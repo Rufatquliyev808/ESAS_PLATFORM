@@ -1,40 +1,53 @@
 # ESAS MT5 Bridge
 
-Version: 0.1.0
+Version: 0.2.0
 
 Status: EXPERIMENTAL
-
-The MQL5 `#property version` uses `1.000` only because MetaEditor requires its
-own `xxx.yyy` format. The authoritative module version is `0.1.0` in
-`module.json`.
 
 ## Purpose
 
 This module is the minimal MetaTrader 5 bridge for ESAS Platform Phase 1.
 
-Its only responsibility in this version is to:
+Its responsibilities are limited to:
 
 - receive live ticks from MT5;
-- convert each tick into the standard ESAS event envelope;
-- emit the serialized `TICK_RECEIVED` event to the MT5 log.
+- convert each tick into the standard `TICK_RECEIVED` event;
+- optionally print serialized events to the MT5 Experts log;
+- optionally send events to the ESAS backend using HTTP.
 
-This version does not:
+This module does not:
 
 - analyze market behavior;
-- generate signals;
+- generate trading signals;
 - open, modify, or close trades;
-- write to a database;
-- communicate over the network.
+- write directly to a database.
 
 ## Files
 
 - `module.json` — module identity, version, lifecycle status, and capabilities.
-- `include/EsasTickEvent.mqh` — immutable tick-event snapshot and JSON serialization.
+- `include/EsasTickEvent.mqh` — tick-event structure and JSON serialization.
+- `include/EsasHttpTransport.mqh` — isolated HTTP POST transport.
 - `src/ESAS_MT5_Bridge.mq5` — minimal EA entry point.
 
-## Current Output
+## Inputs
 
-Every accepted tick is printed as one JSON line in the MT5 Experts log.
+- `InpEmitTickEvents` — prints tick events to the MT5 log.
+- `InpSendTicksToBackend` — sends tick events to the backend.
+- `InpBackendTickUrl` — backend tick endpoint.
+- `InpHttpTimeoutMs` — HTTP request timeout.
 
-The transport mechanism is intentionally isolated for a later version so the
-event contract does not depend on SQLite, files, sockets, or an API.
+Default backend endpoint:
+
+`http://127.0.0.1:8000/events/ticks`
+
+MT5 must allow WebRequest access to:
+
+`http://127.0.0.1:8000`
+
+## Current Transport Limitation
+
+Version 0.2.0 sends one synchronous HTTP request per tick.
+
+This implementation is suitable only for integration testing.
+
+It must not remain enabled for long-running or high-frequency collection. A later version will introduce buffering or queued transport without changing the event contract.
