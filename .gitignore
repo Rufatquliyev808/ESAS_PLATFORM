@@ -1,0 +1,15 @@
+﻿# Generated MT5 files
+*.ex5
+*.log
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Frontend
+node_modules/
+dist/
+
+# Local configuration
+.env
