@@ -45,3 +45,20 @@ FastAPI Validation
 SQLite Storage
     ↓
 Tick Statistics
+
+## Operational Monitoring Validation
+
+Date: 2026-07-27
+
+Operational status endpoint successfully detected both states:
+
+- ACTIVE: live MT5 ticks were reaching the backend.
+- STALE: tick transmission was stopped and the 30-second threshold was exceeded.
+
+Validated endpoint:
+
+`GET /status/operational`
+
+Observed stored tick count during validation: 172.
+
+Result: PASSED
