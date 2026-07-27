@@ -53,3 +53,19 @@ def test_tick_endpoint_stores_event_only_once() -> None:
 
     assert first_response.json()["status"] in {"stored", "duplicate"}
     assert second_response.json()["status"] == "duplicate"
+
+def test_tick_statistics_endpoint() -> None:
+    with TestClient(app) as client:
+        response = client.get("/statistics/ticks")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "total_ticks" in data
+    assert "unique_event_ids" in data
+    assert "duplicate_rows" in data
+    assert data["total_ticks"] >= data["unique_event_ids"]
+    assert data["duplicate_rows"] == (
+        data["total_ticks"] - data["unique_event_ids"]
+    )
