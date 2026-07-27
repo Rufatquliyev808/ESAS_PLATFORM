@@ -69,3 +69,17 @@ def test_tick_statistics_endpoint() -> None:
     assert data["duplicate_rows"] == (
         data["total_ticks"] - data["unique_event_ids"]
     )
+
+def test_operational_status_endpoint() -> None:
+    with TestClient(app) as client:
+        response = client.get("/status/operational")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["status"] == "ok"
+    assert data["database"]["exists"] is True
+    assert data["tick_stream"]["status"] in {"waiting", "active", "stale"}
+    assert data["tick_stream"]["stale_after_seconds"] == 30
+    assert data["tick_stream"]["total_ticks"] >= 0
