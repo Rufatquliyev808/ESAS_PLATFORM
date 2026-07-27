@@ -13,3 +13,8 @@ dist/
 
 # Local configuration
 .env
+
+# Runtime SQLite databases
+database/*.sqlite
+database/*.sqlite-wal
+database/*.sqlite-shm

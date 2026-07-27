@@ -1,12 +1,27 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, status
 
+from backend.app.database.tick_repository import save_tick_event
+
+from backend.app.database.connection import initialize_database
 from backend.app.models.tick_event import TickReceivedEvent
 
+
 APP_VERSION = "0.1.0"
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    initialize_database()
+    yield
+
 
 app = FastAPI(
     title="ESAS Platform Backend",
     version=APP_VERSION,
+    lifespan=lifespan,
 )
 
 
@@ -21,8 +36,10 @@ def health() -> dict[str, str]:
 
 @app.post("/events/ticks", status_code=status.HTTP_202_ACCEPTED)
 def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
+    was_inserted = save_tick_event(event)
+
     return {
-        "status": "accepted",
+        "status": "stored" if was_inserted else "duplicate",
         "event_id": event.event_id,
         "event_type": event.event_type,
     }
