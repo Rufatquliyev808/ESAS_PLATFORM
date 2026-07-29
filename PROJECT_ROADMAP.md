@@ -62,9 +62,9 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 - [ ] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
 - [ ] Phase 1 status sənədini düzəltmək
-- [ ] MT5 Bridge versiyalarını uyğunlaşdırmaq
-- [ ] README sənədini yeniləmək
-- [ ] Buferdəki event-lərin avtomatik retry göndərişi
+- [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
+- [x] README sənədini yeniləmək
+- [x] Buferdəki event-lərin avtomatik retry göndərişi
 - [ ] Bufer dolması siyasəti
 - [ ] İtirilmiş event sayğacı
 - [ ] Disk əsaslı davamlı event növbəsi

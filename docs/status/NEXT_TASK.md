@@ -6,85 +6,71 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-MT5 yaddaş buferində saxlanmış tick event-lərinin backend yenidən əlçatan olduqda avtomatik göndərilməsi.
+MT5 və ya Expert Advisor bağlandıqda gözləyən event-lərin itməməsi üçün disk əsaslı davamlı event növbəsini layihələndirmək.
 
 ## Problem
 
-Hazırda HTTP göndərişi uğursuz olduqda tick event-i `EsasTickBuffer` daxilində saxlanılır.
+Hazırkı FIFO bufer RAM daxilində işləyir.
 
-Lakin sistem:
+Bufer:
 
-- buferdəki event-i yenidən göndərmir;
-- backend-in bərpa olunduğunu istifadə etmir;
-- uğurla göndərilmiş event-i buferdən silmir;
-- köhnə və yeni event-lərin ardıcıllığını idarə etmir.
+- müvəqqəti backend kəsilməsini idarə edir;
+- backend bərpa olduqda event-ləri batch şəklində göndərir;
+- MT5 və ya Expert Advisor bağlandıqda bütün gözləyən event-ləri itirir.
 
-Bu səbəbdən hazırkı bufer məlumatı yalnız müvəqqəti saxlayır, lakin çatdırılmanı təmin etmir.
+Bu, məlumat bütövlüyü prinsipinə uyğun deyil.
 
 ## Məqsəd
 
-Backend müvəqqəti dayandıqda event-ləri yaddaş buferində toplamaq və backend bərpa olunduqda onları FIFO ardıcıllığı ilə göndərmək.
+Göndərilməmiş event-ləri lokal diskdə qorumaq və MT5 yenidən başladıqda onları bərpa edərək FIFO ardıcıllığı ilə backend-ə göndərmək.
 
-## Təsir edəcək əsas fayllar
+## İlkin araşdırma mövzuları
 
-- `mt5/bridge/include/EsasTickBuffer.mqh`
-- `mt5/bridge/include/EsasHttpTransport.mqh`
-- `mt5/bridge/src/ESAS_MT5_Bridge.mq5`
-- `mt5/bridge/README.md`
-- `mt5/bridge/module.json`
-- `docs/status/CURRENT_STATE.md`
-- `CHANGELOG.md`
-
-## Funksional tələblər
-
-1. Bufer boş deyilsə ən köhnə event əvvəl göndərilməlidir.
-2. Event yalnız uğurlu HTTP cavabından sonra buferdən silinməlidir.
-3. Göndəriş uğursuz olarsa event buferdə qalmalıdır.
-4. Retry prosesi sonsuz və sürətli dövrə yaratmamalıdır.
-5. Köhnə event-lərin zaman ardıcıllığı qorunmalıdır.
-6. Bufer sayı və göndəriş nəticəsi loglanmalıdır.
-7. Bufer dolduqda məlumat itkisi açıq şəkildə loglanmalıdır.
-8. Yeni tick-lərin işlənməsi tam bloklanmamalıdır.
-9. Event müqaviləsi dəyişdirilməməlidir.
-10. Backend-də təkrar event qoruması saxlanmalıdır.
+1. Fayl əsaslı növbə və SQLite əsaslı növbənin müqayisəsi.
+2. MQL5 daxilində təhlükəsiz fayl yazma imkanları.
+3. Yarımçıq yazılmış event-in aşkarlanması.
+4. Event-in yalnız uğurlu HTTP cavabından sonra diskdən silinməsi.
+5. MT5 yenidən başladıqda növbənin bərpası.
+6. Maksimum disk istifadəsi və limit siyasəti.
+7. Fayl korlanması zamanı bərpa qaydası.
+8. FIFO ardıcıllığının qorunması.
+9. Təkrar event riskinin backend idempotency ilə idarə olunması.
+10. Disk yazma performansının tick axınına təsiri.
 
 ## Təhlükəsizlik qaydaları
 
-- Real ticarət funksiyası əlavə edilməməlidir.
 - Event məlumatı dəyişdirilməməlidir.
 - Uğursuz event səssiz şəkildə silinməməlidir.
-- Mövcud istifadəçi dəyişiklikləri qorunmalıdır.
-- Dəyişiklikdən əvvəl Git statusu yoxlanmalıdır.
+- Disk faylı korlandıqda mövcud məlumat qorunmalıdır.
+- Real ticarət funksiyası əlavə edilməməlidir.
+- Event müqaviləsi dəyişdirilməməlidir.
+- Koddan əvvəl ayrıca dizayn qərarı sənədi hazırlanmalıdır.
 
-## Yoxlama ssenarisi
+## İlk addım
 
-1. Backend-i işə sal.
-2. MT5 tick göndərişini aktiv et.
-3. Tick-lərin bazaya çatdığını təsdiqlə.
-4. Backend-i dayandır.
-5. Tick-lərin buferə əlavə olunduğunu təsdiqlə.
-6. Backend-i yenidən işə sal.
-7. Buferdəki event-lərin ardıcıllıqla göndərildiyini təsdiqlə.
-8. Bufer sayının sıfıra düşdüyünü təsdiqlə.
-9. Bazada təkrar `event_id` yaranmadığını yoxla.
-10. Yeni tick-lərin göndərilməyə davam etdiyini yoxla.
+`docs/decisions/` daxilində disk növbəsi üçün Architecture Decision Record hazırlamaq.
+
+Qərar sənədində aşağıdakılar olmalıdır:
+
+- problem;
+- tələblər;
+- alternativlər;
+- fayl əsaslı həll;
+- SQLite əsaslı həll;
+- üstünlük və risklər;
+- seçilən yanaşma;
+- qəbul meyarları.
 
 ## Tamamlanma meyarları
 
-Tapşırıq yalnız aşağıdakı hallarda tamamlanmış hesab ediləcək:
+- Disk növbəsinin dizaynı sənədləşdirilir.
+- Seçilmiş yanaşmanın səbəbi izah edilir.
+- Məlumat itkisi və bərpa ssenariləri müəyyən edilir.
+- Kodlaşdırmaya başlamazdan əvvəl təhlükəsizlik riskləri qiymətləndirilir.
+- Qərar konstitusiya və arxitektura prinsiplərinə uyğun olur.
 
-- backend kəsilməsi zamanı event-lər buferdə qalır;
-- backend bərpa olduqda event-lər avtomatik göndərilir;
-- uğurlu event buferdən silinir;
-- uğursuz event buferdə saxlanılır;
-- FIFO ardıcıllığı qorunur;
-- məlumat itkisi səssiz baş vermir;
-- mövcud backend testləri keçir;
-- MT5 Bridge uğurla kompilyasiya olunur;
-- README və status sənədləri yenilənir.
-
-## Planlaşdırılan commit
+## Planlaşdırılan ilk commit
 
 ```text
-Implement buffered tick retry delivery
+Document persistent event queue design
 ```

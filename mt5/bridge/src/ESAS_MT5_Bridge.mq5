@@ -1,5 +1,5 @@
 #property copyright "ESAS Platform"
-#property version   "1.200"
+#property version   "1.300"
 #property strict
 
 #include "../include/EsasTickEvent.mqh"
@@ -11,6 +11,8 @@ input bool   InpSendTicksToBackend   = false;
 input string InpBackendTickUrl       = "http://127.0.0.1:8000/events/ticks";
 input int    InpHttpTimeoutMs        = 500;
 input int    InpTickBufferCapacity   = 1000;
+input int    InpRetryIntervalSeconds = 1;
+input int    InpRetryBatchSize       = 50;
 
 int OnInit()
 {
@@ -19,6 +21,19 @@ int OnInit()
       Print(
          "ESAS MT5 Bridge: tick buffer initialization failed",
          " | capacity=", InpTickBufferCapacity
+      );
+
+      return INIT_FAILED;
+   }
+
+   if(InpRetryIntervalSeconds <= 0 ||
+      InpRetryBatchSize <= 0 ||
+      !EventSetTimer(InpRetryIntervalSeconds))
+   {
+      Print(
+         "ESAS MT5 Bridge: retry timer initialization failed",
+         " | interval_seconds=", InpRetryIntervalSeconds,
+         " | error=", GetLastError()
       );
 
       return INIT_FAILED;
@@ -38,11 +53,87 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+   EventKillTimer();
+
    Print(
       "ESAS MT5 Bridge stopped",
       " | reason=", reason,
       " | buffered_events=", g_tick_buffer.Count()
    );
+}
+
+void EsasRetryBufferedEvents()
+{
+   if(!InpSendTicksToBackend ||
+      MQLInfoInteger(MQL_TESTER) ||
+      g_tick_buffer.IsEmpty())
+   {
+      return;
+   }
+
+   int delivered_count = 0;
+
+   for(int attempt = 0; attempt < InpRetryBatchSize; attempt++)
+   {
+      string event_json = "";
+
+      if(!g_tick_buffer.Peek(event_json))
+         break;
+
+      int http_status = 0;
+      int transport_error = 0;
+      string response_body = "";
+
+      const bool sent = EsasHttpPostJson(
+         InpBackendTickUrl,
+         event_json,
+         InpHttpTimeoutMs,
+         http_status,
+         response_body,
+         transport_error
+      );
+
+      if(!sent)
+      {
+         Print(
+            "ESAS MT5 Bridge: buffered event retry failed",
+            " | http_status=", http_status,
+            " | error=", transport_error,
+            " | delivered_in_batch=", delivered_count,
+            " | buffer_count=", g_tick_buffer.Count(),
+            " | response=", response_body
+         );
+
+         break;
+      }
+
+      if(!g_tick_buffer.RemoveFirst())
+      {
+         Print(
+            "ESAS MT5 Bridge: buffered event removal failed",
+            " | delivered_in_batch=", delivered_count,
+            " | buffer_count=", g_tick_buffer.Count()
+         );
+
+         break;
+      }
+
+      delivered_count++;
+   }
+
+   if(delivered_count > 0)
+   {
+      Print(
+         "ESAS MT5 Bridge: buffered batch delivered",
+         " | delivered=", delivered_count,
+         " | buffer_count=", g_tick_buffer.Count()
+      );
+   }
+}
+
+void OnTimer()
+{
+   EsasRetryBufferedEvents();
 }
 
 void OnTick()
@@ -89,6 +180,20 @@ void OnTick()
       return;
    }
 
+   if(!g_tick_buffer.IsEmpty())
+   {
+      const bool buffered = g_tick_buffer.Enqueue(event_json);
+
+      Print(
+         "ESAS MT5 Bridge: event queued behind buffered events",
+         " | buffered=", buffered,
+         " | buffer_count=", g_tick_buffer.Count(),
+         " | buffer_capacity=", g_tick_buffer.Capacity()
+      );
+
+      return;
+   }
+
    int http_status = 0;
    int transport_error = 0;
    string response_body = "";
@@ -103,17 +208,17 @@ void OnTick()
    );
 
    if(!sent)
-{
-   const bool buffered = g_tick_buffer.Enqueue(event_json);
+   {
+      const bool buffered = g_tick_buffer.Enqueue(event_json);
 
-   Print(
-      "ESAS MT5 Bridge: backend delivery failed",
-      " | http_status=", http_status,
-      " | error=", transport_error,
-      " | buffered=", buffered,
-      " | buffer_count=", g_tick_buffer.Count(),
-      " | buffer_capacity=", g_tick_buffer.Capacity(),
-      " | response=", response_body
-   );
-}
+      Print(
+         "ESAS MT5 Bridge: backend delivery failed",
+         " | http_status=", http_status,
+         " | error=", transport_error,
+         " | buffered=", buffered,
+         " | buffer_count=", g_tick_buffer.Count(),
+         " | buffer_capacity=", g_tick_buffer.Capacity(),
+         " | response=", response_body
+      );
+   }
 }

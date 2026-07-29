@@ -44,6 +44,7 @@ MT5 Tick
 - Real MT5 axını ilə `active` və `stale` vəziyyətləri yoxlanılıb.
 - Sınaq zamanı 172 tick-in saxlanması müşahidə edilib.
 - Uğursuz HTTP göndərişləri üçün ilkin yaddaş FIFO buferi yaradılıb.
+- Backend bərpa olduqda buferdəki event-lərin FIFO batch şəklində avtomatik göndərilməsi real MT5 axını ilə yoxlanılıb.
 - Layihə GitHub-a yüklənib.
 
 ## Mövcud API endpoint-ləri
@@ -71,7 +72,7 @@ MT5 Tick
 - Event yaradılması işləyir.
 - HTTP göndərişi işləyir.
 - Uğursuz event-in RAM buferinə əlavə edilməsi işləyir.
-- Buferdəki event-lərin avtomatik təkrar göndərilməsi hələ yoxdur.
+- Buferdəki event-lər backend bərpa olduqda saniyəlik interval və konfiqurasiya olunan batch ölçüsü ilə avtomatik göndərilir.
 
 ### Frontend
 
@@ -82,30 +83,28 @@ MT5 Tick
 
 ## Məlum problemlər
 
-1. `PROJECT_ROADMAP.md` boşdur.
-2. Azərbaycan hərfləri bəzi sənədlərdə pozulmuş görünür.
-3. Phase 1 status sənədinin Markdown quruluşunda problem var.
-4. MT5 buferi event-i saxlayır, amma yenidən göndərmir.
-5. RAM buferindəki məlumat MT5 bağlandıqda itir.
-6. Bufer dolması və məlumat itkisi siyasəti müəyyən edilməyib.
-7. MT5 Bridge versiyası bütün fayllarda uyğun deyil.
-8. README yeni bufer funksiyasını əks etdirmir.
-9. MT5 buferi üçün avtomatlaşdırılmış test yoxdur.
-10. Frontend spesifikasiyası hazırlanmayıb.
+1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
+2. Phase 1 status sənədinin Markdown quruluşunda problem var.
+3. RAM buferindəki məlumat MT5 bağlandıqda itir.
+4. Bufer dolması və məlumat itkisi siyasəti tam müəyyən edilməyib.
+5. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
+6. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
+7. Frontend spesifikasiyası hazırlanmayıb.
+8. Test verilənlər bazası əsas verilənlər bazasından ayrılmayıb.
+9. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
 
 ## Son tamamlanan texniki dəyişiklik
 
-MT5 Bridge-ə uğursuz tick event-lərini saxlayan FIFO yaddaş buferi əlavə edilib.
+MT5 Bridge backend kəsilməsi zamanı event-ləri RAM əsaslı FIFO buferində saxlayır. Backend bərpa olduqda gözləyən event-ləri konfiqurasiya olunan batch ölçüsü ilə avtomatik göndərir.
 
-Commit:
+Real MT5 sınağında:
 
-```text
-9f58096 Add MT5 tick buffering
-```
-
-## Növbəti əsas texniki prioritet
-
-Backend əlçatan olmadıqda buferə yazılmış event-lərin backend bərpa olduqdan sonra zaman ardıcıllığı ilə avtomatik göndərilməsi.
+- backend dayandırıldıqda event-lər buferdə saxlanılıb;
+- uğursuz retry zamanı event-lər silinməyib;
+- backend bərpa olduqda 3 event göndərilib;
+- sınağın sonunda `buffer_count=0` olub;
+- MT5 kompilyasiyası `0 errors, 0 warnings` nəticəsi verib;
+- backend testləri `5 passed` nəticəsi verib.
 
 ## Phase 1-in tamamlanması üçün qalan əsas işlər
 
@@ -119,3 +118,7 @@ Backend əlçatan olmadıqda buferə yazılmış event-lərin backend bərpa old
 8. Uzunmüddətli sabitlik testi aparmaq.
 9. Phase 1 nəticələrini sənədləşdirmək.
 10. Phase 1-i rəsmi şəkildə bağlamaq.
+
+## Növbəti əsas texniki prioritet
+
+RAM buferindəki event-lərin MT5 və ya kompüter bağlandıqda itməməsi üçün disk əsaslı davamlı event növbəsinin layihələndirilməsi.

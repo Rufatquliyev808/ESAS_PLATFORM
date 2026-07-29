@@ -15,6 +15,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 - Cari vəziyyət üçün `docs/status/CURRENT_STATE.md`.
 - Növbəti tapşırıq üçün `docs/status/NEXT_TASK.md`.
 - Layihə dəyişikliklərini izləmək üçün `CHANGELOG.md`.
+- MT5 Bridge üçün timer əsaslı FIFO retry mexanizmi.
+- Konfiqurasiya olunan retry intervalı.
+- Konfiqurasiya olunan batch göndəriş ölçüsü.
+- Backend bərpa olduqda buferin avtomatik boşaldılması.
+- Retry və batch nəticələri üçün operational log mesajları.
 
 ### Planned
 
