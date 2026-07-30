@@ -35,6 +35,12 @@ Status: IN PROGRESS
   `loss_acknowledged=true` və `acknowledged_rejected_events=7343` qaytardı.
 - Audit sətri SQLite bazasında istifadəçi, say və UTC vaxtı ilə saxlanıldı; tarixi
   rədd edilmiş event sayğacı silinmədi.
+- 30 dəqiqəlik canlı sabitlik sınağında tick sayı `126685`-dən `158529`-a yüksəldi:
+  `31844` yeni tick itkisiz saxlanıldı.
+- Sınağın sonunda backend `/health=ok`, operational status `ok`, tick axını `active`,
+  disk növbəsi `0 / 1000` və SQLite `quick_check=ok` oldu.
+- Tarixi `7343` rədd edilmiş event üçün audit təsdiqi qorundu və yeni rədd edilmiş
+  event qeydə alınmadı.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 - `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
   sağlam prosesləri tanıyır və təkrar proses yaratmır.

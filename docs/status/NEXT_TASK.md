@@ -21,9 +21,8 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. Uzunmüddətli sabitlik sınağı aparmaq.
-2. GitHub Actions nəticələrini təsdiqləmək.
-3. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
+1. GitHub Actions nəticələrini təsdiqləmək.
+2. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
 
 ## Tamamlanma meyarları
 
