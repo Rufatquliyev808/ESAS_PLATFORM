@@ -50,6 +50,7 @@ const labels: Record<string, string> = {
   backlogged: "Növbə var",
   degraded: "Problem aşkarlanıb",
   full: "Növbə dolub",
+  unavailable: "Backend əlçatan deyil",
   none: "Xəta yoxdur",
 };
 
@@ -294,6 +295,13 @@ export default function Home() {
   const queuePercent = primaryBridge?.queue_capacity
     ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
     : 0;
+  const currentQueueStatus = !primaryBridge
+    ? "waiting"
+    : primaryBridge.queue_count === 0
+      ? "healthy"
+      : primaryBridge.queue_count >= primaryBridge.queue_capacity
+        ? "full"
+        : "backlogged";
   const lossStatus = (primaryBridge?.rejected_events ?? 0) > 0 ? "degraded" : "healthy";
   const overallStatus = error
     ? "unavailable"
@@ -368,7 +376,7 @@ export default function Home() {
             <StatusCard
               eyebrow="Davamlılıq"
               title="Disk növbəsi"
-              status={primaryBridge?.queue_status ?? "waiting"}
+              status={currentQueueStatus}
               value={
                 primaryBridge
                   ? `${formatNumber(primaryBridge.queue_count)} / ${formatNumber(primaryBridge.queue_capacity)} event`
@@ -376,8 +384,10 @@ export default function Home() {
               }
               detail={
                 primaryBridge
-                  ? errorLabels[primaryBridge.last_queue_error] ??
-                    primaryBridge.last_queue_error
+                  ? primaryBridge.queue_count === 0
+                    ? errorLabels.none
+                    : errorLabels[primaryBridge.last_queue_error] ??
+                      primaryBridge.last_queue_error
                   : "Növbə məlumatı yoxdur"
               }
             >

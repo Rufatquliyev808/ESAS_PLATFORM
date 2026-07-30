@@ -21,12 +21,11 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. MT5 Bridge və backend işlək halda paneli brauzerdə açmaq.
-2. `active`, `healthy`, sıfır növbə və sıfır rədd edilən event göstəricilərini
-   vizual təsdiqləmək.
-3. Backend dayandırıldıqda qırmızı əlaqə xəbərdarlığını təsdiqləmək.
-4. Backend bərpa olduqda panelin avtomatik sağlam vəziyyətə qayıtmasını yoxlamaq.
-5. GitHub Actions daxilində frontend lint və test addımlarını işə salmaq.
+1. Backend başlanğıcında verilənlər bazasına yazma imkanını avtomatik yoxlamaq.
+2. Yazma mümkün olmadıqda backend-i sağlam kimi göstərməmək və aydın xəta vermək.
+3. Cari problem ilə tarixi məlumat itkisini monitorinqdə ayrı göstərmək.
+4. Uzunmüddətli sabitlik sınağı aparmaq.
+5. GitHub Actions nəticələrini təsdiqləmək.
 
 ## Tamamlanma meyarları
 

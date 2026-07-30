@@ -5,6 +5,17 @@ Cari mərhələ: Phase 1
 Status: IN PROGRESS  
 Əsas budaq: `main`
 
+## 2026-07-30 canlı bərpa sınağı
+
+- Backend-in verilənlər bazasına yaza bilmədiyi real nasazlıq aşkarlandı.
+- MT5 Bridge disk növbəsi `1000 / 1000` həddinə çatdı.
+- Backend düzgün istifadəçi icazəsi ilə başladıldıqdan sonra yazma bərpa olundu.
+- Gözləyən bütün event-lər FIFO qaydasında göndərildi və növbə `0 / 1000` oldu.
+- Canlı tick axını yenidən `active` vəziyyətinə qayıtdı.
+- Hadisə zamanı rədd edilmiş `7343` event audit göstəricisi kimi qorunur.
+- Frontend-də boş növbənin keçmiş `queue_full` xətasına görə dolu göstərilməsi
+  düzəldildi; məlumat itkisi xəbərdarlığı ayrıca saxlanılır.
+
 ## Layihənin məqsədi
 
 ESAS Platform bazar məlumatlarını toplayan, qoruyan, analiz edən və statistik olaraq sübut edilmiş nəticələr əsasında gələcəkdə qərar verə bilən modul platformadır.

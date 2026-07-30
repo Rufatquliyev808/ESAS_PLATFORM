@@ -8,6 +8,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed
+
+- Boşaldılmış disk növbəsinin keçmiş `queue_full` xətasına görə hələ də dolu
+  göstərilməsi düzəldildi.
+- Backend əlçatan olmadıqda status nişanının ingiliscə `unavailable` göstərilməsi
+  Azərbaycan dilinə uyğunlaşdırıldı.
+
 ### Added
 
 - İstifadəçi kodu və parol ilə qorunan monitorinq girişi.
