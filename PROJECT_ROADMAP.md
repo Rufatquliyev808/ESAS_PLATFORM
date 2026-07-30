@@ -74,7 +74,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] GitHub Actions test axını
 - [x] Phase 1 frontend monitorinq paneli
 - [x] 30 dəqiqəlik sabitlik sınağı
-- [ ] 1 saatlıq sabitlik testi
+- [x] 1 saatlıq sabitlik testi
 - [ ] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
 - [ ] Məlumat itkisi hesabatı
@@ -202,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-1 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
+8–12 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
 
 Ətraflı tapşırıq:
 

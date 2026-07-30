@@ -2,7 +2,7 @@
 
 ## 1 saatlıq sınaq — 2026-07-30
 
-Status: RUNNING
+Status: PASSED
 
 Başlanğıc: `2026-07-30 17:06:31 +04:00`
 
@@ -17,6 +17,24 @@ Başlanğıc: `2026-07-30 17:06:31 +04:00`
 | Məlumat itkisi təsdiqi | `true` |
 | SQLite quick check | `ok` |
 
-Tamamlanma vaxtı: `2026-07-30 18:06:31 +04:00` və ya daha sonra.
+Tamamlanma: `2026-07-30 18:14:47 +04:00`
 
-Sınaq tamamlandıqda son göstəricilər və fərq bu fayla əlavə ediləcək.
+| Göstərici | Son dəyər | Fərq |
+|---|---:|---:|
+| Backend health | `ok` | dəyişmədi |
+| Ümumi operational status | `ok` | dəyişmədi |
+| Tick axını | `active` | dəyişmədi |
+| Ümumi tick | `206454` | `+36506` |
+| Disk növbəsi | `0 / 1000` | dəyişmədi |
+| Rədd edilmiş event | `7343` | `+0` |
+| Məlumat itkisi təsdiqi | `true` | qorundu |
+| SQLite quick check | `ok` | dəyişmədi |
+
+Əlavə yoxlamalar:
+
+- Backend: `12 passed`
+- Frontend lint: passed
+- Frontend production build: passed
+- Frontend render testi: `1 passed`
+
+Nəticə: 1 saatlıq qəbul qapısı keçildi.

@@ -1,13 +1,13 @@
 # ESAS Platform — Növbəti tapşırıq
 
-Status: READY  
-Prioritet: HIGH  
+Status: READY
+Prioritet: HIGH
 Mərhələ: Phase 1
 
 ## Tapşırıq
 
-1 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu kimi
-qeyd etmək.
+8–12 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu
+kimi qeyd etmək.
 
 ## Başlanğıc göstəriciləri
 
@@ -21,13 +21,6 @@ Sınağın başlanğıcında aşağıdakılar qeyd edilməlidir:
 - məlumat itkisi təsdiqinin vəziyyəti;
 - SQLite `quick_check` nəticəsi.
 
-## Sınaq zamanı
-
-- MT5 və Algo Trading aktiv qalmalıdır.
-- Backend və frontend işləməlidir.
-- Sistem bilərəkdən dayandırılmamalıdır.
-- Paneldə yeni qırmızı xəbərdarlıq yaranarsa vaxtı qeyd edilməlidir.
-
 ## Tamamlanma meyarları
 
 - Tick sayı artmalıdır.
@@ -40,4 +33,4 @@ Sınağın başlanğıcında aşağıdakılar qeyd edilməlidir:
 
 ## Sonrakı addım
 
-1 saatlıq sınaq keçərsə 8–12 saatlıq sabitlik sınağı planlaşdırılacaq.
+8–12 saatlıq sınaq keçərsə 24 saatlıq son sabitlik sınağı planlaşdırılacaq.
