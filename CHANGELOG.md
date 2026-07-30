@@ -21,6 +21,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Backend və frontend üçün bir-əmrlik təhlükəsiz lokal başlatma skripti.
+- Yalnız qeydə aldığı prosesləri dayandıran lokal dayandırma skripti.
+- Proses PID-si ilə yanaşı başlanma vaxtını yoxlayan təhlükəsiz proses idarəetməsi.
+- Lokal başlatma və dayandırma əməliyyat sənədi.
 - İstifadəçi kodu və parol ilə qorunan monitorinq girişi.
 - Səkkiz saatlıq imzalanmış backend sessiyası və qorunan monitorinq API-ləri.
 - Giriş və icazəsiz API sorğuları üçün avtomatik backend testləri.

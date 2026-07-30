@@ -21,11 +21,11 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. Backend və frontend üçün bir əmrlə təhlükəsiz lokal başlatma mexanizmi yaratmaq.
-2. Backend prosesinin dayanmasını və yenidən başlamasını idarə olunan etmək.
-3. Cari problem ilə tarixi məlumat itkisini monitorinqdə ayrı göstərmək.
-4. Uzunmüddətli sabitlik sınağı aparmaq.
-5. GitHub Actions nəticələrini təsdiqləmək.
+1. Cari problem ilə tarixi məlumat itkisini monitorinqdə ayrı göstərmək.
+2. Tarixi itki hadisəsinin istifadəçi tərəfindən təsdiqlənməsi üçün auditli
+   acknowledgement mexanizmini layihələndirmək.
+3. Uzunmüddətli sabitlik sınağı aparmaq.
+4. GitHub Actions nəticələrini təsdiqləmək.
 
 ## Tamamlanma meyarları
 

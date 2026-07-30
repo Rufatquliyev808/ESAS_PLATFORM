@@ -22,6 +22,14 @@ Status: IN PROGRESS
   və MT5 Bridge eventləri növbəyə əlavə edə bilir.
 - Avtomatik backend testləri: `11 passed`.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
+- `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
+  sağlam prosesləri tanıyır və təkrar proses yaratmır.
+- `tools/stop-local-platform.ps1` yalnız başlatma skriptinin qeydə aldığı, PID və
+  başlanma vaxtı uyğun gələn prosesləri dayandırır.
+- Başlatma skripti backend `/health` və frontend HTTP cavabını gözləyir; uğursuz
+  başlanğıcda yaratdığı proses ağacını təhlükəsiz dayandırır.
+- Başlatma və dayandırma skriptlərinin PowerShell sintaksisi, canlı backend
+  sağlamlığı və frontend `200` cavabı yoxlanıldı.
 
 ## Layihənin məqsədi
 
