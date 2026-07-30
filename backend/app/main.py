@@ -8,14 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.database.tick_repository import save_tick_event
 from backend.app.database.tick_statistics import get_tick_statistics
 from backend.app.database.operational_status import get_operational_status
-from backend.app.operational.bridge_status import save_bridge_status
+from backend.app.database.loss_acknowledgements import acknowledge_loss
+from backend.app.operational.bridge_status import (
+    get_bridge_status,
+    save_bridge_status,
+)
 
 from backend.app.database.connection import (
     initialize_database,
     verify_database_writable,
 )
 from backend.app.models.tick_event import TickReceivedEvent
-from backend.app.models.bridge_status import BridgeStatusReport
+from backend.app.models.bridge_status import (
+    BridgeStatusReport,
+    LossAcknowledgementRequest,
+)
 from backend.app.auth import LoginRequest, create_session, require_dashboard_session
 
 
@@ -96,6 +103,37 @@ def receive_bridge_status(report: BridgeStatusReport) -> dict[str, object]:
         "source": stored_report["source"],
         "symbol": stored_report["symbol"],
         "reported_at": stored_report["reported_at"],
+    }
+
+
+@app.post("/status/loss/acknowledge")
+def acknowledge_data_loss(
+    request: LossAcknowledgementRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    report = get_bridge_status(request.source, request.symbol)
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bridge report was not found",
+        )
+
+    rejected_events = int(report["rejected_events"])
+    if rejected_events <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="There is no data loss to acknowledge",
+        )
+
+    acknowledgement = acknowledge_loss(
+        source=request.source,
+        symbol=request.symbol,
+        rejected_events=rejected_events,
+        acknowledged_by=user_code,
+    )
+    return {
+        "status": "acknowledged",
+        **acknowledgement,
     }
 
 

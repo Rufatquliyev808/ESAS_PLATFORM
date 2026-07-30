@@ -167,6 +167,19 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 .queue-track { height: 8px; margin-top: 18px; overflow: hidden; border-radius: 999px; background: #e9eeeb; }
 .queue-track span { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width .25s ease; }
 .queue-caption { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+.acknowledge-button {
+  margin-top: 12px;
+  border: 1px solid #d77b72;
+  border-radius: 8px;
+  padding: 8px 11px;
+  background: white;
+  color: #801810;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+.acknowledge-button:disabled { cursor: wait; opacity: .65; }
+.acknowledgement-error { margin: 8px 0 0; color: var(--red); font-size: 12px; font-weight: 700; }
 
 .panel { margin-top: 18px; padding: 24px; }
 .section-heading { align-items: flex-end; margin-bottom: 20px; }
@@ -185,6 +198,7 @@ td { padding: 15px 14px; border-bottom: 1px solid #edf0ee; vertical-align: middl
 tbody tr:last-child td { border-bottom: 0; }
 td small { display: block; margin-top: 4px; color: var(--muted); }
 .danger-text { color: var(--red); font-weight: 800; }
+.acknowledged-text { color: var(--amber); font-weight: 800; }
 .empty-state { border: 1px dashed #bcc7c2; border-radius: 12px; padding: 28px; color: var(--muted); text-align: center; }
 
 .loading-panel { display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 300px; padding: 40px; }

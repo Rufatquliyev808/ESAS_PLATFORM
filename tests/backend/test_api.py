@@ -208,13 +208,100 @@ def test_bridge_status_rejects_inconsistent_queue_count() -> None:
     assert response.status_code == 422
 
 
+def test_data_loss_acknowledgement_is_audited_and_versioned() -> None:
+    report = {
+        "source": "esas.mt5.bridge",
+        "module_version": "1.5.0",
+        "symbol": "TEST_ACK",
+        "queue_status": "healthy",
+        "queue_count": 0,
+        "queue_capacity": 10,
+        "rejected_events": 7,
+        "last_queue_error": "queue_full",
+    }
+
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        assert client.post("/status/bridge", json=report).status_code == 202
+
+        before = client.get(
+            "/status/operational",
+            headers=headers,
+        ).json()
+        before_bridge = next(
+            item
+            for item in before["bridge_delivery"]["bridges"]
+            if item["symbol"] == "TEST_ACK"
+        )
+        assert before_bridge["loss_acknowledged"] is False
+
+        acknowledgement = client.post(
+            "/status/loss/acknowledge",
+            headers=headers,
+            json={
+                "source": "esas.mt5.bridge",
+                "symbol": "TEST_ACK",
+            },
+        )
+        assert acknowledgement.status_code == 200
+        assert acknowledgement.json()["status"] == "acknowledged"
+        assert acknowledgement.json()["rejected_events"] == 7
+        assert acknowledgement.json()["acknowledged_by"] == "TEST-USER"
+
+        after = client.get(
+            "/status/operational",
+            headers=headers,
+        ).json()
+        after_bridge = next(
+            item
+            for item in after["bridge_delivery"]["bridges"]
+            if item["symbol"] == "TEST_ACK"
+        )
+        assert after_bridge["loss_acknowledged"] is True
+        assert after_bridge["acknowledged_rejected_events"] == 7
+        assert after_bridge["loss_acknowledged_at"].endswith("Z")
+
+        report["rejected_events"] = 8
+        assert client.post("/status/bridge", json=report).status_code == 202
+        increased = client.get(
+            "/status/operational",
+            headers=headers,
+        ).json()
+        increased_bridge = next(
+            item
+            for item in increased["bridge_delivery"]["bridges"]
+            if item["symbol"] == "TEST_ACK"
+        )
+        assert increased_bridge["loss_acknowledged"] is False
+
+    with get_connection() as connection:
+        audit_rows = connection.execute(
+            """
+            SELECT COUNT(*) AS acknowledgement_count
+            FROM loss_acknowledgements
+            WHERE source = ? AND symbol = ?;
+            """,
+            ("esas.mt5.bridge", "TEST_ACK"),
+        ).fetchone()
+
+    assert audit_rows["acknowledgement_count"] == 1
+
+
 def test_dashboard_endpoints_require_login() -> None:
     with TestClient(app) as client:
         statistics_response = client.get("/statistics/ticks")
         status_response = client.get("/status/operational")
+        acknowledgement_response = client.post(
+            "/status/loss/acknowledge",
+            json={
+                "source": "esas.mt5.bridge",
+                "symbol": "GOLD",
+            },
+        )
 
     assert statistics_response.status_code == 401
     assert status_response.status_code == 401
+    assert acknowledgement_response.status_code == 401
 
 
 def test_login_rejects_wrong_password() -> None:

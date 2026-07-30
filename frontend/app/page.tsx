@@ -12,6 +12,10 @@ type Bridge = {
   rejected_events: number;
   last_queue_error: string;
   reported_at: string;
+  loss_acknowledged: boolean;
+  acknowledged_rejected_events: number;
+  loss_acknowledged_at: string | null;
+  loss_acknowledged_by: string | null;
 };
 
 type Operational = {
@@ -50,6 +54,7 @@ const labels: Record<string, string> = {
   backlogged: "Növbə var",
   degraded: "Problem aşkarlanıb",
   full: "Növbə dolub",
+  acknowledged: "Təsdiqlənib",
   unavailable: "Backend əlçatan deyil",
   none: "Xəta yoxdur",
 };
@@ -67,6 +72,7 @@ const errorLabels: Record<string, string> = {
 function toneFor(status: string): Tone {
   if (["ok", "active", "healthy", "none"].includes(status)) return "good";
   if (["stale", "backlogged"].includes(status)) return "warning";
+  if (status === "acknowledged") return "warning";
   if (["degraded", "full", "unavailable"].includes(status)) return "danger";
   if (status === "waiting") return "info";
   return "neutral";
@@ -98,6 +104,13 @@ function relativeSeconds(seconds: number | null | undefined) {
 function relativeDate(value: string | null | undefined) {
   if (!value) return "Hesabat gözlənilir";
   return relativeSeconds(Math.max(0, (Date.now() - new Date(value).getTime()) / 1000));
+}
+
+function currentQueueStatusFor(bridge: Bridge | undefined) {
+  if (!bridge) return "waiting";
+  if (bridge.queue_count === 0) return "healthy";
+  if (bridge.queue_count >= bridge.queue_capacity) return "full";
+  return "backlogged";
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -161,6 +174,8 @@ export default function Home() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
+  const [acknowledgementError, setAcknowledgementError] = useState<string | null>(null);
   const running = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -236,6 +251,38 @@ export default function Home() {
     }
   }
 
+  async function handleLossAcknowledgement(bridge: Bridge) {
+    const confirmed = window.confirm(
+      `${formatNumber(bridge.rejected_events)} rədd edilmiş eventi gördüyünüzü təsdiqləyirsiniz? Sayğac silinməyəcək və audit tarixçəsində saxlanacaq.`,
+    );
+    if (!confirmed) return;
+
+    setAcknowledgementBusy(true);
+    setAcknowledgementError(null);
+    try {
+      const response = await fetch(`${API_BASE}/status/loss/acknowledge`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          source: bridge.source,
+          symbol: bridge.symbol,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      await refresh();
+    } catch (acknowledgementFailure) {
+      console.error("ESAS loss acknowledgement failed", acknowledgementFailure);
+      setAcknowledgementError("Təsdiq yadda saxlanmadı. Yenidən cəhd edin.");
+    } finally {
+      setAcknowledgementBusy(false);
+    }
+  }
+
   const stats = useMemo(
     () =>
       data
@@ -295,14 +342,12 @@ export default function Home() {
   const queuePercent = primaryBridge?.queue_capacity
     ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
     : 0;
-  const currentQueueStatus = !primaryBridge
-    ? "waiting"
-    : primaryBridge.queue_count === 0
-      ? "healthy"
-      : primaryBridge.queue_count >= primaryBridge.queue_capacity
-        ? "full"
-        : "backlogged";
-  const lossStatus = (primaryBridge?.rejected_events ?? 0) > 0 ? "degraded" : "healthy";
+  const currentQueueStatus = currentQueueStatusFor(primaryBridge);
+  const lossStatus = (primaryBridge?.rejected_events ?? 0) === 0
+    ? "healthy"
+    : primaryBridge?.loss_acknowledged
+      ? "acknowledged"
+      : "degraded";
   const overallStatus = error
     ? "unavailable"
     : data?.operational.status ?? "waiting";
@@ -411,9 +456,29 @@ export default function Home() {
               detail={
                 (primaryBridge?.rejected_events ?? 0) === 0
                   ? "Aşkarlanmış məlumat itkisi yoxdur"
-                  : "Diqqət: rədd edilən event aşkarlanıb"
+                  : primaryBridge?.loss_acknowledged
+                    ? `${formatTime(primaryBridge.loss_acknowledged_at)} tarixində ${primaryBridge.loss_acknowledged_by} tərəfindən təsdiqlənib`
+                    : "Diqqət: rədd edilən event aşkarlanıb"
               }
-            />
+            >
+              {primaryBridge &&
+                primaryBridge.rejected_events > 0 &&
+                !primaryBridge.loss_acknowledged && (
+                  <button
+                    className="acknowledge-button"
+                    type="button"
+                    disabled={acknowledgementBusy}
+                    onClick={() => void handleLossAcknowledgement(primaryBridge)}
+                  >
+                    {acknowledgementBusy ? "Yadda saxlanılır..." : "Hadisəni təsdiqlə"}
+                  </button>
+                )}
+              {acknowledgementError && (
+                <p className="acknowledgement-error" role="alert">
+                  {acknowledgementError}
+                </p>
+              )}
+            </StatusCard>
           </section>
 
           <section className="panel" aria-labelledby="statistics-title">
@@ -464,10 +529,17 @@ export default function Home() {
                       <tr key={`${bridge.source}-${bridge.symbol}`}>
                         <td><strong>{bridge.symbol}</strong></td>
                         <td>{bridge.module_version}</td>
-                        <td><StatusPill status={bridge.queue_status} /></td>
+                        <td><StatusPill status={currentQueueStatusFor(bridge)} /></td>
                         <td>{formatNumber(bridge.queue_count)} / {formatNumber(bridge.queue_capacity)}</td>
-                        <td className={bridge.rejected_events > 0 ? "danger-text" : ""}>
+                        <td className={
+                          bridge.rejected_events > 0 && !bridge.loss_acknowledged
+                            ? "danger-text"
+                            : bridge.rejected_events > 0
+                              ? "acknowledged-text"
+                              : ""
+                        }>
                           {formatNumber(bridge.rejected_events)}
+                          {bridge.loss_acknowledged && <small>Təsdiqlənib</small>}
                         </td>
                         <td>
                           <strong>{relativeDate(bridge.reported_at)}</strong>

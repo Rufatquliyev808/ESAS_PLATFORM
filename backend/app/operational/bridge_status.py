@@ -29,3 +29,13 @@ def get_bridge_statuses() -> list[dict[str, object]]:
             report.copy()
             for _, report in sorted(_latest_reports.items())
         ]
+
+
+def get_bridge_status(
+    source: str,
+    symbol: str,
+) -> dict[str, object] | None:
+    key = f"{source}:{symbol}"
+    with _status_lock:
+        report = _latest_reports.get(key)
+        return None if report is None else report.copy()

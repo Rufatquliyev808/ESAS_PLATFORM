@@ -36,3 +36,10 @@ class BridgeStatusReport(BaseModel):
             )
 
         return self
+
+
+class LossAcknowledgementRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source: Literal["esas.mt5.bridge"]
+    symbol: str = Field(min_length=1)

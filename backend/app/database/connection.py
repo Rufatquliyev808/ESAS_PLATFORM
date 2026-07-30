@@ -61,6 +61,33 @@ def initialize_database() -> None:
             );
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS loss_acknowledgements
+            (
+                acknowledgement_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source             TEXT NOT NULL,
+                symbol             TEXT NOT NULL,
+                rejected_events    INTEGER NOT NULL
+                    CHECK (rejected_events > 0),
+                acknowledged_by    TEXT NOT NULL,
+                acknowledged_at    TEXT NOT NULL
+                    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+            );
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_loss_ack_latest
+            ON loss_acknowledgements
+            (
+                source,
+                symbol,
+                rejected_events DESC,
+                acknowledgement_id DESC
+            );
+            """
+        )
 
 
 def verify_database_writable() -> None:

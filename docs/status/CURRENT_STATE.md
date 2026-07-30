@@ -20,7 +20,15 @@ Status: IN PROGRESS
 - `/health` verilənlər bazası yazıla bilmədikdə `503` qaytarır.
 - Tick saxlanması zamanı SQLite xətası baş verdikdə `/events/ticks` `503` qaytarır
   və MT5 Bridge eventləri növbəyə əlavə edə bilir.
-- Avtomatik backend testləri: `11 passed`.
+- Avtomatik backend testləri: `12 passed`.
+- Tarixi `7343` rədd edilmiş event silinmədən saxlanılır və qorunan API vasitəsilə
+  auditli şəkildə təsdiqlənə bilər.
+- Təsdiq edən istifadəçi, təsdiq vaxtı və həmin anda olan rədd edilmiş event sayı ayrıca
+  saxlanılır.
+- Rədd edilmiş event sayı təsdiqlənmiş saydan yuxarı qalxarsa məlumat itkisi xəbərdarlığı
+  avtomatik yenidən aktivləşir.
+- Canlı backend yoxlamasında tick axını `active`, disk növbəsi `0 / 1000`,
+  `loss_acknowledged=false` və `rejected_events=7343` göstərildi.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 - `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
   sağlam prosesləri tanıyır və təkrar proses yaratmır.

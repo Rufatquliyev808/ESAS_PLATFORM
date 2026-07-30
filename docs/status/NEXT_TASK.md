@@ -21,9 +21,10 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. Cari problem ilə tarixi məlumat itkisini monitorinqdə ayrı göstərmək.
-2. Tarixi itki hadisəsinin istifadəçi tərəfindən təsdiqlənməsi üçün auditli
-   acknowledgement mexanizmini layihələndirmək.
+1. Paneldə tarixi `7343` rədd edilmiş event hadisəsini istifadəçi təsdiqi ilə canlı
+   qəbul sınağından keçirmək.
+2. Təsdiqdən sonra ümumi statusun sağlam, itki kartının isə audit izi ilə
+   `Təsdiqlənib` göstərildiyini yoxlamaq.
 3. Uzunmüddətli sabitlik sınağı aparmaq.
 4. GitHub Actions nəticələrini təsdiqləmək.
 
