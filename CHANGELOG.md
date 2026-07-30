@@ -21,6 +21,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 1 üçün yenidən qurulmuş qəbul vəziyyəti sənədi və aydın qalan qəbul qapıları.
+- Phase 2 replay və məlumat keyfiyyəti mərhələsi üçün ardıcıl icra planı.
 - Tarixi məlumat itkisini silmədən istifadəçi tərəfindən təsdiqləmək üçün audit cədvəli.
 - Qorunan `POST /status/loss/acknowledge` endpoint-i.
 - Monitorinq panelində itki hadisəsini təsdiqləmə düyməsi, təsdiq vaxtı və istifadəçi izi.

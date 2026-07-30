@@ -6,32 +6,38 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-Phase 1 monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək və
-frontend-i GitHub Actions test axınına daxil etmək.
+1 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu kimi
+qeyd etmək.
 
-## Hazır vəziyyət
+## Başlanğıc göstəriciləri
 
-- Azərbaycan dilində monitorinq paneli yaradılıb.
-- Panel yalnız backend API-lərindən məlumat alır.
-- Tick, Bridge, disk növbəsi və rədd edilən event vəziyyətləri göstərilir.
-- Məlumat hər 5 saniyədə yenilənir.
-- Müvəqqəti API xətasında son uğurlu məlumat qorunur.
-- Backend üçün lokal frontend CORS icazələri əlavə edilib.
-- Frontend lint, build və render testi lokal olaraq keçir.
+Sınağın başlanğıcında aşağıdakılar qeyd edilməlidir:
 
-## Növbəti addımlar
+- backend `/health` vəziyyəti;
+- operational ümumi status;
+- ümumi tick sayı;
+- disk növbəsinin sayı və tutumu;
+- rədd edilmiş event sayı;
+- məlumat itkisi təsdiqinin vəziyyəti;
+- SQLite `quick_check` nəticəsi.
 
-1. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
-2. PR #1-i review edib `main` budağına birləşdirmək.
+## Sınaq zamanı
+
+- MT5 və Algo Trading aktiv qalmalıdır.
+- Backend və frontend işləməlidir.
+- Sistem bilərəkdən dayandırılmamalıdır.
+- Paneldə yeni qırmızı xəbərdarlıq yaranarsa vaxtı qeyd edilməlidir.
 
 ## Tamamlanma meyarları
 
-- Panel real API məlumatlarını düzgün göstərir.
-- Backend kəsilməsi zamanı son uğurlu göstəricilər itmir.
-- Desktop və mobil ölçüdə ekran istifadəyə yararlıdır.
-- Backend və frontend testləri GitHub-da keçir.
+- Tick sayı artmalıdır.
+- Tick axını `active` qalmalıdır.
+- Disk növbəsi sınağın sonunda `0 / 1000` olmalıdır.
+- Rədd edilmiş event sayı `7343`-dən yuxarı qalxmamalıdır.
+- Audit təsdiqi qorunmalıdır.
+- Backend `/health=ok` və SQLite `quick_check=ok` olmalıdır.
+- Backend və frontend testləri keçməlidir.
 
-## Təhlükəsizlik sərhədi
+## Sonrakı addım
 
-Panel yalnız oxuma və monitorinq üçündür. Ticarət əməliyyatı, siqnal, proqnoz və
-birbaşa verilənlər bazası bağlantısı daxil deyil.
+1 saatlıq sınaq keçərsə 8–12 saatlıq sabitlik sınağı planlaşdırılacaq.

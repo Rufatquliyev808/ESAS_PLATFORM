@@ -1,6 +1,6 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-07-29  
+Son yenilənmə: 2026-07-30
 Cari mərhələ: Phase 1  
 Ümumi status: IN PROGRESS
 
@@ -61,7 +61,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 ## Qalan işlər
 
 - [ ] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
-- [ ] Phase 1 status sənədini düzəltmək
+- [x] Phase 1 status sənədini düzəltmək
 - [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
 - [x] README sənədini yeniləmək
 - [x] Buferdəki event-lərin avtomatik retry göndərişi
@@ -73,6 +73,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [ ] Bufer və retry testləri
 - [x] GitHub Actions test axını
 - [x] Phase 1 frontend monitorinq paneli
+- [x] 30 dəqiqəlik sabitlik sınağı
 - [ ] 1 saatlıq sabitlik testi
 - [ ] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
@@ -201,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Phase 1 frontend monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək.
+1 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
 
 Ətraflı tapşırıq:
 

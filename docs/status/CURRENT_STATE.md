@@ -1,6 +1,6 @@
 # ESAS Platform — Cari Vəziyyət
 
-Son yenilənmə: 2026-07-29  
+Son yenilənmə: 2026-07-30
 Cari mərhələ: Phase 1  
 Status: IN PROGRESS  
 Əsas budaq: `main`
@@ -43,7 +43,8 @@ Status: IN PROGRESS
   event qeydə alınmadı.
 - PR #1 üçün GitHub Actions daxilində iki Backend və iki Frontend check-i uğurla
   tamamlandı.
-- PR conflictsiz, `MERGEABLE` və `CLEAN` vəziyyətindədir və review üçün hazırdır.
+- PR #1 `main` budağına merge commit ilə birləşdirildi.
+- Merge commit üçün GitHub Actions Backend və Frontend testləri uğurla keçdi.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 - `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
   sağlam prosesləri tanıyır və təkrar proses yaratmır.
@@ -140,17 +141,17 @@ MT5 Tick
 ## Məlum problemlər
 
 1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
-2. Phase 1 status sənədinin Markdown quruluşunda problem var.
-3. Queue sayğacları üçün ayrıca avtomatlaşdırılmış MQL5 unit test infrastrukturu
+2. Queue sayğacları üçün ayrıca avtomatlaşdırılmış MQL5 unit test infrastrukturu
    yoxdur.
-4. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
+3. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
    qədər `waiting` olur.
-5. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
-6. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
-7. Frontend real MT5 axını ilə vizual qəbul sınağından keçirilməlidir.
-8. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
+4. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
+5. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
+6. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
    şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
-9. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
+7. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
+8. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
+   deprecation xəbərdarlığı verir.
 
 ## Son tamamlanan texniki dəyişiklik
 
@@ -183,8 +184,7 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Phase 1 frontend monitorinq panelini real MT5 axını ilə vizual qəbul sınağından
-keçirmək.
+1 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
 
 ## Queue health monitorinqinin son canlı sınağı
 
