@@ -29,6 +29,12 @@ Status: IN PROGRESS
   avtomatik yenidən aktivləşir.
 - Canlı backend yoxlamasında tick axını `active`, disk növbəsi `0 / 1000`,
   `loss_acknowledged=false` və `rejected_events=7343` göstərildi.
+- Canlı qəbul sınağında `7343` tarixi rədd edilmiş event `RUFAT-091084` istifadəçisi
+  tərəfindən təsdiqləndi.
+- Təsdiqdən sonra API `status=ok`, `tick_stream.status=active`, `queue_count=0`,
+  `loss_acknowledged=true` və `acknowledged_rejected_events=7343` qaytardı.
+- Audit sətri SQLite bazasında istifadəçi, say və UTC vaxtı ilə saxlanıldı; tarixi
+  rədd edilmiş event sayğacı silinmədi.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 - `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
   sağlam prosesləri tanıyır və təkrar proses yaratmır.
