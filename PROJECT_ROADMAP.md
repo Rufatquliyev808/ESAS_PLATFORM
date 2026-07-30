@@ -62,17 +62,17 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 - [ ] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
 - [ ] Phase 1 status sənədini düzəltmək
-- [ ] MT5 Bridge versiyalarını uyğunlaşdırmaq
-- [ ] README sənədini yeniləmək
-- [ ] Buferdəki event-lərin avtomatik retry göndərişi
-- [ ] Bufer dolması siyasəti
-- [ ] İtirilmiş event sayğacı
-- [ ] Disk əsaslı davamlı event növbəsi
-- [ ] Backend monitorinq göstəricilərini genişləndirmək
-- [ ] Test verilənlər bazasını əsas bazadan ayırmaq
+- [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
+- [x] README sənədini yeniləmək
+- [x] Buferdəki event-lərin avtomatik retry göndərişi
+- [x] Bufer dolması siyasəti
+- [x] İtirilmiş event sayğacı
+- [x] Disk əsaslı davamlı event növbəsi
+- [x] Backend monitorinq göstəricilərini genişləndirmək
+- [x] Test verilənlər bazasını əsas bazadan ayırmaq
 - [ ] Bufer və retry testləri
-- [ ] GitHub Actions test axını
-- [ ] Phase 1 frontend monitorinq paneli
+- [x] GitHub Actions test axını
+- [x] Phase 1 frontend monitorinq paneli
 - [ ] 1 saatlıq sabitlik testi
 - [ ] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
@@ -201,7 +201,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-MT5 buferində saxlanmış event-lərin backend bərpa olduqda FIFO ardıcıllığı ilə avtomatik göndərilməsi.
+Phase 1 frontend monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək.
 
 Ətraflı tapşırıq:
 

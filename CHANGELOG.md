@@ -8,13 +8,68 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed
+
+- Boşaldılmış disk növbəsinin keçmiş `queue_full` xətasına görə hələ də dolu
+  göstərilməsi düzəldildi.
+- Backend əlçatan olmadıqda status nişanının ingiliscə `unavailable` göstərilməsi
+  Azərbaycan dilinə uyğunlaşdırıldı.
+- Backend başlanğıcında və `/health` yoxlamasında SQLite bazasına real yazma
+  imkanı yoxlanılır.
+- İşləmə zamanı SQLite yazma xətası baş verdikdə tick endpoint-i nəzarətsiz xəta
+  əvəzinə aydın `503` cavabı qaytarır.
+
 ### Added
 
+- Tarixi məlumat itkisini silmədən istifadəçi tərəfindən təsdiqləmək üçün audit cədvəli.
+- Qorunan `POST /status/loss/acknowledge` endpoint-i.
+- Monitorinq panelində itki hadisəsini təsdiqləmə düyməsi, təsdiq vaxtı və istifadəçi izi.
+- Rədd edilən event sayı təsdiqlənmiş həddi keçdikdə xəbərdarlığı yenidən aktiv edən versiyalı təsdiq mexanizmi.
+- `7343` tarixi rədd edilmiş event üçün canlı istifadəçi təsdiqi və audit izi yoxlanıldı.
+- 30 dəqiqəlik canlı sabitlik sınağında `31,844` yeni tick qəbul edildi; disk növbəsi
+  `0 / 1000`, verilənlər bazası bütövlüyü `ok` və ümumi status `ok` qaldı.
+- PR #1 üçün GitHub Actions push və pull request axınlarında Backend və Frontend
+  testləri uğurla keçdi.
+- PR #1 Draft vəziyyətindən çıxarılaraq review üçün hazır edildi.
+- Backend və frontend üçün bir-əmrlik təhlükəsiz lokal başlatma skripti.
+- Yalnız qeydə aldığı prosesləri dayandıran lokal dayandırma skripti.
+- Proses PID-si ilə yanaşı başlanma vaxtını yoxlayan təhlükəsiz proses idarəetməsi.
+- Lokal başlatma və dayandırma əməliyyat sənədi.
+- İstifadəçi kodu və parol ilə qorunan monitorinq girişi.
+- Səkkiz saatlıq imzalanmış backend sessiyası və qorunan monitorinq API-ləri.
+- Giriş və icazəsiz API sorğuları üçün avtomatik backend testləri.
+- Azərbaycan dilində Phase 1 canlı monitorinq paneli.
+- Tick axını, MT5 Bridge, disk növbəsi və rədd edilən event kartları.
+- Beş saniyəlik avtomatik yenilənmə və API xətasında son uğurlu məlumatın qorunması.
+- Frontend üçün responsive desktop, tablet və mobil quruluş.
+- Frontend lint, production build və server-render testi.
+- Lokal frontend ünvanları üçün məhdud backend CORS icazəsi.
+- GitHub Actions daxilində ayrıca frontend test işi.
+
+- MT5 Bridge `1.5.0` üçün davamlı rejected-event sayğacı.
+- `queue_full`, serializasiya, disk və corruption xəta kateqoriyaları.
+- `POST /status/bridge` operational status qəbulu.
+- `GET /status/operational` daxilində `bridge_delivery` göstəriciləri.
+- Bridge queue statusu üçün backend validation və API testləri.
+- Backend testləri üçün hər testə məxsus müvəqqəti SQLite bazası.
+- Test bazasının canlı `ESAS_PLATFORM.sqlite` faylından tam ayrılması.
+- Push və pull request-lər üçün GitHub Actions backend test workflow-u.
+- CI daxilində module manifest və Python source validation.
+- MT5 Bridge `1.4.0` üçün disk əsaslı davamlı FIFO event növbəsi.
+- Restart zamanı pending event-lərin bərpası.
+- Uzunluq prefiksli ikili jurnal və davamlı acknowledgement checkpoint-i.
+- Queue dizaynı üçün `ADR-0001`.
+- Canlı backend outage, EA restart və recovery sınağı.
 - Layihənin davamlı yaddaş sistemi.
 - Codex üçün daimi `AGENTS.md` iş qaydaları.
 - Cari vəziyyət üçün `docs/status/CURRENT_STATE.md`.
 - Növbəti tapşırıq üçün `docs/status/NEXT_TASK.md`.
 - Layihə dəyişikliklərini izləmək üçün `CHANGELOG.md`.
+- MT5 Bridge üçün timer əsaslı FIFO retry mexanizmi.
+- Konfiqurasiya olunan retry intervalı.
+- Konfiqurasiya olunan batch göndəriş ölçüsü.
+- Backend bərpa olduqda buferin avtomatik boşaldılması.
+- Retry və batch nəticələri üçün operational log mesajları.
 
 ### Planned
 
