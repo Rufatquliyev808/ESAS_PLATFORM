@@ -21,8 +21,8 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. Backend başlanğıcında verilənlər bazasına yazma imkanını avtomatik yoxlamaq.
-2. Yazma mümkün olmadıqda backend-i sağlam kimi göstərməmək və aydın xəta vermək.
+1. Backend və frontend üçün bir əmrlə təhlükəsiz lokal başlatma mexanizmi yaratmaq.
+2. Backend prosesinin dayanmasını və yenidən başlamasını idarə olunan etmək.
 3. Cari problem ilə tarixi məlumat itkisini monitorinqdə ayrı göstərmək.
 4. Uzunmüddətli sabitlik sınağı aparmaq.
 5. GitHub Actions nəticələrini təsdiqləmək.

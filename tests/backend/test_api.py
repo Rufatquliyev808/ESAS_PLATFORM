@@ -1,8 +1,14 @@
+import sqlite3
+
 from fastapi.testclient import TestClient
 from pathlib import Path
 
 from backend.app.main import app
-from backend.app.database.connection import DEFAULT_DATABASE_PATH
+from backend.app.database.connection import (
+    DEFAULT_DATABASE_PATH,
+    get_connection,
+    verify_database_writable,
+)
 
 
 def dashboard_headers(client: TestClient) -> dict[str, str]:
@@ -108,6 +114,38 @@ def test_operational_status_endpoint() -> None:
         "degraded",
     }
     assert isinstance(data["bridge_delivery"]["bridges"], list)
+
+
+def test_database_write_probe_leaves_no_schema_artifact() -> None:
+    verify_database_writable()
+
+    with get_connection() as connection:
+        probe_table = connection.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name = '__esas_write_probe';
+            """
+        ).fetchone()
+
+    assert probe_table is None
+
+
+def test_health_reports_unwritable_database(
+    monkeypatch,
+) -> None:
+    with TestClient(app) as client:
+        def fail_write_probe() -> None:
+            raise sqlite3.OperationalError("attempt to write a readonly database")
+
+        monkeypatch.setattr(
+            "backend.app.main.verify_database_writable",
+            fail_write_probe,
+        )
+        response = client.get("/health")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Database is not writable"}
 
 
 def test_bridge_status_is_exposed_by_operational_endpoint() -> None:

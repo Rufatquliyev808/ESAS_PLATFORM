@@ -14,6 +14,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
   göstərilməsi düzəldildi.
 - Backend əlçatan olmadıqda status nişanının ingiliscə `unavailable` göstərilməsi
   Azərbaycan dilinə uyğunlaşdırıldı.
+- Backend başlanğıcında və `/health` yoxlamasında SQLite bazasına real yazma
+  imkanı yoxlanılır.
+- İşləmə zamanı SQLite yazma xətası baş verdikdə tick endpoint-i nəzarətsiz xəta
+  əvəzinə aydın `503` cavabı qaytarır.
 
 ### Added
 

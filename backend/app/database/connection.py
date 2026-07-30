@@ -61,3 +61,23 @@ def initialize_database() -> None:
             );
             """
         )
+
+
+def verify_database_writable() -> None:
+    """Verify main-database writes without leaving probe data behind."""
+    with get_connection() as connection:
+        try:
+            connection.execute("BEGIN IMMEDIATE;")
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS __esas_write_probe
+                (
+                    probe_id INTEGER NOT NULL
+                );
+                """
+            )
+            connection.execute(
+                "INSERT INTO __esas_write_probe (probe_id) VALUES (1);"
+            )
+        finally:
+            connection.rollback()

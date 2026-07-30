@@ -15,6 +15,13 @@ Status: IN PROGRESS
 - Hadisə zamanı rədd edilmiş `7343` event audit göstəricisi kimi qorunur.
 - Frontend-də boş növbənin keçmiş `queue_full` xətasına görə dolu göstərilməsi
   düzəldildi; məlumat itkisi xəbərdarlığı ayrıca saxlanılır.
+- Backend başlanğıcında verilənlər bazasına geri qaytarılan yazma sınağı əlavə
+  edildi; sınaq bazada heç bir cədvəl və ya məlumat saxlamır.
+- `/health` verilənlər bazası yazıla bilmədikdə `503` qaytarır.
+- Tick saxlanması zamanı SQLite xətası baş verdikdə `/events/ticks` `503` qaytarır
+  və MT5 Bridge eventləri növbəyə əlavə edə bilir.
+- Avtomatik backend testləri: `11 passed`.
+- Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 
 ## Layihənin məqsədi
 
