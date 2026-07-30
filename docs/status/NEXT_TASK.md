@@ -21,8 +21,8 @@ frontend-i GitHub Actions test axınına daxil etmək.
 
 ## Növbəti addımlar
 
-1. GitHub Actions nəticələrini təsdiqləmək.
-2. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
+1. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
+2. PR #1-i review üçün hazır vəziyyətə gətirmək.
 
 ## Tamamlanma meyarları
 

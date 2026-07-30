@@ -41,6 +41,9 @@ Status: IN PROGRESS
   disk növbəsi `0 / 1000` və SQLite `quick_check=ok` oldu.
 - Tarixi `7343` rədd edilmiş event üçün audit təsdiqi qorundu və yeni rədd edilmiş
   event qeydə alınmadı.
+- PR #1 üçün GitHub Actions daxilində iki Backend və iki Frontend check-i uğurla
+  tamamlandı.
+- PR conflictsiz, `MERGEABLE` və `CLEAN` vəziyyətindədir; hazırda draft olaraq saxlanılır.
 - Canlı restart sınağından sonra tick axını `active`, disk növbəsi `0 / 1000` oldu.
 - `tools/start-local-platform.ps1` backend və frontend-i bir əmrlə başladır, mövcud
   sağlam prosesləri tanıyır və təkrar proses yaratmır.

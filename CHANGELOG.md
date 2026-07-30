@@ -28,6 +28,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 - `7343` tarixi rədd edilmiş event üçün canlı istifadəçi təsdiqi və audit izi yoxlanıldı.
 - 30 dəqiqəlik canlı sabitlik sınağında `31,844` yeni tick qəbul edildi; disk növbəsi
   `0 / 1000`, verilənlər bazası bütövlüyü `ok` və ümumi status `ok` qaldı.
+- PR #1 üçün GitHub Actions push və pull request axınlarında Backend və Frontend
+  testləri uğurla keçdi.
 - Backend və frontend üçün bir-əmrlik təhlükəsiz lokal başlatma skripti.
 - Yalnız qeydə aldığı prosesləri dayandıran lokal dayandırma skripti.
 - Proses PID-si ilə yanaşı başlanma vaxtını yoxlayan təhlükəsiz proses idarəetməsi.
