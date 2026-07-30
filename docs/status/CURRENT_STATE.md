@@ -67,12 +67,14 @@ MT5 Tick
 ### MT5 Bridge
 
 - Status: `EXPERIMENTAL`
-- Sənədləşdirilmiş versiya: `0.2.0`
+- Sənədləşdirilmiş versiya: `1.4.0`
 - Canlı tick oxunması işləyir.
 - Event yaradılması işləyir.
 - HTTP göndərişi işləyir.
-- Uğursuz event-in RAM buferinə əlavə edilməsi işləyir.
-- Buferdəki event-lər backend bərpa olduqda saniyəlik interval və konfiqurasiya olunan batch ölçüsü ilə avtomatik göndərilir.
+- Uğursuz event-in disk əsaslı davamlı FIFO növbəsinə əlavə edilməsi işləyir.
+- Növbədəki event-lər EA və MT5 restartından sonra bərpa olunur.
+- Event-lər backend bərpa olduqda konfiqurasiya olunan batch ölçüsü ilə
+  avtomatik göndərilir.
 
 ### Frontend
 
@@ -85,8 +87,8 @@ MT5 Tick
 
 1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
 2. Phase 1 status sənədinin Markdown quruluşunda problem var.
-3. RAM buferindəki məlumat MT5 bağlandıqda itir.
-4. Bufer dolması və məlumat itkisi siyasəti tam müəyyən edilməyib.
+3. Disk növbəsi limitə çatdıqda qəbul edilməyən event sayı ayrıca ölçülmür.
+4. Queue health vəziyyəti backend operational endpoint-də göstərilmir.
 5. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
 6. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
 7. Frontend spesifikasiyası hazırlanmayıb.
@@ -95,7 +97,10 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
-MT5 Bridge backend kəsilməsi zamanı event-ləri RAM əsaslı FIFO buferində saxlayır. Backend bərpa olduqda gözləyən event-ləri konfiqurasiya olunan batch ölçüsü ilə avtomatik göndərir.
+MT5 Bridge backend kəsilməsi zamanı event-ləri disk əsaslı davamlı FIFO
+növbəsində saxlayır. EA və ya MT5 yenidən başladıqda növbəni bərpa edir. Backend
+bərpa olduqda gözləyən event-ləri konfiqurasiya olunan batch ölçüsü ilə avtomatik
+göndərir.
 
 Real MT5 sınağında:
 
@@ -121,4 +126,26 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-RAM buferindəki event-lərin MT5 və ya kompüter bağlandıqda itməməsi üçün disk əsaslı davamlı event növbəsinin layihələndirilməsi.
+Disk növbəsi limitinə çatdıqda qəbul edilməyən event-lərin ölçülməsi və
+operational monitorinqdə göstərilməsi.
+
+## Disk növbəsi üzrə son canlı sınaq
+
+2026-07-30 tarixində backend bağlı olduğu halda MT5 Bridge `1.4.0` yenidən
+başladıldı.
+
+- Başlanğıcda diskdən `queue_count=1000` bərpa edildi.
+- FIFO növbə faylı EA restartı zamanı qorundu.
+- Backend başladıldıqdan sonra event-lər hər dövrdə maksimum 50-lik batch-lərlə
+  göndərildi.
+- Növbə təxminən 16 saniyədə `1000`-dən `0`-a endi.
+- Son batch `delivered=24 | queue_count=0` nəticəsi verdi.
+- Operational endpoint tick axınını `active` göstərdi.
+- Backend bazasında ümumi tick sayı `33570` oldu.
+- Həm layihə, həm MT5 terminal nüsxəsi `0 errors, 0 warnings` ilə kompilyasiya
+  edildi.
+- Backend testləri `5 passed` nəticəsi verdi.
+
+Sınaqda növbənin `1000` limitinə çatdığı da müşahidə edildi. Mövcud növbə
+qorundu, lakin limitdən sonra gələn event-lər saxlanıla bilmədiyi üçün növbəti
+prioritet itki sayğacı və queue health monitorinqidir.

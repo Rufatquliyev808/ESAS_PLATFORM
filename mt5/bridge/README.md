@@ -1,6 +1,6 @@
 # ESAS MT5 Bridge
 
-Version: 1.3.0
+Version: 1.4.0
 
 Status: EXPERIMENTAL
 
@@ -14,8 +14,9 @@ Its responsibilities are limited to:
 - convert each tick into the standard `TICK_RECEIVED` event;
 - optionally print serialized events to the MT5 Experts log;
 - optionally send events to the ESAS backend using HTTP.
-- buffer events in memory when backend delivery fails;
-- retry buffered events in FIFO batches when the backend becomes available.
+- persist events to disk when backend delivery fails;
+- retry queued events in FIFO batches when the backend becomes available;
+- recover pending events after an EA or MT5 restart.
 
 This module does not:
 
@@ -31,15 +32,17 @@ This module does not:
 - `include/EsasHttpTransport.mqh` — isolated HTTP POST transport.
 - `src/ESAS_MT5_Bridge.mq5` — minimal EA entry point.
 
+- `include/EsasPersistentTickQueue.mqh`: persistent FIFO delivery queue.
+
 ## Inputs
 
 - `InpEmitTickEvents` — prints tick events to the MT5 log.
 - `InpSendTicksToBackend` — sends tick events to the backend.
 - `InpBackendTickUrl` — backend tick endpoint.
 - `InpHttpTimeoutMs` — HTTP request timeout.
-- `InpTickBufferCapacity` — maximum number of events stored in memory.
-- `InpRetryIntervalSeconds` — interval between buffered delivery attempts.
-- `InpRetryBatchSize` — maximum buffered events delivered in one retry cycle.
+- `InpTickBufferCapacity` — maximum number of pending events stored on disk.
+- `InpRetryIntervalSeconds` — interval between queued delivery attempts.
+- `InpRetryBatchSize` — maximum queued events delivered in one retry cycle.
 
 Default backend endpoint:
 
@@ -51,8 +54,13 @@ MT5 must allow WebRequest access to:
 
 ## Current Transport Limitation
 
-Version 1.3.0 uses synchronous HTTP requests.
+Version 1.4.0 uses synchronous HTTP requests.
 
-When delivery fails, events are stored in an in-memory FIFO buffer. The bridge retries buffered events in configurable batches after the backend becomes available.
+When delivery fails, events are appended to a persistent FIFO journal in the
+MQL5 common file sandbox. The bridge retries queued events in configurable
+batches after the backend becomes available.
 
-The memory buffer protects against temporary backend outages, but its contents are lost when MT5 or the Expert Advisor stops. A later version will introduce persistent disk-backed delivery.
+Pending events and their acknowledgement checkpoint survive EA and MT5
+restarts. Delivery is at least once: a crash after backend storage but before
+checkpoint persistence can replay an event, and backend idempotency prevents a
+second database row.

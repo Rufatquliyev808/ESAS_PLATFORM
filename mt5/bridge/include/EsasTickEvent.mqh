@@ -4,7 +4,7 @@
 #define ESAS_TICK_EVENT_TYPE              "TICK_RECEIVED"
 #define ESAS_TICK_EVENT_VERSION           "1.0"
 #define ESAS_MT5_BRIDGE_SOURCE            "esas.mt5.bridge"
-#define ESAS_MT5_BRIDGE_MODULE_VERSION "1.3.0"
+#define ESAS_MT5_BRIDGE_MODULE_VERSION "1.4.0"
 
 struct EsasTickEvent
 {
@@ -115,4 +115,3 @@ string EsasSerializeTickEvent(const EsasTickEvent &event)
 }
 
 #endif
-

@@ -67,7 +67,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] Buferdəki event-lərin avtomatik retry göndərişi
 - [ ] Bufer dolması siyasəti
 - [ ] İtirilmiş event sayğacı
-- [ ] Disk əsaslı davamlı event növbəsi
+- [x] Disk əsaslı davamlı event növbəsi
 - [ ] Backend monitorinq göstəricilərini genişləndirmək
 - [ ] Test verilənlər bazasını əsas bazadan ayırmaq
 - [ ] Bufer və retry testləri
@@ -201,7 +201,8 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-MT5 buferində saxlanmış event-lərin backend bərpa olduqda FIFO ardıcıllığı ilə avtomatik göndərilməsi.
+Disk növbəsi limitinə çatdıqda qəbul edilməyən event-lərin ölçülməsi və
+operational monitorinqdə göstərilməsi.
 
 Ətraflı tapşırıq:
 

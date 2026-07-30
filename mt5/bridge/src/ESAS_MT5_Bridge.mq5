@@ -1,10 +1,10 @@
 #property copyright "ESAS Platform"
-#property version   "1.300"
+#property version   "1.400"
 #property strict
 
 #include "../include/EsasTickEvent.mqh"
 #include "../include/EsasHttpTransport.mqh"
-#include "../include/EsasTickBuffer.mqh"
+#include "../include/EsasPersistentTickQueue.mqh"
 
 input bool   InpEmitTickEvents       = true;
 input bool   InpSendTicksToBackend   = false;
@@ -16,11 +16,16 @@ input int    InpRetryBatchSize       = 50;
 
 int OnInit()
 {
-   if(!g_tick_buffer.Initialize(InpTickBufferCapacity))
+   const string queue_key =
+      "ticks_" + IntegerToString((int)AccountInfoInteger(ACCOUNT_LOGIN)) +
+      "_" + _Symbol;
+
+   if(!g_tick_queue.Initialize(queue_key, InpTickBufferCapacity))
    {
       Print(
-         "ESAS MT5 Bridge: tick buffer initialization failed",
-         " | capacity=", InpTickBufferCapacity
+         "ESAS MT5 Bridge: persistent queue initialization failed",
+         " | capacity=", InpTickBufferCapacity,
+         " | error=", GetLastError()
       );
 
       return INIT_FAILED;
@@ -45,7 +50,9 @@ int OnInit()
       " | event_contract=", ESAS_TICK_EVENT_VERSION,
       " | symbol=", _Symbol,
       " | backend_transport=", InpSendTicksToBackend,
-      " | buffer_capacity=", g_tick_buffer.Capacity()
+      " | queue_count=", g_tick_queue.Count(),
+      " | queue_capacity=", g_tick_queue.Capacity(),
+      " | queue_file=", g_tick_queue.QueueFile()
    );
 
    return INIT_SUCCEEDED;
@@ -58,7 +65,7 @@ void OnDeinit(const int reason)
    Print(
       "ESAS MT5 Bridge stopped",
       " | reason=", reason,
-      " | buffered_events=", g_tick_buffer.Count()
+      " | queued_events=", g_tick_queue.Count()
    );
 }
 
@@ -66,7 +73,7 @@ void EsasRetryBufferedEvents()
 {
    if(!InpSendTicksToBackend ||
       MQLInfoInteger(MQL_TESTER) ||
-      g_tick_buffer.IsEmpty())
+      g_tick_queue.IsEmpty())
    {
       return;
    }
@@ -77,7 +84,7 @@ void EsasRetryBufferedEvents()
    {
       string event_json = "";
 
-      if(!g_tick_buffer.Peek(event_json))
+      if(!g_tick_queue.Peek(event_json))
          break;
 
       int http_status = 0;
@@ -100,19 +107,20 @@ void EsasRetryBufferedEvents()
             " | http_status=", http_status,
             " | error=", transport_error,
             " | delivered_in_batch=", delivered_count,
-            " | buffer_count=", g_tick_buffer.Count(),
+            " | queue_count=", g_tick_queue.Count(),
             " | response=", response_body
          );
 
          break;
       }
 
-      if(!g_tick_buffer.RemoveFirst())
+      if(!g_tick_queue.RemoveFirst())
       {
          Print(
-            "ESAS MT5 Bridge: buffered event removal failed",
+            "ESAS MT5 Bridge: persistent event acknowledgement failed",
             " | delivered_in_batch=", delivered_count,
-            " | buffer_count=", g_tick_buffer.Count()
+            " | queue_count=", g_tick_queue.Count(),
+            " | error=", GetLastError()
          );
 
          break;
@@ -124,9 +132,9 @@ void EsasRetryBufferedEvents()
    if(delivered_count > 0)
    {
       Print(
-         "ESAS MT5 Bridge: buffered batch delivered",
+         "ESAS MT5 Bridge: persistent batch delivered",
          " | delivered=", delivered_count,
-         " | buffer_count=", g_tick_buffer.Count()
+         " | queue_count=", g_tick_queue.Count()
       );
    }
 }
@@ -180,15 +188,16 @@ void OnTick()
       return;
    }
 
-   if(!g_tick_buffer.IsEmpty())
+   if(!g_tick_queue.IsEmpty())
    {
-      const bool buffered = g_tick_buffer.Enqueue(event_json);
+      const bool queued = g_tick_queue.Enqueue(event_json);
 
       Print(
-         "ESAS MT5 Bridge: event queued behind buffered events",
-         " | buffered=", buffered,
-         " | buffer_count=", g_tick_buffer.Count(),
-         " | buffer_capacity=", g_tick_buffer.Capacity()
+         "ESAS MT5 Bridge: event queued behind persistent events",
+         " | queued=", queued,
+         " | queue_count=", g_tick_queue.Count(),
+         " | queue_capacity=", g_tick_queue.Capacity(),
+         " | error=", queued ? 0 : GetLastError()
       );
 
       return;
@@ -209,15 +218,15 @@ void OnTick()
 
    if(!sent)
    {
-      const bool buffered = g_tick_buffer.Enqueue(event_json);
+      const bool queued = g_tick_queue.Enqueue(event_json);
 
       Print(
          "ESAS MT5 Bridge: backend delivery failed",
          " | http_status=", http_status,
          " | error=", transport_error,
-         " | buffered=", buffered,
-         " | buffer_count=", g_tick_buffer.Count(),
-         " | buffer_capacity=", g_tick_buffer.Capacity(),
+         " | queued=", queued,
+         " | queue_count=", g_tick_queue.Count(),
+         " | queue_capacity=", g_tick_queue.Capacity(),
          " | response=", response_body
       );
    }

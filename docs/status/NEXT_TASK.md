@@ -6,71 +6,56 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-MT5 və ya Expert Advisor bağlandıqda gözləyən event-lərin itməməsi üçün disk əsaslı davamlı event növbəsini layihələndirmək.
+Disk növbəsi limitə çatdıqda qəbul edilməyən event-ləri ölçmək və bu vəziyyəti
+backend monitorinqində görünən etmək.
 
 ## Problem
 
-Hazırkı FIFO bufer RAM daxilində işləyir.
+Canlı davamlılıq sınağında backend uzun müddət bağlı qaldığı üçün disk növbəsi
+konfiqurasiya edilmiş `1000` event limitinə çatdı. Növbədəki mövcud event-lər
+qorundu, lakin limitdən sonra gələn yeni event-lər saxlanıla bilmədi.
 
-Bufer:
+Bridge hazırda uğursuz `Enqueue` nəticəsini loglayır, amma:
 
-- müvəqqəti backend kəsilməsini idarə edir;
-- backend bərpa olduqda event-ləri batch şəklində göndərir;
-- MT5 və ya Expert Advisor bağlandıqda bütün gözləyən event-ləri itirir.
-
-Bu, məlumat bütövlüyü prinsipinə uyğun deyil.
+- sessiya üzrə qəbul edilməyən event sayını saxlamır;
+- son növbə xətasının səbəbini ayrıca göstərmir;
+- backend operational endpoint bu problemi göstərmir;
+- frontend üçün hazır monitorinq göstəricisi yoxdur.
 
 ## Məqsəd
 
-Göndərilməmiş event-ləri lokal diskdə qorumaq və MT5 yenidən başladıqda onları bərpa edərək FIFO ardıcıllığı ilə backend-ə göndərmək.
+Səssiz məlumat itkisini aradan qaldırmaq və resurs limiti səbəbindən qəbul
+edilməyən hər event-i ölçülə bilən operational problemə çevirmək.
 
-## İlkin araşdırma mövzuları
+## Plan
 
-1. Fayl əsaslı növbə və SQLite əsaslı növbənin müqayisəsi.
-2. MQL5 daxilində təhlükəsiz fayl yazma imkanları.
-3. Yarımçıq yazılmış event-in aşkarlanması.
-4. Event-in yalnız uğurlu HTTP cavabından sonra diskdən silinməsi.
-5. MT5 yenidən başladıqda növbənin bərpası.
-6. Maksimum disk istifadəsi və limit siyasəti.
-7. Fayl korlanması zamanı bərpa qaydası.
-8. FIFO ardıcıllığının qorunması.
-9. Təkrar event riskinin backend idempotency ilə idarə olunması.
-10. Disk yazma performansının tick axınına təsiri.
+1. Queue əməliyyat nəticələri üçün aydın xəta kodları müəyyən etmək.
+2. `queue_full`, `disk_write_failed` və `corrupt_queue` hallarını ayırmaq.
+3. Bridge daxilində sessiya üzrə qəbul edilməyən event sayğacı yaratmaq.
+4. Operational vəziyyəti backend-ə ötürmək üçün minimal status müqaviləsi
+   hazırlamaq.
+5. Backend status endpoint-inə queue vəziyyəti və itki sayğaclarını əlavə etmək.
+6. Limit sınağı və backend testləri əlavə etmək.
 
 ## Təhlükəsizlik qaydaları
 
-- Event məlumatı dəyişdirilməməlidir.
-- Uğursuz event səssiz şəkildə silinməməlidir.
-- Disk faylı korlandıqda mövcud məlumat qorunmalıdır.
-- Real ticarət funksiyası əlavə edilməməlidir.
+- Köhnə event növbədən avtomatik silinməməlidir.
+- Növbə dolduqda köhnə məlumatın üzərinə yazılmamalıdır.
+- Sayğac sıfırlanması məlumat itkisini gizlətməməlidir.
 - Event müqaviləsi dəyişdirilməməlidir.
-- Koddan əvvəl ayrıca dizayn qərarı sənədi hazırlanmalıdır.
-
-## İlk addım
-
-`docs/decisions/` daxilində disk növbəsi üçün Architecture Decision Record hazırlamaq.
-
-Qərar sənədində aşağıdakılar olmalıdır:
-
-- problem;
-- tələblər;
-- alternativlər;
-- fayl əsaslı həll;
-- SQLite əsaslı həll;
-- üstünlük və risklər;
-- seçilən yanaşma;
-- qəbul meyarları.
+- Real ticarət funksiyası əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Disk növbəsinin dizaynı sənədləşdirilir.
-- Seçilmiş yanaşmanın səbəbi izah edilir.
-- Məlumat itkisi və bərpa ssenariləri müəyyən edilir.
-- Kodlaşdırmaya başlamazdan əvvəl təhlükəsizlik riskləri qiymətləndirilir.
-- Qərar konstitusiya və arxitektura prinsiplərinə uyğun olur.
+- Növbə dolması ayrıca səbəb kimi müəyyən edilir.
+- Qəbul edilməyən event sayı hesablanır.
+- Operational API problemi göstərir.
+- Limitə çatma testi mövcuddur.
+- Mövcud tick axını və idempotency testləri keçir.
+- MT5 kompilyasiyası `0 errors, 0 warnings` nəticəsi verir.
 
 ## Planlaşdırılan ilk commit
 
 ```text
-Document persistent event queue design
+Expose persistent queue health metrics
 ```

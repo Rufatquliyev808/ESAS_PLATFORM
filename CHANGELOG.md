@@ -10,6 +10,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- MT5 Bridge `1.4.0` üçün disk əsaslı davamlı FIFO event növbəsi.
+- Restart zamanı pending event-lərin bərpası.
+- Uzunluq prefiksli ikili jurnal və davamlı acknowledgement checkpoint-i.
+- Queue dizaynı üçün `ADR-0001`.
+- Canlı backend outage, EA restart və recovery sınağı.
 - Layihənin davamlı yaddaş sistemi.
 - Codex üçün daimi `AGENTS.md` iş qaydaları.
 - Cari vəziyyət üçün `docs/status/CURRENT_STATE.md`.
