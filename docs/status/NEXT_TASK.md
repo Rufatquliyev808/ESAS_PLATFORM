@@ -1,4 +1,4 @@
-# ESAS Platform — Növbəti Tapşırıq
+# ESAS Platform — Növbəti tapşırıq
 
 Status: READY  
 Prioritet: HIGH  
@@ -6,48 +6,36 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
+Phase 1 monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək və
+frontend-i GitHub Actions test axınına daxil etmək.
 
-## Problem
+## Hazır vəziyyət
 
-`frontend` qovluğu mövcuddur, lakin panelin göstərəcəyi məlumatlar, ekran
-quruluşu və operational statusların istifadəçiyə necə izah ediləcəyi
-sənədləşdirilməyib.
+- Azərbaycan dilində monitorinq paneli yaradılıb.
+- Panel yalnız backend API-lərindən məlumat alır.
+- Tick, Bridge, disk növbəsi və rədd edilən event vəziyyətləri göstərilir.
+- Məlumat hər 5 saniyədə yenilənir.
+- Müvəqqəti API xətasında son uğurlu məlumat qorunur.
+- Backend üçün lokal frontend CORS icazələri əlavə edilib.
+- Frontend lint, build və render testi lokal olaraq keçir.
 
-## Məqsəd
+## Növbəti addımlar
 
-Kod yazmazdan əvvəl sadə, Azərbaycan dilində və texniki olmayan Phase 1
-monitorinq panelinin dəqiq spesifikasiyasını hazırlamaq.
-
-## Plan
-
-1. İstifadəçinin ilk baxışda cavab almalı olduğu sualları müəyyən etmək.
-2. `GET /status/operational` və `GET /statistics/ticks` məlumatlarını xəritələmək.
-3. `active`, `stale`, `waiting`, `healthy`, `degraded` və `full` vəziyyətləri
-   üçün Azərbaycan dilində izah və rəng qaydaları yazmaq.
-4. Desktop əsaslı sadə ekran quruluşunu müəyyən etmək.
-5. API əlçatmaz olduqda göstəriləcək vəziyyəti müəyyən etmək.
-6. Yenilənmə intervalı və son yenilənmə vaxtını müəyyən etmək.
-7. Spesifikasiyanı `docs/frontend/` daxilində saxlamaq.
-
-## Təhlükəsizlik qaydaları
-
-- Frontend birbaşa SQLite bazasına qoşulmamalıdır.
-- Frontend yalnız backend API istifadə etməlidir.
-- Panel ticarət qərarı və ya siqnal verməməlidir.
-- Texniki xəta kodları istifadəçiyə izahsız göstərilməməlidir.
-- Məlumat itkisi və degraded vəziyyət yaşıl göstərilməməlidir.
+1. MT5 Bridge və backend işlək halda paneli brauzerdə açmaq.
+2. `active`, `healthy`, sıfır növbə və sıfır rədd edilən event göstəricilərini
+   vizual təsdiqləmək.
+3. Backend dayandırıldıqda qırmızı əlaqə xəbərdarlığını təsdiqləmək.
+4. Backend bərpa olduqda panelin avtomatik sağlam vəziyyətə qayıtmasını yoxlamaq.
+5. GitHub Actions daxilində frontend lint və test addımlarını işə salmaq.
 
 ## Tamamlanma meyarları
 
-- Panelin bütün bölmələri və məlumat mənbələri sənədləşdirilir.
-- Status rəngləri və Azərbaycan dilində mətnlər müəyyən edilir.
-- API xətası və stale vəziyyəti fərqli göstərilir.
-- Responsive desktop/tablet quruluşu təsvir edilir.
-- Kodlaşdırmaya başlamaq üçün qəbul meyarları aydın olur.
+- Panel real API məlumatlarını düzgün göstərir.
+- Backend kəsilməsi zamanı son uğurlu göstəricilər itmir.
+- Desktop və mobil ölçüdə ekran istifadəyə yararlıdır.
+- Backend və frontend testləri GitHub-da keçir.
 
-## Planlaşdırılan ilk commit
+## Təhlükəsizlik sərhədi
 
-```text
-Document Phase 1 monitoring dashboard
-```
+Panel yalnız oxuma və monitorinq üçündür. Ticarət əməliyyatı, siqnal, proqnoz və
+birbaşa verilənlər bazası bağlantısı daxil deyil.

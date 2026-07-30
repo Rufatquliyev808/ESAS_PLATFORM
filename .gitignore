@@ -10,9 +10,14 @@ __pycache__/
 # Frontend
 node_modules/
 dist/
+.npm-cache/
+.wrangler/
 
 # Local configuration
 .env
+
+# Local test scratch space
+.test-tmp/
 
 # Runtime SQLite databases
 database/*.sqlite

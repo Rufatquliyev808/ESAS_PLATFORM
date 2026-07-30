@@ -81,10 +81,12 @@ MT5 Tick
 
 ### Frontend
 
-- `frontend` qovluğu mövcuddur.
-- Hazır frontend tətbiqi yoxdur.
-- İlk frontend Phase 1 monitorinq paneli olmalıdır.
-- Frontend yalnız backend API vasitəsilə məlumat almalıdır.
+- `frontend` qovluğunda Phase 1 monitorinq paneli yaradılıb.
+- Panel yalnız backend API vasitəsilə məlumat alır.
+- Tick, MT5 Bridge, disk növbəsi və rədd edilən event vəziyyətlərini göstərir.
+- Məlumat 5 saniyədə bir yenilənir və müvəqqəti API xətasında son uğurlu
+  göstəricilər qorunur.
+- Lokal lint, production build və server-render testi keçir.
 
 ## Məlum problemlər
 
@@ -96,8 +98,9 @@ MT5 Tick
    qədər `waiting` olur.
 5. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
 6. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
-7. Frontend spesifikasiyası hazırlanmayıb.
-8. Phase 1 frontend monitorinq panelinin spesifikasiyası hazırlanmayıb.
+7. Frontend real MT5 axını ilə vizual qəbul sınağından keçirilməlidir.
+8. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
+   şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
 9. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
 
 ## Son tamamlanan texniki dəyişiklik
@@ -131,7 +134,8 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
+Phase 1 frontend monitorinq panelini real MT5 axını ilə vizual qəbul sınağından
+keçirmək.
 
 ## Queue health monitorinqinin son canlı sınağı
 

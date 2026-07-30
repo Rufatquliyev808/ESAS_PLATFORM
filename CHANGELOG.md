@@ -10,6 +10,14 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Azərbaycan dilində Phase 1 canlı monitorinq paneli.
+- Tick axını, MT5 Bridge, disk növbəsi və rədd edilən event kartları.
+- Beş saniyəlik avtomatik yenilənmə və API xətasında son uğurlu məlumatın qorunması.
+- Frontend üçün responsive desktop, tablet və mobil quruluş.
+- Frontend lint, production build və server-render testi.
+- Lokal frontend ünvanları üçün məhdud backend CORS icazəsi.
+- GitHub Actions daxilində ayrıca frontend test işi.
+
 - MT5 Bridge `1.5.0` üçün davamlı rejected-event sayğacı.
 - `queue_full`, serializasiya, disk və corruption xəta kateqoriyaları.
 - `POST /status/bridge` operational status qəbulu.

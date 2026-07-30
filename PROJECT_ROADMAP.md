@@ -72,7 +72,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] Test verilənlər bazasını əsas bazadan ayırmaq
 - [ ] Bufer və retry testləri
 - [x] GitHub Actions test axını
-- [ ] Phase 1 frontend monitorinq paneli
+- [x] Phase 1 frontend monitorinq paneli
 - [ ] 1 saatlıq sabitlik testi
 - [ ] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
@@ -201,7 +201,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
+Phase 1 frontend monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək.
 
 Ətraflı tapşırıq:
 

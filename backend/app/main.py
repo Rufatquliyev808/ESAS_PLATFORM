@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
 from backend.app.database.tick_statistics import get_tick_statistics
@@ -26,6 +27,18 @@ app = FastAPI(
     title="ESAS Platform Backend",
     version=APP_VERSION,
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
+    allow_methods=["GET"],
+    allow_headers=["*"],
 )
 
 
