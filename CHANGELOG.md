@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- İstifadəçi kodu və parol ilə qorunan monitorinq girişi.
+- Səkkiz saatlıq imzalanmış backend sessiyası və qorunan monitorinq API-ləri.
+- Giriş və icazəsiz API sorğuları üçün avtomatik backend testləri.
 - Azərbaycan dilində Phase 1 canlı monitorinq paneli.
 - Tick axını, MT5 Bridge, disk növbəsi və rədd edilən event kartları.
 - Beş saniyəlik avtomatik yenilənmə və API xətasında son uğurlu məlumatın qorunması.

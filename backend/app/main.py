@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, status
+from fastapi import Depends, FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -12,6 +12,7 @@ from backend.app.operational.bridge_status import save_bridge_status
 from backend.app.database.connection import initialize_database
 from backend.app.models.tick_event import TickReceivedEvent
 from backend.app.models.bridge_status import BridgeStatusReport
+from backend.app.auth import LoginRequest, create_session, require_dashboard_session
 
 
 APP_VERSION = "0.2.0"
@@ -37,7 +38,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -62,6 +63,11 @@ def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
     }
 
 
+@app.post("/auth/login")
+def login(credentials: LoginRequest) -> dict[str, object]:
+    return create_session(credentials)
+
+
 @app.post("/status/bridge", status_code=status.HTTP_202_ACCEPTED)
 def receive_bridge_status(report: BridgeStatusReport) -> dict[str, object]:
     stored_report = save_bridge_status(report)
@@ -75,9 +81,13 @@ def receive_bridge_status(report: BridgeStatusReport) -> dict[str, object]:
 
 
 @app.get("/statistics/ticks")
-def tick_statistics() -> dict[str, object]:
+def tick_statistics(
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
     return get_tick_statistics()
 
 @app.get("/status/operational")
-def operational_status() -> dict[str, object]:
+def operational_status(
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
     return get_operational_status()

@@ -5,6 +5,15 @@ from backend.app.main import app
 from backend.app.database.connection import DEFAULT_DATABASE_PATH
 
 
+def dashboard_headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/auth/login",
+        json={"user_code": "TEST-USER", "password": "test-password-123"},
+    )
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
 def test_health_endpoint() -> None:
     with TestClient(app) as client:
         response = client.get("/health")
@@ -58,7 +67,10 @@ def test_tick_endpoint_stores_event_only_once() -> None:
 
 def test_tick_statistics_endpoint() -> None:
     with TestClient(app) as client:
-        response = client.get("/statistics/ticks")
+        response = client.get(
+            "/statistics/ticks",
+            headers=dashboard_headers(client),
+        )
 
     assert response.status_code == 200
 
@@ -74,7 +86,10 @@ def test_tick_statistics_endpoint() -> None:
 
 def test_operational_status_endpoint() -> None:
     with TestClient(app) as client:
-        response = client.get("/status/operational")
+        response = client.get(
+            "/status/operational",
+            headers=dashboard_headers(client),
+        )
 
     assert response.status_code == 200
 
@@ -109,7 +124,10 @@ def test_bridge_status_is_exposed_by_operational_endpoint() -> None:
 
     with TestClient(app) as client:
         post_response = client.post("/status/bridge", json=report)
-        status_response = client.get("/status/operational")
+        status_response = client.get(
+            "/status/operational",
+            headers=dashboard_headers(client),
+        )
 
     assert post_response.status_code == 202
     assert post_response.json()["status"] == "accepted"
@@ -150,3 +168,22 @@ def test_bridge_status_rejects_inconsistent_queue_count() -> None:
         response = client.post("/status/bridge", json=report)
 
     assert response.status_code == 422
+
+
+def test_dashboard_endpoints_require_login() -> None:
+    with TestClient(app) as client:
+        statistics_response = client.get("/statistics/ticks")
+        status_response = client.get("/status/operational")
+
+    assert statistics_response.status_code == 401
+    assert status_response.status_code == 401
+
+
+def test_login_rejects_wrong_password() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/auth/login",
+            json={"user_code": "TEST-USER", "password": "wrong-password"},
+        )
+
+    assert response.status_code == 401

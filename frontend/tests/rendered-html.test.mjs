@@ -17,8 +17,9 @@ test("server renders the ESAS monitoring dashboard shell", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /<title>ESAS Platform — Monitorinq<\/title>/i);
-  assert.match(html, /Məlumat axınının monitorinqi/);
-  assert.match(html, /Platforma qoşulur/);
+  assert.match(html, /Monitorinq panelinə giriş/);
+  assert.match(html, /İstifadəçi kodu/);
+  assert.match(html, /Daxil ol/);
   assert.match(html, /lang="az"/);
   assert.doesNotMatch(html, /Your site is taking shape|SkeletonPreview/);
 });

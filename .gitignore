@@ -17,7 +17,7 @@ dist/
 .env
 
 # Local test scratch space
-.test-tmp/
+.test-tmp*/
 
 # Runtime SQLite databases
 database/*.sqlite

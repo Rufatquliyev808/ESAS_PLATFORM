@@ -29,3 +29,14 @@ Standart backend ünvanı `http://127.0.0.1:8000`-dir. Başqa mühit üçün
 
 Frontend yalnız backend API-lərini oxuyur. SQLite bazasına və MT5 order
 əməliyyatlarına birbaşa çıxışı yoxdur.
+
+## Giriş qoruması
+
+Lokal `.env` faylında aşağıdakı dəyişənlər təyin edilməlidir:
+
+- `ESAS_USER_CODE`
+- `ESAS_USER_PASSWORD`
+- `ESAS_SESSION_SECRET`
+
+`.env` Git-ə daxil edilmir. Monitorinq API-ləri etibarlı 8 saatlıq sessiya
+nişanı olmadan `401 Unauthorized` qaytarır.

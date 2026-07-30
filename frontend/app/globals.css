@@ -34,6 +34,49 @@ button:focus-visible, a:focus-visible { outline: 3px solid #2563eb; outline-offs
 
 main { width: min(1480px, 100%); margin: 0 auto; padding: 30px 32px 24px; }
 
+.login-main {
+  display: grid;
+  width: 100%;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+.login-card {
+  width: min(440px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 34px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.login-card .brand-mark { margin-bottom: 20px; }
+.login-card h1 { margin-top: 8px; font-size: 30px; }
+.login-intro { margin: 13px 0 25px; color: var(--muted); line-height: 1.55; }
+.login-card form { display: grid; gap: 9px; }
+.login-card label { margin-top: 8px; font-weight: 800; }
+.login-card input {
+  width: 100%;
+  border: 1px solid #b8c3be;
+  border-radius: 9px;
+  padding: 12px 13px;
+  background: white;
+  color: var(--ink);
+}
+.login-card input:focus { border-color: var(--green); outline: 3px solid #cce9dc; }
+.login-card button {
+  margin-top: 14px;
+  border: 0;
+  border-radius: 9px;
+  padding: 13px 16px;
+  background: var(--ink);
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+}
+.login-card button:disabled { cursor: wait; opacity: .65; }
+.login-error { margin: 7px 0 0; border-radius: 8px; padding: 10px 12px; background: var(--red-soft); color: var(--red); font-weight: 700; }
+.login-footnote { margin: 22px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+
 .app-header {
   display: flex;
   align-items: center;
@@ -59,6 +102,15 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 .header-status { display: flex; align-items: center; gap: 14px; text-align: right; }
 .header-status p { margin: 0; color: var(--muted); font-size: 13px; }
 .header-status strong { display: block; margin-top: 4px; color: var(--ink); font-size: 14px; }
+.logout-button {
+  border: 1px solid #bcc7c2;
+  border-radius: 8px;
+  padding: 8px 11px;
+  background: white;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+}
 
 .status-pill {
   display: inline-flex;

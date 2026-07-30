@@ -137,16 +137,26 @@ function StatusCard({
   );
 }
 
-async function fetchJson<T>(path: string, signal: AbortSignal): Promise<T> {
+async function fetchJson<T>(
+  path: string,
+  signal: AbortSignal,
+  token: string | null,
+): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     signal,
     cache: "no-store",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
   return response.json() as Promise<T>;
 }
 
 export default function Home() {
+  const [token, setToken] = useState<string | null>(null);
+  const [userCode, setUserCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginBusy, setLoginBusy] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -159,8 +169,8 @@ export default function Home() {
     const timeout = window.setTimeout(() => controller.abort(), 3000);
     try {
       const [operational, statistics] = await Promise.all([
-        fetchJson<Operational>("/status/operational", controller.signal),
-        fetchJson<Statistics>("/statistics/ticks", controller.signal),
+        fetchJson<Operational>("/status/operational", controller.signal, token),
+        fetchJson<Statistics>("/statistics/ticks", controller.signal, token),
       ]);
       if (!operational.tick_stream || !operational.bridge_delivery) {
         throw new Error("Backend response shape is invalid");
@@ -170,6 +180,13 @@ export default function Home() {
       setError(null);
     } catch (requestError) {
       console.error("ESAS dashboard refresh failed", requestError);
+      if (requestError instanceof Error && requestError.message.includes("401")) {
+        setToken(null);
+        setData(null);
+        setError(null);
+        setLoginError("Sessiyanın vaxtı bitib. Yenidən daxil olun.");
+        return;
+      }
       setError(
         requestError instanceof SyntaxError
           ? "Backend cavabı gözlənilən formata uyğun deyil."
@@ -179,25 +196,44 @@ export default function Home() {
       window.clearTimeout(timeout);
       running.current = false;
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
+    if (!token) return;
     const initialRefresh = window.setTimeout(() => void refresh(), 0);
     const interval = window.setInterval(() => void refresh(), 5000);
     return () => {
       window.clearTimeout(initialRefresh);
       window.clearInterval(interval);
     };
-  }, [refresh]);
+  }, [refresh, token]);
 
-  const primaryBridge = data?.operational.bridge_delivery.bridges[0];
-  const queuePercent = primaryBridge?.queue_capacity
-    ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
-    : 0;
-  const lossStatus = (primaryBridge?.rejected_events ?? 0) > 0 ? "degraded" : "healthy";
-  const overallStatus = error
-    ? "unavailable"
-    : data?.operational.status ?? "waiting";
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginBusy(true);
+    setLoginError(null);
+    try {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_code: userCode, password }),
+      });
+      if (!response.ok) {
+        throw new Error(response.status === 401 ? "invalid" : "unavailable");
+      }
+      const result = (await response.json()) as { access_token: string };
+      setToken(result.access_token);
+      setPassword("");
+    } catch (loginFailure) {
+      setLoginError(
+        loginFailure instanceof Error && loginFailure.message === "invalid"
+          ? "İstifadəçi kodu və ya parol yanlışdır."
+          : "Giriş xidməti hazırda əlçatan deyil.",
+      );
+    } finally {
+      setLoginBusy(false);
+    }
+  }
 
   const stats = useMemo(
     () =>
@@ -213,6 +249,55 @@ export default function Home() {
         : [],
     [data],
   );
+
+  if (!token) {
+    return (
+      <main className="login-main">
+        <section className="login-card">
+          <div className="brand-mark" aria-hidden="true">E</div>
+          <p className="product-name">ESAS Platform</p>
+          <h1>Monitorinq panelinə giriş</h1>
+          <p className="login-intro">
+            Platforma məlumatlarını görmək üçün istifadəçi kodunuzu və parolunuzu daxil edin.
+          </p>
+          <form onSubmit={handleLogin}>
+            <label htmlFor="user-code">İstifadəçi kodu</label>
+            <input
+              id="user-code"
+              autoComplete="username"
+              value={userCode}
+              onChange={(event) => setUserCode(event.target.value)}
+              required
+            />
+            <label htmlFor="password">Parol</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={8}
+            />
+            {loginError && <p className="login-error" role="alert">{loginError}</p>}
+            <button type="submit" disabled={loginBusy}>
+              {loginBusy ? "Yoxlanılır..." : "Daxil ol"}
+            </button>
+          </form>
+          <p className="login-footnote">Qorunan lokal giriş · Sessiya müddəti 8 saat</p>
+        </section>
+      </main>
+    );
+  }
+
+  const primaryBridge = data?.operational.bridge_delivery.bridges[0];
+  const queuePercent = primaryBridge?.queue_capacity
+    ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
+    : 0;
+  const lossStatus = (primaryBridge?.rejected_events ?? 0) > 0 ? "degraded" : "healthy";
+  const overallStatus = error
+    ? "unavailable"
+    : data?.operational.status ?? "waiting";
 
   return (
     <main>
@@ -230,6 +315,16 @@ export default function Home() {
             Son yenilənmə:{" "}
             <strong>{lastRefresh ? formatTime(lastRefresh.toISOString()) : "gözlənilir"}</strong>
           </p>
+          <button
+            className="logout-button"
+            type="button"
+            onClick={() => {
+              setToken(null);
+              setData(null);
+            }}
+          >
+            Çıxış
+          </button>
         </div>
       </header>
 
