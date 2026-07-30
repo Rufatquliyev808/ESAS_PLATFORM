@@ -4,13 +4,29 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATABASE_DIR = PROJECT_ROOT / "database"
-DATABASE_PATH = DATABASE_DIR / "ESAS_PLATFORM.sqlite"
+DEFAULT_DATABASE_PATH = DATABASE_DIR / "ESAS_PLATFORM.sqlite"
+_database_path = DEFAULT_DATABASE_PATH
+
+
+def get_database_path() -> Path:
+    return _database_path
+
+
+def configure_database_path(database_path: Path | None) -> None:
+    global _database_path
+
+    _database_path = (
+        DEFAULT_DATABASE_PATH
+        if database_path is None
+        else database_path.resolve()
+    )
 
 
 def get_connection() -> sqlite3.Connection:
-    DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+    database_path = get_database_path()
+    database_path.parent.mkdir(parents=True, exist_ok=True)
 
-    connection = sqlite3.connect(DATABASE_PATH)
+    connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
 
     connection.execute("PRAGMA journal_mode = WAL;")

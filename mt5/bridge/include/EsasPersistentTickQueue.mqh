@@ -1,16 +1,84 @@
 #ifndef ESAS_PERSISTENT_TICK_QUEUE_MQH
 #define ESAS_PERSISTENT_TICK_QUEUE_MQH
 
+enum EsasQueueError
+{
+   ESAS_QUEUE_ERROR_NONE = 0,
+   ESAS_QUEUE_ERROR_FULL = 1,
+   ESAS_QUEUE_ERROR_SERIALIZATION = 2,
+   ESAS_QUEUE_ERROR_DISK_OPEN = 3,
+   ESAS_QUEUE_ERROR_DISK_SEEK = 4,
+   ESAS_QUEUE_ERROR_DISK_WRITE = 5,
+   ESAS_QUEUE_ERROR_CORRUPT = 6
+};
+
 class EsasPersistentTickQueue
 {
 private:
    string m_queue_file;
    string m_checkpoint_file;
+   string m_metrics_file;
    int    m_capacity;
    int    m_count;
+   long   m_rejected_events;
+   EsasQueueError m_last_error;
    long   m_read_offset;
    long   m_next_offset;
    bool   m_peek_ready;
+
+   void PersistMetrics(void)
+   {
+      const int handle = FileOpen(
+         m_metrics_file,
+         FILE_WRITE | FILE_BIN | FILE_COMMON
+      );
+
+      if(handle == INVALID_HANDLE)
+         return;
+
+      FileWriteLong(handle, m_rejected_events);
+      FileWriteInteger(handle, (int)m_last_error, INT_VALUE);
+      FileFlush(handle);
+      FileClose(handle);
+   }
+
+   void Reject(const EsasQueueError error)
+   {
+      m_last_error = error;
+      m_rejected_events++;
+      PersistMetrics();
+   }
+
+   void ReadMetrics(void)
+   {
+      m_rejected_events = 0;
+      m_last_error = ESAS_QUEUE_ERROR_NONE;
+
+      if(!FileIsExist(m_metrics_file, FILE_COMMON))
+         return;
+
+      const int handle = FileOpen(
+         m_metrics_file,
+         FILE_READ | FILE_BIN | FILE_COMMON
+      );
+
+      if(handle == INVALID_HANDLE)
+         return;
+
+      if(FileSize(handle) >= 12)
+      {
+         m_rejected_events = FileReadLong(handle);
+         m_last_error = (EsasQueueError)FileReadInteger(
+            handle,
+            INT_VALUE
+         );
+      }
+
+      FileClose(handle);
+
+      if(m_rejected_events < 0)
+         m_rejected_events = 0;
+   }
 
    bool ReadCheckpoint(long &offset)
    {
@@ -128,6 +196,7 @@ private:
 
          if(!ReadRecord(handle, offset, event_json, next_offset))
          {
+            m_last_error = ESAS_QUEUE_ERROR_CORRUPT;
             FileClose(handle);
             return false;
          }
@@ -157,8 +226,11 @@ public:
    {
       m_queue_file = "";
       m_checkpoint_file = "";
+      m_metrics_file = "";
       m_capacity = 0;
       m_count = 0;
+      m_rejected_events = 0;
+      m_last_error = ESAS_QUEUE_ERROR_NONE;
       m_read_offset = 0;
       m_next_offset = 0;
       m_peek_ready = false;
@@ -172,17 +244,28 @@ public:
       m_queue_file = "ESAS_PLATFORM\\queues\\" + queue_key + ".queue";
       m_checkpoint_file =
          "ESAS_PLATFORM\\queues\\" + queue_key + ".checkpoint";
+      m_metrics_file = "ESAS_PLATFORM\\queues\\" + queue_key + ".metrics";
       m_capacity = capacity;
       m_count = 0;
+      m_rejected_events = 0;
+      m_last_error = ESAS_QUEUE_ERROR_NONE;
       m_read_offset = 0;
       m_next_offset = 0;
       m_peek_ready = false;
 
+      ReadMetrics();
+
       if(!ReadCheckpoint(m_read_offset))
+      {
+         m_last_error = ESAS_QUEUE_ERROR_DISK_OPEN;
          return false;
+      }
 
       if(!RebuildCount())
+      {
+         PersistMetrics();
          return false;
+      }
 
       CleanupIfEmpty();
       return true;
@@ -213,10 +296,50 @@ public:
       return m_queue_file;
    }
 
+   long RejectedEvents(void) const
+   {
+      return m_rejected_events;
+   }
+
+   EsasQueueError LastError(void) const
+   {
+      return m_last_error;
+   }
+
+   string LastErrorName(void) const
+   {
+      switch(m_last_error)
+      {
+         case ESAS_QUEUE_ERROR_FULL:
+            return "queue_full";
+         case ESAS_QUEUE_ERROR_SERIALIZATION:
+            return "serialization_failed";
+         case ESAS_QUEUE_ERROR_DISK_OPEN:
+            return "disk_open_failed";
+         case ESAS_QUEUE_ERROR_DISK_SEEK:
+            return "disk_seek_failed";
+         case ESAS_QUEUE_ERROR_DISK_WRITE:
+            return "disk_write_failed";
+         case ESAS_QUEUE_ERROR_CORRUPT:
+            return "corrupt_queue";
+      }
+
+      return "none";
+   }
+
    bool Enqueue(const string event_json)
    {
-      if(event_json == "" || m_capacity <= 0 || IsFull())
+      if(event_json == "" || m_capacity <= 0)
+      {
+         Reject(ESAS_QUEUE_ERROR_SERIALIZATION);
          return false;
+      }
+
+      if(IsFull())
+      {
+         Reject(ESAS_QUEUE_ERROR_FULL);
+         return false;
+      }
 
       uchar payload[];
       int payload_size = StringToCharArray(
@@ -228,7 +351,10 @@ public:
       );
 
       if(payload_size <= 1)
+      {
+         Reject(ESAS_QUEUE_ERROR_SERIALIZATION);
          return false;
+      }
 
       payload_size--;
 
@@ -238,11 +364,15 @@ public:
       );
 
       if(handle == INVALID_HANDLE)
+      {
+         Reject(ESAS_QUEUE_ERROR_DISK_OPEN);
          return false;
+      }
 
       if(!FileSeek(handle, 0, SEEK_END))
       {
          FileClose(handle);
+         Reject(ESAS_QUEUE_ERROR_DISK_SEEK);
          return false;
       }
 
@@ -257,7 +387,10 @@ public:
       FileClose(handle);
 
       if((int)bytes_written != payload_size)
+      {
+         Reject(ESAS_QUEUE_ERROR_DISK_WRITE);
          return false;
+      }
 
       m_count++;
       return true;

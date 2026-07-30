@@ -1,5 +1,5 @@
 #property copyright "ESAS Platform"
-#property version   "1.400"
+#property version   "1.500"
 #property strict
 
 #include "../include/EsasTickEvent.mqh"
@@ -9,10 +9,12 @@
 input bool   InpEmitTickEvents       = true;
 input bool   InpSendTicksToBackend   = false;
 input string InpBackendTickUrl       = "http://127.0.0.1:8000/events/ticks";
+input string InpBackendStatusUrl     = "http://127.0.0.1:8000/status/bridge";
 input int    InpHttpTimeoutMs        = 500;
 input int    InpTickBufferCapacity   = 1000;
 input int    InpRetryIntervalSeconds = 1;
 input int    InpRetryBatchSize       = 50;
+input int    InpStatusIntervalSeconds = 5;
 
 int OnInit()
 {
@@ -33,6 +35,7 @@ int OnInit()
 
    if(InpRetryIntervalSeconds <= 0 ||
       InpRetryBatchSize <= 0 ||
+      InpStatusIntervalSeconds <= 0 ||
       !EventSetTimer(InpRetryIntervalSeconds))
    {
       Print(
@@ -67,6 +70,69 @@ void OnDeinit(const int reason)
       " | reason=", reason,
       " | queued_events=", g_tick_queue.Count()
    );
+}
+
+void EsasReportBridgeStatus()
+{
+   if(!InpSendTicksToBackend || MQLInfoInteger(MQL_TESTER))
+      return;
+
+   static datetime last_reported_at = 0;
+   const datetime current_time = TimeLocal();
+
+   if(last_reported_at > 0 &&
+      current_time - last_reported_at < InpStatusIntervalSeconds)
+   {
+      return;
+   }
+
+   last_reported_at = current_time;
+
+   string queue_status = "healthy";
+
+   if(g_tick_queue.IsFull())
+      queue_status = "full";
+   else if(g_tick_queue.RejectedEvents() > 0)
+      queue_status = "degraded";
+   else if(!g_tick_queue.IsEmpty())
+      queue_status = "backlogged";
+
+   const string status_json =
+      "{" +
+      "\"source\":\"esas.mt5.bridge\"," +
+      "\"module_version\":\"" + ESAS_MT5_BRIDGE_MODULE_VERSION + "\"," +
+      "\"symbol\":\"" + EsasJsonEscape(_Symbol) + "\"," +
+      "\"queue_status\":\"" + queue_status + "\"," +
+      "\"queue_count\":" + IntegerToString(g_tick_queue.Count()) + "," +
+      "\"queue_capacity\":" + IntegerToString(g_tick_queue.Capacity()) + "," +
+      "\"rejected_events\":" +
+         (string)g_tick_queue.RejectedEvents() + "," +
+      "\"last_queue_error\":\"" + g_tick_queue.LastErrorName() + "\"" +
+      "}";
+
+   int http_status = 0;
+   int transport_error = 0;
+   string response_body = "";
+
+   const bool sent = EsasHttpPostJson(
+      InpBackendStatusUrl,
+      status_json,
+      InpHttpTimeoutMs,
+      http_status,
+      response_body,
+      transport_error
+   );
+
+   if(!sent)
+   {
+      Print(
+         "ESAS MT5 Bridge: status delivery failed",
+         " | http_status=", http_status,
+         " | error=", transport_error,
+         " | queue_status=", queue_status,
+         " | rejected_events=", g_tick_queue.RejectedEvents()
+      );
+   }
 }
 
 void EsasRetryBufferedEvents()
@@ -142,6 +208,7 @@ void EsasRetryBufferedEvents()
 void OnTimer()
 {
    EsasRetryBufferedEvents();
+   EsasReportBridgeStatus();
 }
 
 void OnTick()
@@ -197,7 +264,8 @@ void OnTick()
          " | queued=", queued,
          " | queue_count=", g_tick_queue.Count(),
          " | queue_capacity=", g_tick_queue.Capacity(),
-         " | error=", queued ? 0 : GetLastError()
+         " | queue_error=", g_tick_queue.LastErrorName(),
+         " | rejected_events=", g_tick_queue.RejectedEvents()
       );
 
       return;
@@ -227,6 +295,8 @@ void OnTick()
          " | queued=", queued,
          " | queue_count=", g_tick_queue.Count(),
          " | queue_capacity=", g_tick_queue.Capacity(),
+         " | queue_error=", g_tick_queue.LastErrorName(),
+         " | rejected_events=", g_tick_queue.RejectedEvents(),
          " | response=", response_body
       );
    }

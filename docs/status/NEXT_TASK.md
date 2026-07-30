@@ -6,56 +6,48 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-Disk növbəsi limitə çatdıqda qəbul edilməyən event-ləri ölçmək və bu vəziyyəti
-backend monitorinqində görünən etmək.
+Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
 
 ## Problem
 
-Canlı davamlılıq sınağında backend uzun müddət bağlı qaldığı üçün disk növbəsi
-konfiqurasiya edilmiş `1000` event limitinə çatdı. Növbədəki mövcud event-lər
-qorundu, lakin limitdən sonra gələn yeni event-lər saxlanıla bilmədi.
-
-Bridge hazırda uğursuz `Enqueue` nəticəsini loglayır, amma:
-
-- sessiya üzrə qəbul edilməyən event sayını saxlamır;
-- son növbə xətasının səbəbini ayrıca göstərmir;
-- backend operational endpoint bu problemi göstərmir;
-- frontend üçün hazır monitorinq göstəricisi yoxdur.
+`frontend` qovluğu mövcuddur, lakin panelin göstərəcəyi məlumatlar, ekran
+quruluşu və operational statusların istifadəçiyə necə izah ediləcəyi
+sənədləşdirilməyib.
 
 ## Məqsəd
 
-Səssiz məlumat itkisini aradan qaldırmaq və resurs limiti səbəbindən qəbul
-edilməyən hər event-i ölçülə bilən operational problemə çevirmək.
+Kod yazmazdan əvvəl sadə, Azərbaycan dilində və texniki olmayan Phase 1
+monitorinq panelinin dəqiq spesifikasiyasını hazırlamaq.
 
 ## Plan
 
-1. Queue əməliyyat nəticələri üçün aydın xəta kodları müəyyən etmək.
-2. `queue_full`, `disk_write_failed` və `corrupt_queue` hallarını ayırmaq.
-3. Bridge daxilində sessiya üzrə qəbul edilməyən event sayğacı yaratmaq.
-4. Operational vəziyyəti backend-ə ötürmək üçün minimal status müqaviləsi
-   hazırlamaq.
-5. Backend status endpoint-inə queue vəziyyəti və itki sayğaclarını əlavə etmək.
-6. Limit sınağı və backend testləri əlavə etmək.
+1. İstifadəçinin ilk baxışda cavab almalı olduğu sualları müəyyən etmək.
+2. `GET /status/operational` və `GET /statistics/ticks` məlumatlarını xəritələmək.
+3. `active`, `stale`, `waiting`, `healthy`, `degraded` və `full` vəziyyətləri
+   üçün Azərbaycan dilində izah və rəng qaydaları yazmaq.
+4. Desktop əsaslı sadə ekran quruluşunu müəyyən etmək.
+5. API əlçatmaz olduqda göstəriləcək vəziyyəti müəyyən etmək.
+6. Yenilənmə intervalı və son yenilənmə vaxtını müəyyən etmək.
+7. Spesifikasiyanı `docs/frontend/` daxilində saxlamaq.
 
 ## Təhlükəsizlik qaydaları
 
-- Köhnə event növbədən avtomatik silinməməlidir.
-- Növbə dolduqda köhnə məlumatın üzərinə yazılmamalıdır.
-- Sayğac sıfırlanması məlumat itkisini gizlətməməlidir.
-- Event müqaviləsi dəyişdirilməməlidir.
-- Real ticarət funksiyası əlavə edilməməlidir.
+- Frontend birbaşa SQLite bazasına qoşulmamalıdır.
+- Frontend yalnız backend API istifadə etməlidir.
+- Panel ticarət qərarı və ya siqnal verməməlidir.
+- Texniki xəta kodları istifadəçiyə izahsız göstərilməməlidir.
+- Məlumat itkisi və degraded vəziyyət yaşıl göstərilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Növbə dolması ayrıca səbəb kimi müəyyən edilir.
-- Qəbul edilməyən event sayı hesablanır.
-- Operational API problemi göstərir.
-- Limitə çatma testi mövcuddur.
-- Mövcud tick axını və idempotency testləri keçir.
-- MT5 kompilyasiyası `0 errors, 0 warnings` nəticəsi verir.
+- Panelin bütün bölmələri və məlumat mənbələri sənədləşdirilir.
+- Status rəngləri və Azərbaycan dilində mətnlər müəyyən edilir.
+- API xətası və stale vəziyyəti fərqli göstərilir.
+- Responsive desktop/tablet quruluşu təsvir edilir.
+- Kodlaşdırmaya başlamaq üçün qəbul meyarları aydın olur.
 
 ## Planlaşdırılan ilk commit
 
 ```text
-Expose persistent queue health metrics
+Document Phase 1 monitoring dashboard
 ```

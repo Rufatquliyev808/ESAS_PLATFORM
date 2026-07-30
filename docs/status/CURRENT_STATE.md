@@ -51,6 +51,7 @@ MT5 Tick
 
 - `GET /health`
 - `POST /events/ticks`
+- `POST /status/bridge`
 - `GET /statistics/ticks`
 - `GET /status/operational`
 
@@ -60,14 +61,14 @@ MT5 Tick
 
 - Texnologiya: FastAPI
 - Verilənlər bazası: SQLite
-- Versiya: `0.1.0`
+- Versiya: `0.2.0`
 - Tick doğrulaması və saxlanması işləyir.
 - Operational monitoring işləyir.
 
 ### MT5 Bridge
 
 - Status: `EXPERIMENTAL`
-- Sənədləşdirilmiş versiya: `1.4.0`
+- Sənədləşdirilmiş versiya: `1.5.0`
 - Canlı tick oxunması işləyir.
 - Event yaradılması işləyir.
 - HTTP göndərişi işləyir.
@@ -75,6 +76,8 @@ MT5 Tick
 - Növbədəki event-lər EA və MT5 restartından sonra bərpa olunur.
 - Event-lər backend bərpa olduqda konfiqurasiya olunan batch ölçüsü ilə
   avtomatik göndərilir.
+- Qəbul edilməyən event sayı restartlar arasında davamlı saxlanılır.
+- Queue vəziyyəti və xəta səbəbi backend operational API-yə göndərilir.
 
 ### Frontend
 
@@ -87,12 +90,14 @@ MT5 Tick
 
 1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
 2. Phase 1 status sənədinin Markdown quruluşunda problem var.
-3. Disk növbəsi limitə çatdıqda qəbul edilməyən event sayı ayrıca ölçülmür.
-4. Queue health vəziyyəti backend operational endpoint-də göstərilmir.
+3. Queue sayğacları üçün ayrıca avtomatlaşdırılmış MQL5 unit test infrastrukturu
+   yoxdur.
+4. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
+   qədər `waiting` olur.
 5. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
 6. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
 7. Frontend spesifikasiyası hazırlanmayıb.
-8. Test verilənlər bazası əsas verilənlər bazasından ayrılmayıb.
+8. Phase 1 frontend monitorinq panelinin spesifikasiyası hazırlanmayıb.
 9. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
 
 ## Son tamamlanan texniki dəyişiklik
@@ -126,8 +131,43 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Disk növbəsi limitinə çatdıqda qəbul edilməyən event-lərin ölçülməsi və
-operational monitorinqdə göstərilməsi.
+Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
+
+## Queue health monitorinqinin son canlı sınağı
+
+2026-07-30 tarixində MT5 Bridge `1.5.0` və backend `0.2.0` birlikdə yoxlanıldı.
+
+- Bridge hər 5 saniyədə `POST /status/bridge` hesabatı göndərdi.
+- Operational API `bridge_delivery.status=healthy` göstərdi.
+- `queue_count=0`, `queue_capacity=1000` göstərildi.
+- `rejected_events=0`, `last_queue_error=none` göstərildi.
+- Tick axını `active` oldu.
+- Backend testləri `7 passed` nəticəsi verdi.
+- MT5 layihə və terminal kompilyasiyaları `0 errors, 0 warnings` nəticəsi verdi.
+
+## Backend test bazasının təcridi
+
+2026-07-30 tarixində backend testləri canlı bazadan ayrıldı.
+
+- Hər test ayrıca müvəqqəti SQLite faylı istifadə edir.
+- Test bitdikdə database yolu production default dəyərinə qaytarılır.
+- İdempotency testinin ilk cavabı deterministik olaraq `stored` olur.
+- Operational status test database yolunun canlı bazadan fərqli olduğunu
+  təsdiqləyir.
+- Canlı `database/ESAS_PLATFORM.sqlite` testlər tərəfindən istifadə edilmir.
+- Bütün `7` backend testi keçdi.
+
+## Avtomatik GitHub test axını
+
+2026-07-30 tarixində `.github/workflows/tests.yml` əlavə edildi.
+
+- Workflow `main`, `agent/**` push-larında və pull request-lərdə başlayır.
+- Python `3.13` təmiz GitHub runner mühitində qurulur.
+- Backend dependency-ləri kilidlənmiş requirements faylından quraşdırılır.
+- `module.json` JSON validation-dan keçirilir.
+- Backend və test Python mənbələri compile edilir.
+- `pytest` cache yazmadan icra olunur.
+- Workflow lokal YAML validation və `7 passed` nəticəsi ilə yoxlanıldı.
 
 ## Disk növbəsi üzrə son canlı sınaq
 

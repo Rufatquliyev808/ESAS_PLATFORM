@@ -10,6 +10,15 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- MT5 Bridge `1.5.0` üçün davamlı rejected-event sayğacı.
+- `queue_full`, serializasiya, disk və corruption xəta kateqoriyaları.
+- `POST /status/bridge` operational status qəbulu.
+- `GET /status/operational` daxilində `bridge_delivery` göstəriciləri.
+- Bridge queue statusu üçün backend validation və API testləri.
+- Backend testləri üçün hər testə məxsus müvəqqəti SQLite bazası.
+- Test bazasının canlı `ESAS_PLATFORM.sqlite` faylından tam ayrılması.
+- Push və pull request-lər üçün GitHub Actions backend test workflow-u.
+- CI daxilində module manifest və Python source validation.
 - MT5 Bridge `1.4.0` üçün disk əsaslı davamlı FIFO event növbəsi.
 - Restart zamanı pending event-lərin bərpası.
 - Uzunluq prefiksli ikili jurnal və davamlı acknowledgement checkpoint-i.

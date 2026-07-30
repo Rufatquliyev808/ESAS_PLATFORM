@@ -65,13 +65,13 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
 - [x] README sənədini yeniləmək
 - [x] Buferdəki event-lərin avtomatik retry göndərişi
-- [ ] Bufer dolması siyasəti
-- [ ] İtirilmiş event sayğacı
+- [x] Bufer dolması siyasəti
+- [x] İtirilmiş event sayğacı
 - [x] Disk əsaslı davamlı event növbəsi
-- [ ] Backend monitorinq göstəricilərini genişləndirmək
-- [ ] Test verilənlər bazasını əsas bazadan ayırmaq
+- [x] Backend monitorinq göstəricilərini genişləndirmək
+- [x] Test verilənlər bazasını əsas bazadan ayırmaq
 - [ ] Bufer və retry testləri
-- [ ] GitHub Actions test axını
+- [x] GitHub Actions test axını
 - [ ] Phase 1 frontend monitorinq paneli
 - [ ] 1 saatlıq sabitlik testi
 - [ ] 8–12 saatlıq sabitlik testi
@@ -201,8 +201,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Disk növbəsi limitinə çatdıqda qəbul edilməyən event-lərin ölçülməsi və
-operational monitorinqdə göstərilməsi.
+Phase 1 frontend monitorinq panelinin API və UI spesifikasiyasını hazırlamaq.
 
 Ətraflı tapşırıq:
 

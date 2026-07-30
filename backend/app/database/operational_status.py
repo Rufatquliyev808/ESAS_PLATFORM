@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
-from backend.app.database.connection import DATABASE_PATH
+from backend.app.database.connection import get_database_path
 from backend.app.database.tick_statistics import get_tick_statistics
+from backend.app.operational.bridge_status import get_bridge_statuses
 
 
 STALE_AFTER_SECONDS = 30
@@ -9,6 +10,8 @@ STALE_AFTER_SECONDS = 30
 
 def get_operational_status() -> dict[str, object]:
     statistics = get_tick_statistics()
+    bridge_reports = get_bridge_statuses()
+    database_path = get_database_path()
     last_received_at = statistics["last_received_at"]
 
     seconds_since_last_tick: float | None = None
@@ -30,11 +33,17 @@ def get_operational_status() -> dict[str, object]:
             else "stale"
         )
 
+    has_bridge_degradation = any(
+        report["queue_status"] in {"full", "degraded"}
+        or int(report["rejected_events"]) > 0
+        for report in bridge_reports
+    )
+
     return {
-        "status": "ok",
+        "status": "degraded" if has_bridge_degradation else "ok",
         "database": {
-            "path": str(DATABASE_PATH),
-            "exists": DATABASE_PATH.exists(),
+            "path": str(database_path),
+            "exists": database_path.exists(),
         },
         "tick_stream": {
             "status": stream_status,
@@ -42,5 +51,17 @@ def get_operational_status() -> dict[str, object]:
             "seconds_since_last_tick": seconds_since_last_tick,
             "last_received_at": last_received_at,
             "total_ticks": statistics["total_ticks"],
+        },
+        "bridge_delivery": {
+            "status": (
+                "waiting"
+                if not bridge_reports
+                else (
+                    "degraded"
+                    if has_bridge_degradation
+                    else "healthy"
+                )
+            ),
+            "bridges": bridge_reports,
         },
     }
