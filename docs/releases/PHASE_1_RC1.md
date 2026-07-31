@@ -106,7 +106,7 @@ rejection qeydə alınmayıb.
 - Disk növbəsi sərhədlidir; yenidən dolarsa əlavə event itkisi mümkündür.
 - Çox yüksək tick sürətində uzunmüddətli retry batch davranışı 24 saatlıq sınaqda
   yenidən izlənməlidir.
-- Backend testlərində Starlette/httpx deprecation xəbərdarlığı mövcuddur.
+- Backend test transportu Starlette-in rəsmi `httpx2` keçidinə uyğunlaşdırılıb.
 - Production hostinq və HTTPS konfiqurasiyası bu buraxılışa daxil deyil.
 
 ## Stable keçid şərti

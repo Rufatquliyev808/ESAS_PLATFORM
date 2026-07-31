@@ -64,6 +64,17 @@ Status: IN PROGRESS
   başlanğıcda yaratdığı proses ağacını təhlükəsiz dayandırır.
 - Başlatma və dayandırma skriptlərinin PowerShell sintaksisi, canlı backend
   sağlamlığı və frontend `200` cavabı yoxlanıldı.
+- Phase 1 uzunmüddətli sınaqları üçün başlanğıc və son göstəriciləri lokal JSON
+  sübutunda saxlayan qəbul aləti əlavə edildi.
+- Qəbul aləti health, operational status, tick artımı, disk növbəsi, rejection,
+  məlumat itkisi təsdiqi, SQLite `quick_check` və audit sayını avtomatik yoxlayır.
+- Alətin real backend yoxlamasında tick artımı və dəyişməyən rejection düzgün
+  hesablandı; məxfi məlumat sübut faylına yazılmadı və minimum 24 saat qapısı
+  erkən müqayisəni düzgün rədd etdi.
+- Starlette-in rəsmi tövsiyəsinə uyğun `httpx2 2.9.1` test transportu əlavə
+  edildi; backend testləri `12 passed` nəticəsi ilə xəbərdarlıqsız keçdi.
+- GitHub Actions `checkout@v6`, `setup-python@v6` və `setup-node@v6` versiyalarına
+  yeniləndi; action runtime Node.js 24-ə keçirildi.
 
 ## Layihənin məqsədi
 
@@ -155,7 +166,8 @@ MT5 Tick
 2. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
 3. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
    şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
-4. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
+4. Backend test transportu Starlette-in rəsmi `httpx2` keçidinə
+   uyğunlaşdırılıb və köhnəlmə xəbərdarlığı aradan qaldırılıb.
 5. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
    deprecation xəbərdarlığı verir.
 

@@ -11,6 +11,7 @@ başlatmaq və yekun qəbul sübutunu toplamaq.
 
 ## Başlanğıc göstəriciləri
 
+- `tools/phase1-acceptance-snapshot.ps1` ilə başlanğıc JSON sübutu;
 - backend `/health` və operational status;
 - ümumi tick sayı və tick axınının vəziyyəti;
 - disk növbəsinin sayı və tutumu;
@@ -20,6 +21,7 @@ başlatmaq və yekun qəbul sübutunu toplamaq.
 
 ## Tamamlanma meyarları
 
+- Avtomatik müqayisə minimum `24` saat keçdiyini təsdiqləməlidir.
 - Tick sayı 24 saat ərzində artmalıdır və axın `active` qalmalıdır.
 - Disk növbəsi sonda `0 / 1000` olmalıdır.
 - Rejection sayı `7343`-dən yuxarı qalxmamalıdır.

@@ -25,3 +25,28 @@ powershell -ExecutionPolicy Bypass -File .\tools\stop-local-platform.ps1
 
 Dayandırma skripti yalnız özü tərəfindən qeydə alınmış prosesləri dayandırır. PID
 başqa prosesə aid olarsa, təhlükəsizlik üçün həmin prosesə toxunmur.
+
+## Phase 1 qəbul göstəricilərinin avtomatik saxlanması
+
+24 saatlıq sınağın əvvəlində cari göstəriciləri məxfi məlumatları göstərmədən
+`.runtime/phase1-acceptance` qovluğunda saxlamaq üçün:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\phase1-acceptance-snapshot.ps1 `
+  -Action Capture -Label phase1-24h-start
+```
+
+Sınağın sonunda başlanğıc JSON faylının yolunu göstərərək müqayisə aparmaq üçün:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\phase1-acceptance-snapshot.ps1 `
+  -Action Compare `
+  -BaselinePath ".\.runtime\phase1-acceptance\<başlanğıc-faylı>.json" `
+  -Label phase1-24h-end
+```
+
+Alət backend health və operational statusunu, tick artımını, disk növbəsini,
+rejection sayını, məlumat itkisi təsdiqini, SQLite `quick_check` nəticəsini və
+audit sayını yoxlayır. Müqayisənin uğurlu sayılması üçün standart olaraq minimum
+`24` saat keçməlidir. Sübut faylları lokal `.runtime` daxilində qalır və Git-ə
+əlavə edilmir.

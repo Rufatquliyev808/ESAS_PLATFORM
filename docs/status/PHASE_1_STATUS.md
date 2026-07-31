@@ -60,8 +60,7 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
   event rədd edilib. Hadisə auditdə qorunur və təsdiqlənib.
 - MQL5 disk növbəsi və retry qəbul testi `44 / 44` assertion ilə, `0` uğursuzluq
   və `0 errors, 0 warnings` kompilyasiya nəticəsi ilə keçib.
-- GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
-  deprecation xəbərdarlığı verir. Hazırkı testlər keçir.
+- GitHub Actions addımları Node.js 24 əsaslı rəsmi major versiyalara yenilənib.
 - Frontend hazırda lokal istifadə üçündür; uzaqdan təhlükəsiz giriş üçün ayrıca
   HTTPS yerləşdirmə arxitekturası tələb olunur.
 

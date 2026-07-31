@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Fixed
 
+- GitHub Actions checkout, Python və Node qurulum addımları Node 24 əsaslı rəsmi
+  major versiyalara yeniləndi.
+- Starlette `TestClient` üçün rəsmi `httpx2` keçidi tamamlandı və backend
+  testlərindəki köhnəlmə xəbərdarlığı aradan qaldırıldı.
 - Boşaldılmış disk növbəsinin keçmiş `queue_full` xətasına görə hələ də dolu
   göstərilməsi düzəldildi.
 - Backend əlçatan olmadıqda status nişanının ingiliscə `unavailable` göstərilməsi
@@ -21,6 +25,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 1 uzunmüddətli sınaqlarında başlanğıc və son göstəriciləri təhlükəsiz
+  JSON sübutu kimi saxlayan və qəbul meyarlarını avtomatik müqayisə edən alət.
 - Backend `0.2.0`, MT5 Bridge `1.5.0` və frontend `0.1.0` üçün qəbul sübutlarını,
   geriyə uyğunluğu və Stable keçid şərtlərini göstərən Phase 1 RC1 release qeydləri.
 - `7343` tarixi rədd edilmiş event üzrə kök səbəb, audit izi, düzəlişlər və qalıq
