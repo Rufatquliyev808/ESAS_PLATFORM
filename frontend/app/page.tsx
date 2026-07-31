@@ -268,15 +268,25 @@ export default function Home() {
         body: JSON.stringify({ user_code: userCode, password }),
       });
       if (!response.ok) {
-        throw new Error(response.status === 401 ? "invalid" : "unavailable");
+        throw new Error(
+          response.status === 401
+            ? "invalid"
+            : response.status === 429
+              ? "locked"
+              : "unavailable",
+        );
       }
       const result = (await response.json()) as { access_token: string };
       setToken(result.access_token);
       setPassword("");
     } catch (loginFailure) {
       setLoginError(
-        loginFailure instanceof Error && loginFailure.message === "invalid"
-          ? "İstifadəçi kodu və ya parol yanlışdır."
+        loginFailure instanceof Error
+          ? loginFailure.message === "invalid"
+            ? "İstifadəçi kodu və ya parol yanlışdır."
+            : loginFailure.message === "locked"
+              ? "Çox sayda uğursuz cəhd oldu. 15 dəqiqə sonra yenidən yoxlayın."
+              : "Giriş xidməti hazırda əlçatan deyil."
           : "Giriş xidməti hazırda əlçatan deyil.",
       );
     } finally {

@@ -49,3 +49,7 @@ Lokal `.env` faylında aşağıdakı dəyişənlər təyin edilməlidir:
 
 `.env` Git-ə daxil edilmir. Monitorinq API-ləri etibarlı 8 saatlıq sessiya
 nişanı olmadan `401 Unauthorized` qaytarır.
+
+Eyni şəbəkə ünvanından ardıcıl 5 səhv giriş cəhdi olduqda yeni girişlər
+15 dəqiqəlik müvəqqəti bloklanır. Uğurlu giriş əvvəlki səhv cəhd sayğacını
+sıfırlayır.

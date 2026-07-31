@@ -27,6 +27,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Eyni şəbəkə ünvanından ardıcıl 5 uğursuz giriş cəhdindən sonra 15 dəqiqəlik
+  müvəqqəti bloklama və uğurlu girişdə səhv sayğacının sıfırlanması.
 - Monitorinq panelində əl ilə yeniləmə düyməsi və yenilənmə vəziyyəti.
 - Çoxsaylı MT5 Bridge üçün ümumi göstəricilər və ayrıca simvol/Bridge filtri.
 - Phase 1 uzunmüddətli sınaqlarında başlanğıc və son göstəriciləri təhlükəsiz

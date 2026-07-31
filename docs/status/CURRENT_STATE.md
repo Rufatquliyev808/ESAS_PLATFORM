@@ -175,6 +175,13 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Monitorinq girişinə eyni şəbəkə ünvanı üzrə uğursuz cəhd məhdudiyyəti əlavə
+  edildi: 5 ardıcıl səhvdən sonra 15 dəqiqəlik müvəqqəti bloklama tətbiq olunur.
+- Uğurlu giriş əvvəlki səhv cəhd sayğacını sıfırlayır və bloklanmış giriş
+  sorğuları `429 Too Many Requests` cavabı alır.
+- Backend giriş təhlükəsizliyi testləri daxil olmaqla `14 / 14`, frontend lint,
+  production build və server-render testləri uğurla keçdi.
+
 Frontend çoxsaylı Bridge və simvol üçün optimallaşdırılıb. Əsas kartlar bütün
 Bridge-lərin növbə və rejection göstəricilərini düzgün ümumiləşdirir, seçim
 filtri isə ayrıca Bridge-in versiyasını, növbəsini və audit vəziyyətini göstərir.

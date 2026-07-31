@@ -26,6 +26,13 @@ powershell -ExecutionPolicy Bypass -File .\tools\stop-local-platform.ps1
 Dayandırma skripti yalnız özü tərəfindən qeydə alınmış prosesləri dayandırır. PID
 başqa prosesə aid olarsa, təhlükəsizlik üçün həmin prosesə toxunmur.
 
+## Giriş təhlükəsizliyi
+
+Monitorinq paneli istifadəçi kodu və parol ilə qorunur. Eyni şəbəkə ünvanından
+ardıcıl 5 səhv giriş cəhdi olduqda giriş 15 dəqiqəlik müvəqqəti bloklanır.
+Uğurlu giriş əvvəlki səhv cəhd sayğacını sıfırlayır. Backend yenidən başladıldıqda
+yaddaşdakı müvəqqəti bloklama vəziyyəti də sıfırlanır.
+
 ## Phase 1 qəbul göstəricilərinin avtomatik saxlanması
 
 24 saatlıq sınağın əvvəlində cari göstəriciləri məxfi məlumatları göstərmədən

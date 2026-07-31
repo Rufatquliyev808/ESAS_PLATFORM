@@ -312,3 +312,65 @@ def test_login_rejects_wrong_password() -> None:
         )
 
     assert response.status_code == 401
+
+
+def test_login_rate_limit_blocks_repeated_failures() -> None:
+    with TestClient(app) as client:
+        for _ in range(4):
+            response = client.post(
+                "/auth/login",
+                json={
+                    "user_code": "TEST-USER",
+                    "password": "wrong-password",
+                },
+            )
+            assert response.status_code == 401
+
+        blocked_response = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "wrong-password",
+            },
+        )
+        correct_password_while_blocked = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "test-password-123",
+            },
+        )
+
+    assert blocked_response.status_code == 429
+    assert int(blocked_response.headers["retry-after"]) > 0
+    assert correct_password_while_blocked.status_code == 429
+
+
+def test_successful_login_clears_previous_failures() -> None:
+    with TestClient(app) as client:
+        for _ in range(4):
+            assert client.post(
+                "/auth/login",
+                json={
+                    "user_code": "TEST-USER",
+                    "password": "wrong-password",
+                },
+            ).status_code == 401
+
+        successful_response = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "test-password-123",
+            },
+        )
+        next_failure = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "wrong-password",
+            },
+        )
+
+    assert successful_response.status_code == 200
+    assert next_failure.status_code == 401

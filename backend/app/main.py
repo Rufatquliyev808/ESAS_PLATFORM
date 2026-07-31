@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 import sqlite3
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -90,8 +90,12 @@ def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
 
 
 @app.post("/auth/login")
-def login(credentials: LoginRequest) -> dict[str, object]:
-    return create_session(credentials)
+def login(
+    credentials: LoginRequest,
+    request: Request,
+) -> dict[str, object]:
+    client_key = request.client.host if request.client else "unknown"
+    return create_session(credentials, client_key)
 
 
 @app.post("/status/bridge", status_code=status.HTTP_202_ACCEPTED)
