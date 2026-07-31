@@ -6,7 +6,10 @@ Başlama şərti: Phase 1 qəbul qapılarının tamamlanması
 Detallı oxuma müqaviləsi:
 `docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
 
-Müqavilə sənədi hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
+Məlumat keyfiyyəti müqaviləsi:
+`docs/architecture/PHASE_2_DATA_QUALITY_CONTRACT.md`
+
+Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd
 

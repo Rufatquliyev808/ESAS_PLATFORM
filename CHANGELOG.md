@@ -27,6 +27,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 tick məlumat keyfiyyəti müqaviləsi: versiyalanmış boşluq, timestamp,
+  spread, qiymət, gecikmə və müqavilə uyğunluğu qaydaları; audit edilən hesabat
+  formatı və sintetik qəbul testləri. Bazar sessiyası məlum olmadan fasilə
+  avtomatik məlumat itkisi sayılmır.
 - Phase 2 üçün yalnız-oxuma tick replay müqaviləsi: sabit vaxt aralığı,
   deterministik `event_timestamp + event_id` sırası, cursor səhifələmə,
   təhlükəsizlik sərhədi və qəbul meyarları. Bu dəyişiklik yalnız dizayndır;

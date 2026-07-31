@@ -175,6 +175,12 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Phase 2 məlumat keyfiyyəti müqaviləsi hazırlandı. Boşluq, timestamp,
+  mənfi spread, natamam qiymət, qəbul gecikməsi və müqavilə uyğunsuzluğu
+  qaydaları versiyalanmış formada müəyyən edildi.
+- Bazar sessiyası təqvimi olmadan uzun fasilənin avtomatik məlumat itkisi
+  sayılmaması və sıfır qiymətlərin səhv müsbət nəticə yaratmaması sənəddə
+  qorundu.
 - Phase 2 üçün yalnız-oxuma tick replay müqaviləsi hazırlandı. Müqavilə sabit
   `[start_at, end_at)` aralığını, `event_timestamp + event_id` deterministik
   sırasını, cursor səhifələməni, qorunan API sərhədini və məlumatın
