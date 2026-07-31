@@ -102,7 +102,7 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 .header-status { display: flex; align-items: center; gap: 14px; text-align: right; }
 .header-status p { margin: 0; color: var(--muted); font-size: 13px; }
 .header-status strong { display: block; margin-top: 4px; color: var(--ink); font-size: 14px; }
-.logout-button {
+.refresh-button, .logout-button {
   border: 1px solid #bcc7c2;
   border-radius: 8px;
   padding: 8px 11px;
@@ -111,6 +111,7 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
   cursor: pointer;
   font-weight: 700;
 }
+.refresh-button:disabled { cursor: wait; opacity: .65; }
 
 .status-pill {
   display: inline-flex;

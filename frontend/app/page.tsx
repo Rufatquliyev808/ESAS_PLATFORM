@@ -44,6 +44,13 @@ type Tone = "good" | "warning" | "danger" | "info" | "neutral";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
+const REFRESH_INTERVAL_MS = 5000;
+const REQUEST_TIMEOUT_MS = 3000;
+const numberFormatter = new Intl.NumberFormat("az-AZ");
+const dateTimeFormatter = new Intl.DateTimeFormat("az-AZ", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+});
 
 const labels: Record<string, string> = {
   ok: "İşləyir",
@@ -79,7 +86,7 @@ function toneFor(status: string): Tone {
 }
 
 function formatNumber(value: number | null | undefined) {
-  return new Intl.NumberFormat("az-AZ").format(value ?? 0);
+  return numberFormatter.format(value ?? 0);
 }
 
 function formatTime(value: string | null | undefined) {
@@ -87,10 +94,7 @@ function formatTime(value: string | null | undefined) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Vaxt məlum deyil"
-    : new Intl.DateTimeFormat("az-AZ", {
-        dateStyle: "medium",
-        timeStyle: "medium",
-      }).format(date);
+    : dateTimeFormatter.format(date);
 }
 
 function relativeSeconds(seconds: number | null | undefined) {
@@ -173,16 +177,20 @@ export default function Home() {
   const [loginBusy, setLoginBusy] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
   const [acknowledgementError, setAcknowledgementError] = useState<string | null>(null);
   const running = useRef(false);
+  const activeController = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
     if (running.current) return;
     running.current = true;
+    setRefreshing(true);
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 3000);
+    activeController.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const [operational, statistics] = await Promise.all([
         fetchJson<Operational>("/status/operational", controller.signal, token),
@@ -210,17 +218,33 @@ export default function Home() {
       );
     } finally {
       window.clearTimeout(timeout);
+      if (activeController.current === controller) {
+        activeController.current = null;
+      }
       running.current = false;
+      setRefreshing(false);
     }
   }, [token]);
 
   useEffect(() => {
     if (!token) return;
-    const initialRefresh = window.setTimeout(() => void refresh(), 0);
-    const interval = window.setInterval(() => void refresh(), 5000);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refresh();
+      }
+    };
+    const initialRefresh = window.setTimeout(refreshWhenVisible, 0);
+    const interval = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("online", refreshWhenVisible);
+
     return () => {
       window.clearTimeout(initialRefresh);
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("online", refreshWhenVisible);
+      activeController.current?.abort();
     };
   }, [refresh, token]);
 
@@ -368,6 +392,14 @@ export default function Home() {
             Son yenilənmə:{" "}
             <strong>{lastRefresh ? formatTime(lastRefresh.toISOString()) : "gözlənilir"}</strong>
           </p>
+          <button
+            className="refresh-button"
+            type="button"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
+            {refreshing ? "Yenilənir..." : "Yenilə"}
+          </button>
           <button
             className="logout-button"
             type="button"
@@ -557,7 +589,7 @@ export default function Home() {
 
       <footer>
         <p>Yalnız monitorinq · Ticarət əməliyyatı aparılmır</p>
-        <p>Avtomatik yenilənmə: 5 saniyə</p>
+        <p>Avtomatik yenilənmə: səhifə aktiv olduqda 5 saniyə</p>
       </footer>
     </main>
   );

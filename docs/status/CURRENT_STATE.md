@@ -157,6 +157,9 @@ MT5 Tick
 - Tick, MT5 Bridge, disk növbəsi və rədd edilən event vəziyyətlərini göstərir.
 - Məlumat 5 saniyədə bir yenilənir və müvəqqəti API xətasında son uğurlu
   göstəricilər qorunur.
+- Brauzer səhifəsi arxa planda olduqda avtomatik sorğular dayandırılır; səhifə
+  yenidən görünəndə və bağlantı bərpa olunanda məlumat dərhal təzələnir.
+- Başlıq hissəsində sorğunun vəziyyətini göstərən əl ilə yeniləmə idarəsi var.
 - Lokal lint, production build və server-render testi keçir.
 
 ## Məlum problemlər
@@ -170,12 +173,10 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
-Phase 1 uzunmüddətli qəbul sınağı üçün başlanğıc və son göstəriciləri lokal JSON
-sübutunda saxlayan avtomatik müqayisə aləti əlavə edilib. Alət minimum sınaq
-müddətini, tick artımını, növbəni, rejection sayını, məlumat itkisi təsdiqini,
-SQLite `quick_check` nəticəsini və audit izini yoxlayır. Backend testləri
-`12 passed` nəticəsi ilə xəbərdarlıqsız, frontend və GitHub Actions yoxlamaları
-isə uğurla keçib.
+Frontend yenilənmə axını optimallaşdırılıb. Panel görünməyən brauzer səhifəsində
+backend sorğusu göndərmir, səhifəyə qayıdanda və internet bağlantısı bərpa
+olunanda dərhal təzələnir. Əl ilə yeniləmə idarəsi və sorğunun davam etdiyini
+göstərən vəziyyət əlavə edilib; yarımçıq sorğular səhifədən çıxarkən dayandırılır.
 
 ## Phase 1-in tamamlanması üçün qalan əsas işlər
 

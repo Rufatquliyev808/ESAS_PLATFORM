@@ -30,6 +30,11 @@ Standart backend ünvanı `http://127.0.0.1:8000`-dir. Başqa mühit üçün
 Frontend yalnız backend API-lərini oxuyur. SQLite bazasına və MT5 order
 əməliyyatlarına birbaşa çıxışı yoxdur.
 
+Panel görünən brauzer səhifəsində məlumatı 5 saniyədə bir yeniləyir. Səhifə
+arxa plana keçdikdə lazımsız backend sorğuları dayandırılır; səhifəyə qayıdanda
+və internet bağlantısı bərpa olunanda vəziyyət dərhal yenidən yoxlanılır. Başlıq
+hissəsində əl ilə `Yenilə` düyməsi də mövcuddur.
+
 ## Giriş qoruması
 
 Lokal `.env` faylında aşağıdakı dəyişənlər təyin edilməlidir:

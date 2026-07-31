@@ -27,6 +27,7 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Monitorinq panelində əl ilə yeniləmə düyməsi və yenilənmə vəziyyəti.
 - Phase 1 uzunmüddətli sınaqlarında başlanğıc və son göstəriciləri təhlükəsiz
   JSON sübutu kimi saxlayan və qəbul meyarlarını avtomatik müqayisə edən alət.
 - Backend `0.2.0`, MT5 Bridge `1.5.0` və frontend `0.1.0` üçün qəbul sübutlarını,
@@ -93,6 +94,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 - Konfiqurasiya olunan batch göndəriş ölçüsü.
 - Backend bərpa olduqda buferin avtomatik boşaldılması.
 - Retry və batch nəticələri üçün operational log mesajları.
+
+### Changed
+
+- Monitorinq panelinin avtomatik yenilənməsi yalnız brauzer səhifəsi görünəndə
+  işləyir; səhifəyə qayıdanda və bağlantı bərpa olunanda dərhal davam edir.
+- Frontend tarix və say formatlayıcılarını hər renderdə yenidən yaratmır və
+  tamamlanmamış sorğuları səhifədən çıxarkən təhlükəsiz dayandırır.
 
 ### Planned
 
