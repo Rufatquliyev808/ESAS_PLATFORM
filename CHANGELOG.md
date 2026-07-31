@@ -27,6 +27,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 üçün yalnız-oxuma tick replay müqaviləsi: sabit vaxt aralığı,
+  deterministik `event_timestamp + event_id` sırası, cursor səhifələmə,
+  təhlükəsizlik sərhədi və qəbul meyarları. Bu dəyişiklik yalnız dizayndır;
+  Phase 2 istehsal kodu başladılmayıb.
+
 - Tick və Bridge status qəbulunu qoruyan minimum 32 simvolluq
   `X-ESAS-Bridge-Key` autentifikasiyası və MT5 `InpBackendBridgeKey` parametri.
 - Backend `0.3.0` və MT5 Bridge `1.6.0` məxfi açarla canlı qoşuldu; qısa qəbul

@@ -175,6 +175,13 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Phase 2 üçün yalnız-oxuma tick replay müqaviləsi hazırlandı. Müqavilə sabit
+  `[start_at, end_at)` aralığını, `event_timestamp + event_id` deterministik
+  sırasını, cursor səhifələməni, qorunan API sərhədini və məlumatın
+  dəyişməzliyini təsdiqləyən qəbul testlərini müəyyən edir.
+- Bu hazırlıq yalnız dizayn və qəbul meyarlarıdır; Phase 1 bağlanmadan Phase 2
+  istehsal kodu başladılmayıb.
+
 - MT5 tick və status qəbulu minimum 32 simvolluq ayrıca Bridge açarı ilə
   qorundu; açarsız və səhv açarlı sorğular `401` cavabı alır.
 - Backend versiyası `0.3.0`, MT5 Bridge versiyası `1.6.0` edildi.

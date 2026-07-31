@@ -3,6 +3,11 @@
 Status: PLANNED  
 Başlama şərti: Phase 1 qəbul qapılarının tamamlanması
 
+Detallı oxuma müqaviləsi:
+`docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
+
+Müqavilə sənədi hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
+
 ## Məqsəd
 
 Saxlanmış xam tick məlumatını dəyişdirmədən oxumaq, müəyyən zaman aralığını
