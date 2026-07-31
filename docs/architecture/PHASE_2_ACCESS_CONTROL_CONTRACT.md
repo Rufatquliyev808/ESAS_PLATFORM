@@ -7,6 +7,9 @@ Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 Konfiqurasiya, secret və təhlükəsiz bootstrap qaydaları:
 `docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
 
+Audit və qəbul sübutunun ixrac qaydaları:
+`docs/architecture/PHASE_2_AUDIT_EVIDENCE_EXPORT_CONTRACT.md`
+
 ## Məqsəd
 
 Bu müqavilə Phase 2 replay, məlumat keyfiyyəti və audit funksiyalarına kimin baxa

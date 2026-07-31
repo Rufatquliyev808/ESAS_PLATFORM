@@ -36,6 +36,9 @@ Konfiqurasiya, məxfi açarlar və təhlükəsiz startup müqaviləsi:
 API versiyalanması, cursor, limit və xəta cavabı müqaviləsi:
 `docs/architecture/PHASE_2_API_CONTRACT.md`
 
+Audit ixracı və qəbul sübutu paketi müqaviləsi:
+`docs/architecture/PHASE_2_AUDIT_EVIDENCE_EXPORT_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

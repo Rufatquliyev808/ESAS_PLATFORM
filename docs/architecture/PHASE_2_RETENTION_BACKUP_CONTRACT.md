@@ -9,6 +9,9 @@ tamamlanmadan icraya icazə vermir.
 Konfiqurasiya, açar və startup sərhədləri:
 `docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
 
+Audit və qəbul sübutu paketinin formatı və saxlanması:
+`docs/architecture/PHASE_2_AUDIT_EVIDENCE_EXPORT_CONTRACT.md`
+
 ## Əsas prinsiplər
 
 1. Xam bazar məlumatı əsas aktivdir və standart olaraq qorunur.

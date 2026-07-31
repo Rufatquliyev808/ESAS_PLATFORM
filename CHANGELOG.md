@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 audit və qəbul sübutu ixrac müqaviləsi: sanitizasiya edilmiş ZIP/JSONL
+  paket, manifest, checksum, rəqəmsal imza, offline verifier, chain-of-custody
+  və acceptance `pass`, `fail`, `inconclusive` qaydaları.
 - Phase 2 API müqaviləsi: `/api/v2` versiyalanması, asinxron replay və keyfiyyət
   işi, imzalanmış snapshot cursor-u, sorğu və rate limitləri, idempotency,
   optimistic locking və standart xəta envelope-u.

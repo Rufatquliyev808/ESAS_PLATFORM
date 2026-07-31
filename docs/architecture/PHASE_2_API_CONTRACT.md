@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: **DESIGN READY — NOT IMPLEMENTED**
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Audit ixracı və qəbul sübutu paketinin detallı qaydaları:
+`docs/architecture/PHASE_2_AUDIT_EVIDENCE_EXPORT_CONTRACT.md`
+
 ## Məqsəd və sərhəd
 
 Bu müqavilə Phase 2 replay, məlumat keyfiyyəti, audit və əməliyyat
