@@ -14,6 +14,10 @@ Status: IN PROGRESS
   migration, qorunan API və frontend ölçüləri müəyyən edilib.
 - Yük və migration sınaqlarının canlı `database/ESAS_PLATFORM.sqlite` üzərində
   aparılması qadağandır; onlar yalnız sintetik müvəqqəti bazada işləyəcək.
+- Phase 2 giriş və icazə müqaviləsi hazırlanıb: müşahidəçi, operator, auditor və
+  administrator rolları, ownership, yüksək riskli əməliyyatların yenidən
+  autentifikasiyası və append-only təhlükəsizlik auditi müəyyən edilib.
+- Heç bir rol xam tick və audit sətrini dəyişə, siqnal və ya order yarada bilməz.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

@@ -140,6 +140,7 @@ CREATE TABLE replay_session_audit
     audit_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id       TEXT NOT NULL,
     actor             TEXT NOT NULL,
+    actor_role        TEXT NOT NULL,
     action            TEXT NOT NULL,
     previous_state    TEXT,
     next_state        TEXT NOT NULL,
@@ -170,6 +171,9 @@ BEGIN
     SELECT RAISE(ABORT, 'replay audit is append-only');
 END;
 ```
+
+`actor_role` əməliyyat anında backend-in etibarlı mənbədən müəyyən etdiyi rolun
+dəyişməz surətidir; frontend-dən qəbul edilmir.
 
 Audit məxfi açar, bearer nişanı, parol, xam SQL, lokal yol və traceback saxlamır.
 

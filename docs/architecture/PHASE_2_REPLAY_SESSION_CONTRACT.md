@@ -20,6 +20,7 @@ Replay sessiyası:
 
 - `docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
 - `docs/architecture/PHASE_2_DATA_QUALITY_CONTRACT.md`
+- `docs/architecture/PHASE_2_ACCESS_CONTROL_CONTRACT.md`
 
 ## Dəyişməz sessiya girişi
 
@@ -220,8 +221,10 @@ məhdudlaşdırılır.
 ## İcazə və təhlükəsizlik
 
 - Bütün replay endpoint-ləri etibarlı monitorinq sessiyası tələb edir.
-- İlkin tək-istifadəçi mərhələsində sessiyalar autentifikasiya olunmuş istifadəçiyə
-  görünür; gələcək çox-istifadəçi mərhələsi ownership qaydasını sərtləşdirməlidir.
+- Rollar, permission-lar və ownership
+  `docs/architecture/PHASE_2_ACCESS_CONTROL_CONTRACT.md` müqaviləsinə əsaslanır.
+- Operator yalnız öz sessiyasını idarə edir; administratorun başqa istifadəçinin
+  sessiyasına müdaxiləsi məcburi səbəb və audit tələb edir.
 - Sessiya identifikatoru ardıcıl rəqəm kimi təxmin edilə bilməz.
 - Mövcud olmayan və istifadəçiyə aid olmayan sessiya eyni `404` cavabını verir.
 - İdarəetmə əmri gözlənilməyən vəziyyətdədirsə `409` qaytarılır.

@@ -21,6 +21,9 @@ Verilənlər bazası sxemi və təhlükəsiz migration müqaviləsi:
 Performans, yaddaş və yük sınağı müqaviləsi:
 `docs/architecture/PHASE_2_PERFORMANCE_TEST_CONTRACT.md`
 
+Giriş, rol, permission və təhlükəsizlik auditi müqaviləsi:
+`docs/architecture/PHASE_2_ACCESS_CONTROL_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

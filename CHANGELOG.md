@@ -27,6 +27,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 giriş və icazə müqaviləsi: müşahidəçi, operator, auditor və
+  administrator rolları, permission matrisi, replay ownership-i, yüksək riskli
+  əməliyyatlarda təzə autentifikasiya, təhlükəsiz bootstrap və append-only audit
+  qaydaları. Heç bir rol xam tick, audit, siqnal və order səlahiyyəti almır.
 - Phase 2 performans və yaddaş sınağı müqaviləsi: yalnız sintetik müvəqqəti
   bazada işləyən ölçü pillələri, replay, keyfiyyət analizi, paralel SQLite
   yazma/oxuma, migration, qorunan API və frontend üçün ölçülə bilən qəbul
