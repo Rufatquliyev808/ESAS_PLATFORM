@@ -47,6 +47,10 @@ Status: IN PROGRESS
   volatilite, spread, tick sürəti, MT5 tick-volume, sessiya təqvimi, neytral bazar
   rejimi, uncertainty, məlumat keyfiyyəti qapısı, API və frontend təqdimatı
   müəyyən edilib.
+- Phase 4 pattern və texniki analiz müqaviləsi hazırlanıb: deterministik bar,
+  yalnız bağlanmış barlardan causal indikator, dəyişməz pattern namizədi, label və
+  horizon ayrılığı, realist backtest, xərc/risk göstəriciləri və SHADOW hazırlığı
+  qapıları müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

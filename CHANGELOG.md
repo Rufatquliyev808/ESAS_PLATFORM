@@ -10,6 +10,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 4 üçün deterministik bar, causal texniki feature, pattern namizədi, label,
+  realist backtest, xərc/risk nəticələri və SHADOW hazırlığı müqaviləsi.
 - Phase 3 üçün volatilite, spread, tick sürəti, MT5 tick-volume, sessiya müqayisəsi,
   neytral bazar rejimi, uncertainty, keyfiyyət qapısı və nəticə API-si müqaviləsi.
 - Phase 3 statistik, texniki analiz və gələcək AI tədqiqatları üçün əvvəlcədən

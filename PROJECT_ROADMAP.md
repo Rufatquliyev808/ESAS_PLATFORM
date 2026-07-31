@@ -127,6 +127,10 @@ Volatilite, spread, tick sürəti, sessiya və bazar rejimi nəticə müqaviləs
 
 Status: PLANNED
 
+Deterministik bar, causal indikator, pattern namizədi, realist backtest və SHADOW
+hazırlığı müqaviləsi:
+`docs/architecture/PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`
+
 - [ ] Pattern namizədlərinin yaradılması
 - [ ] Texniki analiz modulları
 - [ ] Backtesting
