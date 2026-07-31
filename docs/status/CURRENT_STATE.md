@@ -24,6 +24,9 @@ Status: IN PROGRESS
   müəyyən edilib.
 - Məlumat keyfiyyəti tapıntısı avtomatik platforma nasazlığı sayılmır;
   xəbərdarlığın təsdiqi sayğacı silmir və problemi həll olunmuş göstərmir.
+- Phase 2 saxlama və ehtiyat nüsxə müqaviləsi hazırlanıb: xam tick və auditin
+  müddətsiz qorunması, backup manifesti, bərpa sınağı, disk hədləri və təhlükəsiz
+  təmizləmə qaydaları müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

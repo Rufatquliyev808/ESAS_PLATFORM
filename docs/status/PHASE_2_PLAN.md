@@ -27,6 +27,9 @@ Giriş, rol, permission və təhlükəsizlik auditi müqaviləsi:
 Müşahidə, xəta kateqoriyası və xəbərdarlıq müqaviləsi:
 `docs/architecture/PHASE_2_OBSERVABILITY_CONTRACT.md`
 
+Saxlama, ehtiyat nüsxə, bərpa və təhlükəsiz təmizləmə müqaviləsi:
+`docs/architecture/PHASE_2_RETENTION_BACKUP_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

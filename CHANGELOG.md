@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 saxlama və ehtiyat nüsxə müqaviləsi: xam məlumat və auditin qorunması,
+  backup manifesti, bərpa sınağı, RPO/RTO hədəfləri, disk təzyiqi və iki mərhələli
+  təhlükəsiz təmizləmə qaydaları.
 - Phase 2 müşahidə və xəbərdarlıq müqaviləsi: platforma sağlamlığı, replay
   vəziyyəti və məlumat keyfiyyətini ayıran status modeli, aşağı kardinal
   metric-lər, təhlükəsiz strukturlaşdırılmış log, correlation ID, versiyalanmış

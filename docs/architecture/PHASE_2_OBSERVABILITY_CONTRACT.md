@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: DESIGN READY — NOT IMPLEMENTED
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Metric, log, alert və sübutların saxlanma qaydaları:
+`docs/architecture/PHASE_2_RETENTION_BACKUP_CONTRACT.md`
+
 ## Məqsəd
 
 Bu müqavilə replay, məlumat keyfiyyəti, worker, SQLite, API və təhlükəsizlik

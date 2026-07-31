@@ -3,6 +3,9 @@
 Status: DESIGN READY — NOT IMPLEMENTED  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Saxlama, backup yoxlaması və bərpa qaydaları:
+`docs/architecture/PHASE_2_RETENTION_BACKUP_CONTRACT.md`
+
 ## Məqsəd və sərhəd
 
 Bu sənəd Phase 2 replay sessiyası, checkpoint, idempotency, məlumat keyfiyyəti və
