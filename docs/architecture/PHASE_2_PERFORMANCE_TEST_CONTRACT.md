@@ -1,6 +1,6 @@
 # ESAS Platform — Phase 2 performans və yaddaş sınağı müqaviləsi
 
-Status: DESIGN READY — NOT IMPLEMENTED  
+Status: DESIGN READY — NOT IMPLEMENTED
 Başlama şərti: Phase 1 qəbul qapılarının tamamlanması
 
 ## Məqsəd
@@ -229,4 +229,3 @@ məlumatını daşımır.
 - Heç bir test canlı bazada aparılmayıb.
 - Qəbul sübutu commit SHA və müqavilə versiyası ilə saxlanıb.
 - Aşkarlanmış regressiya aradan qaldırılmadan release qapısı bağlanmır.
-
