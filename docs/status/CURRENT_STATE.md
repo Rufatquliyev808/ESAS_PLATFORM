@@ -18,6 +18,12 @@ Status: IN PROGRESS
   administrator rolları, ownership, yüksək riskli əməliyyatların yenidən
   autentifikasiyası və append-only təhlükəsizlik auditi müəyyən edilib.
 - Heç bir rol xam tick və audit sətrini dəyişə, siqnal və ya order yarada bilməz.
+- Phase 2 müşahidə və xəbərdarlıq müqaviləsi hazırlanıb: platforma sağlamlığı,
+  replay vəziyyəti və məlumat keyfiyyəti ayrılıb; metric, təhlükəsiz log,
+  correlation ID, xəta kateqoriyaları, heartbeat, alert və fail-closed qaydaları
+  müəyyən edilib.
+- Məlumat keyfiyyəti tapıntısı avtomatik platforma nasazlığı sayılmır;
+  xəbərdarlığın təsdiqi sayğacı silmir və problemi həll olunmuş göstərmir.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

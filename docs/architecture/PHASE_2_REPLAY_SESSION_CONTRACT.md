@@ -21,6 +21,7 @@ Replay sessiyası:
 - `docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
 - `docs/architecture/PHASE_2_DATA_QUALITY_CONTRACT.md`
 - `docs/architecture/PHASE_2_ACCESS_CONTROL_CONTRACT.md`
+- `docs/architecture/PHASE_2_OBSERVABILITY_CONTRACT.md`
 
 ## Dəyişməz sessiya girişi
 

@@ -27,6 +27,7 @@ Frontend:
 - `docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
 - `docs/architecture/PHASE_2_REPLAY_SESSION_CONTRACT.md`
 - `docs/architecture/PHASE_2_DATA_QUALITY_CONTRACT.md`
+- `docs/architecture/PHASE_2_OBSERVABILITY_CONTRACT.md`
 
 ## Naviqasiya
 

@@ -27,6 +27,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 müşahidə və xəbərdarlıq müqaviləsi: platforma sağlamlığı, replay
+  vəziyyəti və məlumat keyfiyyətini ayıran status modeli, aşağı kardinal
+  metric-lər, təhlükəsiz strukturlaşdırılmış log, correlation ID, versiyalanmış
+  xəta kateqoriyaları, worker heartbeat, alert həyat dövrü və fail-closed
+  bütövlük qaydaları.
 - Phase 2 giriş və icazə müqaviləsi: müşahidəçi, operator, auditor və
   administrator rolları, permission matrisi, replay ownership-i, yüksək riskli
   əməliyyatlarda təzə autentifikasiya, təhlükəsiz bootstrap və append-only audit
