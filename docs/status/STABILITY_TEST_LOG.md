@@ -80,3 +80,26 @@ Müddət: `12 saat 37 dəqiqə` (`12.62 saat`)
 - Frontend render testi: `1 passed`
 
 Nəticə: 8–12 saatlıq qəbul qapısı 12.62 saatlıq fasiləsiz işlə keçildi.
+
+## 24 saatlıq sınaq — 2026-07-31/08-01
+
+Status: RUNNING
+
+Başlanğıc: `2026-07-31 07:04:13 +04:00`
+
+| Göstərici | Başlanğıc dəyəri |
+|---|---:|
+| Backend health | `ok` |
+| Ümumi operational status | `ok` |
+| Tick axını | `active` |
+| Ümumi tick | `421193` |
+| Disk növbəsi | `0 / 1000` |
+| Rədd edilmiş event | `7343` |
+| Məlumat itkisi təsdiqi | `true` |
+| SQLite quick check | `ok` |
+| Audit sətri | `1` |
+
+Ən erkən tamamlanma: `2026-08-01 07:04:13 +04:00`.
+
+Sınaq tamamlandıqda son göstəricilər, fərq və yekun test nəticələri bu fayla
+əlavə ediləcək.
