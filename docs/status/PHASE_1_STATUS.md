@@ -49,7 +49,7 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 - [x] 1 saatlıq fasiləsiz canlı sabitlik sınağı
 - [x] 8–12 saatlıq fasiləsiz canlı sabitlik sınağı
 - [ ] 24 saatlıq fasiləsiz canlı sabitlik sınağı
-- [ ] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
+- [x] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
 - [ ] Məlumat itkisi üzrə yekun hesabat
 - [ ] Phase 1 release qeydləri
 - [ ] Əsas status və konstitusiya sənədlərindəki köhnə kodlaşdırma problemlərinin aradan qaldırılması
@@ -58,8 +58,8 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 
 - Canlı sınaqda bir dəfə backend bazaya yaza bilmədiyi üçün növbə dolub və `7343`
   event rədd edilib. Hadisə auditdə qorunur və təsdiqlənib.
-- MQL5 növbə mexanizmi real sınaqlardan keçib, lakin ayrıca avtomatlaşdırılmış
-  unit-test infrastrukturu hələ yoxdur.
+- MQL5 disk növbəsi və retry qəbul testi `44 / 44` assertion ilə, `0` uğursuzluq
+  və `0 errors, 0 warnings` kompilyasiya nəticəsi ilə keçib.
 - GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
   deprecation xəbərdarlığı verir. Hazırkı testlər keçir.
 - Frontend hazırda lokal istifadə üçündür; uzaqdan təhlükəsiz giriş üçün ayrıca

@@ -6,31 +6,27 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu
-kimi qeyd etmək.
+MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış qəbul testini
+hazırlamaq və nəticəni qəbul sübutu kimi qeyd etmək.
 
-## Başlanğıc göstəriciləri
+## Yoxlanacaq davranışlar
 
-Sınağın başlanğıcında aşağıdakılar qeyd edilməlidir:
-
-- backend `/health` vəziyyəti;
-- operational ümumi status;
-- ümumi tick sayı;
-- disk növbəsinin sayı və tutumu;
-- rədd edilmiş event sayı;
-- məlumat itkisi təsdiqinin vəziyyəti;
-- SQLite `quick_check` nəticəsi.
+- FIFO sırası qorunmalıdır.
+- Növbə faylı və checkpoint restart simulyasiyasından sonra bərpa olunmalıdır.
+- Yalnız `Peek` edilmiş ilk event təsdiqlənib silinməlidir.
+- Tutum həddi keçildikdə event qəbul edilməməli və rejection metriyi artmalıdır.
+- Rejection metriyi yenidən initialize edildikdən sonra qorunmalıdır.
+- Korlanmış növbə faylı aşkar edilməlidir.
 
 ## Tamamlanma meyarları
 
-- Tick sayı artmalıdır.
-- Tick axını `active` qalmalıdır.
-- Disk növbəsi sınağın sonunda `0 / 1000` olmalıdır.
-- Rədd edilmiş event sayı `7343`-dən yuxarı qalxmamalıdır.
-- Audit təsdiqi qorunmalıdır.
-- Backend `/health=ok` və SQLite `quick_check=ok` olmalıdır.
-- Backend və frontend testləri keçməlidir.
+- MQL5 test mənbəyi `0 errors, 0 warnings` ilə kompilyasiya edilməlidir.
+- Test real queue fayllarına toxunmamaq üçün unikal test açarı istifadə etməlidir.
+- Bütün avtomatik assertion-lar keçməlidir.
+- Test yaratdığı müvəqqəti queue, checkpoint və metrics fayllarını təmizləməlidir.
 
 ## Sonrakı addım
 
-24 saatlıq sınaq keçərsə yekun məlumat itkisi hesabatı hazırlanacaq.
+Avtomatlaşdırılmış queue testi keçərsə Azərbaycan dilindəki köhnə sənədlərin
+UTF-8 kodlaşdırması düzəldiləcək. Rəsmi 24 saatlıq canlı sınaq bazar açıldıqdan
+sonra yenidən başladılacaq.

@@ -70,7 +70,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] Disk əsaslı davamlı event növbəsi
 - [x] Backend monitorinq göstəricilərini genişləndirmək
 - [x] Test verilənlər bazasını əsas bazadan ayırmaq
-- [ ] Bufer və retry testləri
+- [x] Bufer və retry testləri
 - [x] GitHub Actions test axını
 - [x] Phase 1 frontend monitorinq paneli
 - [x] 30 dəqiqəlik sabitlik sınağı
@@ -202,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
+Azərbaycan dilindəki köhnə sənədlərin UTF-8 kodlaşdırmasını düzəltmək.
 
 Ətraflı tapşırıq:
 

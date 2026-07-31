@@ -83,7 +83,7 @@ Nəticə: 8–12 saatlıq qəbul qapısı 12.62 saatlıq fasiləsiz işlə keçi
 
 ## 24 saatlıq sınaq — 2026-07-31/08-01
 
-Status: RUNNING
+Status: INTERRUPTED — PLANNED MARKET CLOSURE
 
 Başlanğıc: `2026-07-31 07:04:13 +04:00`
 
@@ -101,5 +101,7 @@ Başlanğıc: `2026-07-31 07:04:13 +04:00`
 
 Ən erkən tamamlanma: `2026-08-01 07:04:13 +04:00`.
 
-Sınaq tamamlandıqda son göstəricilər, fərq və yekun test nəticələri bu fayla
-əlavə ediləcək.
+Qeyd: Sınaq cümə günü başladığı və bazar axşam bağlandığı üçün 24 saatlıq canlı
+tick qəbul meyarını ölçə bilməz. Bu, platforma nasazlığı deyil və uğursuz sınaq
+sayılmır. Rəsmi 24 saatlıq sınaq bazar yenidən açıldıqdan sonra təkrar
+başladılacaq.

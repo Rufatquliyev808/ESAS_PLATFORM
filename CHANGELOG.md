@@ -21,6 +21,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- MT5 disk növbəsi və retry semantikası üçün real MQL5 fayl API-si ilə işləyən
+  avtomatlaşdırılmış qəbul testi; nəticə `44 / 44`, uğursuzluq `0`.
 - 12.62 saatlıq canlı sabitlik sınağında `210168` yeni tick qəbul edildi; disk
   növbəsi `0 / 1000` qaldı, yeni rədd edilmiş event yaranmadı və bütün yekun
   backend/frontend yoxlamaları keçdi.

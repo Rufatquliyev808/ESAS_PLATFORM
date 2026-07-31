@@ -151,16 +151,13 @@ MT5 Tick
 ## Məlum problemlər
 
 1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
-2. Queue sayğacları üçün ayrıca avtomatlaşdırılmış MQL5 unit test infrastrukturu
-   yoxdur.
-3. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
+2. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
    qədər `waiting` olur.
-4. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
-5. MT5 buferi üçün avtomatlaşdırılmış unit test yoxdur.
-6. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
+3. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
+4. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
    şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
-7. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
-8. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
+5. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
+6. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
    deprecation xəbərdarlığı verir.
 
 ## Son tamamlanan texniki dəyişiklik
@@ -194,7 +191,21 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
+Azərbaycan dilindəki köhnə sənədlərin UTF-8 kodlaşdırmasını düzəltmək.
+
+## Avtomatlaşdırılmış MT5 queue və retry qəbul testi
+
+2026-07-31 tarixində `ESAS_PersistentQueue_Test` real MT5 terminalında işləndi.
+
+- MQL5 kompilyasiyası: `0 errors, 0 warnings`.
+- Avtomatik assertion nəticəsi: `44 / 44`, uğursuzluq `0`.
+- FIFO sırası və yalnız ilk eventin acknowledgement ilə silinməsi yoxlanıldı.
+- Pending event və rejection metriyinin restart simulyasiyasından sonra bərpası
+  yoxlanıldı.
+- Uğursuz göndəriş simulyasiyasında event növbədə saxlanıldı.
+- Retry batch limitindən sonra qalan event restart simulyasiyasında bərpa edildi.
+- Queue-full, serialization rejection və korlanmış jurnal aşkarlanması yoxlanıldı.
+- Test unikal açarlar istifadə etdi və yaratdığı müvəqqəti faylları təmizlədi.
 
 ## Queue health monitorinqinin son canlı sınağı
 

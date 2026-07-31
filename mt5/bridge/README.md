@@ -72,3 +72,22 @@ second database row.
 Queue capacity, pending count, persistent rejected-event count, and the latest
 queue error are reported to `POST /status/bridge`. They are exposed by
 `GET /status/operational` under `bridge_delivery`.
+
+## Queue Acceptance Test
+
+`tests/ESAS_PersistentQueue_Test.mq5` disk queue və retry semantikasını real
+MQL5 fayl API-si ilə avtomatik yoxlayır. Test real Bridge növbələrindən ayrı,
+unikal test açarları istifadə edir və yaratdığı queue, checkpoint və metrics
+fayllarını tamamlandıqda silir.
+
+Yoxlanılan davranışlar:
+
+- FIFO sırası;
+- restartdan sonra pending event və rejection metrics bərpası;
+- uğursuz delivery zamanı eventin acknowledge edilməməsi;
+- retry batch limitindən sonra qalan eventin qorunması;
+- queue-full və serialization rejection sayğacları;
+- korlanmış queue jurnalının aşkarlanması.
+
+2026-07-31 qəbul nəticəsi: `44 assertions`, `0 failures`,
+`0 errors, 0 warnings`.
