@@ -35,6 +35,10 @@ arxa plana keçdikdə lazımsız backend sorğuları dayandırılır; səhifəy�
 və internet bağlantısı bərpa olunanda vəziyyət dərhal yenidən yoxlanılır. Başlıq
 hissəsində əl ilə `Yenilə` düyməsi də mövcuddur.
 
+Bir neçə MT5 Bridge qoşulduqda panel onların növbə və rədd edilən event
+göstəricilərini ümumi şəkildə hesablayır. `Bridge və simvol seçimi` filtri ilə
+ayrıca Bridge-in versiyasına, növbəsinə və audit vəziyyətinə baxmaq mümkündür.
+
 ## Giriş qoruması
 
 Lokal `.env` faylında aşağıdakı dəyişənlər təyin edilməlidir:

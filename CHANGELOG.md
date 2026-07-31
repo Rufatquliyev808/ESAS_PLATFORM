@@ -28,6 +28,7 @@ Format Semantic Versioning prinsipinə əsaslanır:
 ### Added
 
 - Monitorinq panelində əl ilə yeniləmə düyməsi və yenilənmə vəziyyəti.
+- Çoxsaylı MT5 Bridge üçün ümumi göstəricilər və ayrıca simvol/Bridge filtri.
 - Phase 1 uzunmüddətli sınaqlarında başlanğıc və son göstəriciləri təhlükəsiz
   JSON sübutu kimi saxlayan və qəbul meyarlarını avtomatik müqayisə edən alət.
 - Backend `0.2.0`, MT5 Bridge `1.5.0` və frontend `0.1.0` üçün qəbul sübutlarını,
@@ -101,6 +102,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
   işləyir; səhifəyə qayıdanda və bağlantı bərpa olunanda dərhal davam edir.
 - Frontend tarix və say formatlayıcılarını hər renderdə yenidən yaratmır və
   tamamlanmamış sorğuları səhifədən çıxarkən təhlükəsiz dayandırır.
+- Əsas monitorinq kartları ilk Bridge-lə məhdudlaşmır; növbə və rejection
+  göstəricilərini bütün görünən Bridge-lər üzrə hesablayır.
 
 ### Planned
 

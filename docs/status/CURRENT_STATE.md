@@ -160,6 +160,8 @@ MT5 Tick
 - Brauzer səhifəsi arxa planda olduqda avtomatik sorğular dayandırılır; səhifə
   yenidən görünəndə və bağlantı bərpa olunanda məlumat dərhal təzələnir.
 - Başlıq hissəsində sorğunun vəziyyətini göstərən əl ilə yeniləmə idarəsi var.
+- Bir neçə Bridge olduqda növbə və rejection göstəriciləri ümumiləşdirilir;
+  simvol/Bridge filtri ayrıca mənbənin vəziyyətini göstərir.
 - Lokal lint, production build və server-render testi keçir.
 
 ## Məlum problemlər
@@ -173,10 +175,10 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
-Frontend yenilənmə axını optimallaşdırılıb. Panel görünməyən brauzer səhifəsində
-backend sorğusu göndərmir, səhifəyə qayıdanda və internet bağlantısı bərpa
-olunanda dərhal təzələnir. Əl ilə yeniləmə idarəsi və sorğunun davam etdiyini
-göstərən vəziyyət əlavə edilib; yarımçıq sorğular səhifədən çıxarkən dayandırılır.
+Frontend çoxsaylı Bridge və simvol üçün optimallaşdırılıb. Əsas kartlar bütün
+Bridge-lərin növbə və rejection göstəricilərini düzgün ümumiləşdirir, seçim
+filtri isə ayrıca Bridge-in versiyasını, növbəsini və audit vəziyyətini göstərir.
+Məlumat itkisi təsdiqi yalnız konkret Bridge seçildikdə aparılır.
 
 ## Phase 1-in tamamlanması üçün qalan əsas işlər
 

@@ -112,9 +112,17 @@ function relativeDate(value: string | null | undefined) {
 
 function currentQueueStatusFor(bridge: Bridge | undefined) {
   if (!bridge) return "waiting";
-  if (bridge.queue_count === 0) return "healthy";
-  if (bridge.queue_count >= bridge.queue_capacity) return "full";
+  return queueStatusForValues(bridge.queue_count, bridge.queue_capacity);
+}
+
+function queueStatusForValues(count: number, capacity: number) {
+  if (count === 0) return "healthy";
+  if (capacity > 0 && count >= capacity) return "full";
   return "backlogged";
+}
+
+function bridgeKey(bridge: Bridge) {
+  return `${bridge.source}::${bridge.symbol}`;
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -181,6 +189,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
   const [acknowledgementError, setAcknowledgementError] = useState<string | null>(null);
+  const [selectedBridgeKey, setSelectedBridgeKey] = useState("all");
   const running = useRef(false);
   const activeController = useRef<AbortController | null>(null);
 
@@ -362,14 +371,41 @@ export default function Home() {
     );
   }
 
-  const primaryBridge = data?.operational.bridge_delivery.bridges[0];
-  const queuePercent = primaryBridge?.queue_capacity
-    ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
+  const bridges = data?.operational.bridge_delivery.bridges ?? [];
+  const selectedBridge =
+    selectedBridgeKey === "all"
+      ? undefined
+      : bridges.find((bridge) => bridgeKey(bridge) === selectedBridgeKey);
+  const visibleBridges = selectedBridge ? [selectedBridge] : bridges;
+  const queueCount = visibleBridges.reduce(
+    (total, bridge) => total + bridge.queue_count,
+    0,
+  );
+  const queueCapacity = visibleBridges.reduce(
+    (total, bridge) => total + bridge.queue_capacity,
+    0,
+  );
+  const rejectedEvents = visibleBridges.reduce(
+    (total, bridge) => total + bridge.rejected_events,
+    0,
+  );
+  const unacknowledgedBridges = visibleBridges.filter(
+    (bridge) => bridge.rejected_events > 0 && !bridge.loss_acknowledged,
+  );
+  const queuePercent = queueCapacity
+    ? (queueCount / queueCapacity) * 100
     : 0;
-  const currentQueueStatus = currentQueueStatusFor(primaryBridge);
-  const lossStatus = (primaryBridge?.rejected_events ?? 0) === 0
+  const currentQueueStatus = bridges.length
+    ? queueStatusForValues(queueCount, queueCapacity)
+    : "waiting";
+  const bridgeStatus = selectedBridge
+    ? unacknowledgedBridges.length > 0
+      ? "degraded"
+      : currentQueueStatusFor(selectedBridge)
+    : data?.operational.bridge_delivery.status ?? "waiting";
+  const lossStatus = rejectedEvents === 0
     ? "healthy"
-    : primaryBridge?.loss_acknowledged
+    : unacknowledgedBridges.length === 0
       ? "acknowledged"
       : "degraded";
   const overallStatus = error
@@ -431,6 +467,28 @@ export default function Home() {
         </section>
       ) : (
         <>
+          <section className="bridge-filter" aria-labelledby="bridge-filter-title">
+            <div>
+              <p className="eyebrow">Görünüş filtri</p>
+              <h2 id="bridge-filter-title">Bridge və simvol seçimi</h2>
+            </div>
+            <label htmlFor="bridge-select">Göstərilən məlumat</label>
+            <select
+              id="bridge-select"
+              value={selectedBridge ? selectedBridgeKey : "all"}
+              onChange={(event) => setSelectedBridgeKey(event.target.value)}
+            >
+              <option value="all">
+                Bütün Bridge-lər ({formatNumber(bridges.length)})
+              </option>
+              {bridges.map((bridge) => (
+                <option key={bridgeKey(bridge)} value={bridgeKey(bridge)}>
+                  {bridge.symbol} · {bridge.source}
+                </option>
+              ))}
+            </select>
+          </section>
+
           <section className="status-grid" aria-label="Əsas vəziyyət göstəriciləri">
             <StatusCard
               eyebrow="Bazar məlumatı"
@@ -442,11 +500,19 @@ export default function Home() {
             <StatusCard
               eyebrow="Çatdırılma"
               title="MT5 Bridge"
-              status={data.operational.bridge_delivery.status}
-              value={primaryBridge ? primaryBridge.symbol : "Hesabat gözlənilir"}
+              status={bridgeStatus}
+              value={
+                selectedBridge
+                  ? selectedBridge.symbol
+                  : bridges.length
+                    ? `${formatNumber(bridges.length)} Bridge`
+                    : "Hesabat gözlənilir"
+              }
               detail={
-                primaryBridge
-                  ? `Versiya ${primaryBridge.module_version} · ${relativeDate(primaryBridge.reported_at)}`
+                selectedBridge
+                  ? `Versiya ${selectedBridge.module_version} · ${relativeDate(selectedBridge.reported_at)}`
+                  : bridges.length
+                    ? `${formatNumber(bridges.length)} aktiv hesabat birlikdə göstərilir`
                   : "MT5 Bridge hesabatı hələ alınmayıb"
               }
             />
@@ -455,16 +521,20 @@ export default function Home() {
               title="Disk növbəsi"
               status={currentQueueStatus}
               value={
-                primaryBridge
-                  ? `${formatNumber(primaryBridge.queue_count)} / ${formatNumber(primaryBridge.queue_capacity)} event`
+                bridges.length
+                  ? `${formatNumber(queueCount)} / ${formatNumber(queueCapacity)} event`
                   : "Hesabat gözlənilir"
               }
               detail={
-                primaryBridge
-                  ? primaryBridge.queue_count === 0
+                bridges.length
+                  ? queueCount === 0
                     ? errorLabels.none
-                    : errorLabels[primaryBridge.last_queue_error] ??
-                      primaryBridge.last_queue_error
+                    : selectedBridge
+                      ? errorLabels[selectedBridge.last_queue_error] ??
+                        selectedBridge.last_queue_error
+                      : `${formatNumber(
+                          visibleBridges.filter((bridge) => bridge.queue_count > 0).length,
+                        )} Bridge-də gözləyən event var`
                   : "Növbə məlumatı yoxdur"
               }
             >
@@ -484,27 +554,34 @@ export default function Home() {
               eyebrow="Təhlükəsizlik"
               title="Məlumat itkisi"
               status={lossStatus}
-              value={`${formatNumber(primaryBridge?.rejected_events)} rədd edilən event`}
+              value={`${formatNumber(rejectedEvents)} rədd edilən event`}
               detail={
-                (primaryBridge?.rejected_events ?? 0) === 0
+                rejectedEvents === 0
                   ? "Aşkarlanmış məlumat itkisi yoxdur"
-                  : primaryBridge?.loss_acknowledged
-                    ? `${formatTime(primaryBridge.loss_acknowledged_at)} tarixində ${primaryBridge.loss_acknowledged_by} tərəfindən təsdiqlənib`
-                    : "Diqqət: rədd edilən event aşkarlanıb"
+                  : unacknowledgedBridges.length === 0
+                    ? selectedBridge
+                      ? `${formatTime(selectedBridge.loss_acknowledged_at)} tarixində ${selectedBridge.loss_acknowledged_by} tərəfindən təsdiqlənib`
+                      : "Bütün qeydə alınmış məlumat itkisi hadisələri təsdiqlənib"
+                    : `${formatNumber(unacknowledgedBridges.length)} Bridge üzrə təsdiqlənməmiş hadisə var`
               }
             >
-              {primaryBridge &&
-                primaryBridge.rejected_events > 0 &&
-                !primaryBridge.loss_acknowledged && (
+              {selectedBridge &&
+                selectedBridge.rejected_events > 0 &&
+                !selectedBridge.loss_acknowledged && (
                   <button
                     className="acknowledge-button"
                     type="button"
                     disabled={acknowledgementBusy}
-                    onClick={() => void handleLossAcknowledgement(primaryBridge)}
+                    onClick={() => void handleLossAcknowledgement(selectedBridge)}
                   >
                     {acknowledgementBusy ? "Yadda saxlanılır..." : "Hadisəni təsdiqlə"}
                   </button>
                 )}
+              {!selectedBridge && unacknowledgedBridges.length > 0 && (
+                <p className="selection-hint">
+                  Təsdiq üçün yuxarıdan problemli Bridge-i seçin.
+                </p>
+              )}
               {acknowledgementError && (
                 <p className="acknowledgement-error" role="alert">
                   {acknowledgementError}
