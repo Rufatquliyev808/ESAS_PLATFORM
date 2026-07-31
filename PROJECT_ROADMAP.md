@@ -112,6 +112,9 @@ Tədqiqat qeydiyyatı, məlumat sızması, zaman bölgüsü, holdout, walk-forwa
 multiple-testing, xərclər və qəbul qapıları:
 `docs/architecture/PHASE_3_RESEARCH_VALIDATION_CONTRACT.md`
 
+Volatilite, spread, tick sürəti, sessiya və bazar rejimi nəticə müqaviləsi:
+`docs/architecture/PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`
+
 - [ ] Volatilite analizi
 - [ ] Spread davranışı
 - [ ] Həcm analizi

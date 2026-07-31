@@ -43,6 +43,10 @@ Status: IN PROGRESS
   qeydiyyat, zaman əsaslı train/validation/holdout bölgüsü, leakage və overfitting
   qoruması, walk-forward, baseline, multiple-testing, real icra xərcləri və
   SHADOW hazırlığına keçid qapıları müəyyən edilib.
+- Phase 3 statistik analiz nəticə müqaviləsi hazırlanıb: mid-price və log-return,
+  volatilite, spread, tick sürəti, MT5 tick-volume, sessiya təqvimi, neytral bazar
+  rejimi, uncertainty, məlumat keyfiyyəti qapısı, API və frontend təqdimatı
+  müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 
