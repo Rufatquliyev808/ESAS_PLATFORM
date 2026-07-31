@@ -15,6 +15,9 @@ Replay sessiyası və həyat dövrü müqaviləsi:
 Frontend replay və məlumat keyfiyyəti ekran müqaviləsi:
 `docs/frontend/PHASE2_REPLAY_QUALITY_DASHBOARD.md`
 
+Verilənlər bazası sxemi və təhlükəsiz migration müqaviləsi:
+`docs/architecture/PHASE_2_DATABASE_SCHEMA.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

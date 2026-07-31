@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 SQLite sxem və migration müqaviləsi: replay sessiyası, checkpoint,
+  append-only audit, idempotency, keyfiyyət hesabatı cədvəlləri, replay indeksi,
+  online backup, bütövlük sübutu və təhlükəsiz bərpa meyarları.
 - Phase 2 frontend funksional müqaviləsi: replay sessiyası yaratma və idarəetmə,
   addım rejimi, progress, məlumat keyfiyyəti hesabatı, təhlükəsiz xəta davranışı,
   responsive və əlçatanlıq qəbul meyarları.

@@ -175,6 +175,14 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Phase 2 SQLite sxemi və təhlükəsiz migration müqaviləsi hazırlandı. Replay
+  sessiyası, checkpoint, append-only audit, idempotency, keyfiyyət hesabatı və
+  tapıntı cədvəlləri müəyyən edildi.
+- Real migration-dan əvvəl online backup, `quick_check`, sətir sayları və xam
+  event fingerprint-i; migration-dan sonra isə eyni sübutların müqayisəsi və
+  ayrıca bərpa sınağı tələb olunur.
+- Real bazada heç bir migration icra edilməyib və xam `tick_events` cədvəlinə
+  toxunulmayıb.
 - Phase 2 frontend replay və məlumat keyfiyyəti ekranlarının funksional
   müqaviləsi hazırlandı. Qorunan naviqasiya, sessiya yaratma, addım və maksimum
   sürət idarəsi, progress, keyfiyyət tapıntıları və təhlükəsiz xəta davranışı
