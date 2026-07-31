@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 10 üçün default-bağlı məhdud icra, execution lease və dəyişməz manifest,
+  manual təsdiq, atomik pre-trade risk qapısı, idempotent order həyatı, broker
+  reconciliation, kill switch, audit və rollback müqaviləsi.
 - Phase 9 üçün real bazar axınında order-siz SHADOW müşahidəsi, causal nəzəri fill,
   xərc və nəzəri portfolio hesabı, champion/challenger müqayisəsi, restart təhlükəsizliyi,
   statistik qəbul və məhdud icra baxışına keçid müqaviləsi.

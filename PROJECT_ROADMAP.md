@@ -214,6 +214,11 @@ məhdud icra baxışına keçid müqaviləsi:
 
 Status: PLANNED
 
+Default-bağlı execution lease, dəyişməz run manifesti, manual təsdiq, atomik pre-trade
+risk qapısı, idempotent order həyatı, broker reconciliation, kill switch, audit və
+rollback müqaviləsi:
+`docs/architecture/PHASE_10_LIMITED_EXECUTION_CONTRACT.md`
+
 - [ ] MT5 order interfeysi
 - [ ] Məhdud risklə ilkin əməliyyatlar
 - [ ] Fövqəladə dayandırma mexanizmi

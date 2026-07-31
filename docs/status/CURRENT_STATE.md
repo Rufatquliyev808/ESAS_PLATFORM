@@ -7,6 +7,10 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 10 üçün default-bağlı məhdud icra, dəyişməz run manifesti, təzə manual təsdiq,
+  atomik pre-trade risk qapısı, idempotent order həyatı, broker reconciliation, davamlı
+  kill switch və audit müqaviləsi hazırlandı; bu yalnız gələcək dizayndır, MT5 order
+  interfeysi və real ticarət aktivləşdirilməyib.
 - Phase 9 üçün real bazar axınında order-siz SHADOW müşahidəsi, səbəbiyyətə uyğun
   nəzəri fill və portfolio, champion/challenger müqayisəsi, restart/kəsinti qoruması,
   statistik qəbul qapısı və yalnız məhdud icra baxışına tövsiyə müqaviləsi hazırlandı;
