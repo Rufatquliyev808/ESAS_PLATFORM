@@ -78,7 +78,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
 - [x] Məlumat itkisi hesabatı
-- [ ] Phase 1 release qeydləri
+- [x] Phase 1 release qeydləri
 
 ## Phase 1 qəbul meyarları
 
@@ -202,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Phase 1 release qeydlərini hazırlamaq.
+Bazar açıldıqda 24 saatlıq fasiləsiz canlı sabitlik sınağını yenidən başlatmaq.
 
 Ətraflı tapşırıq:
 

@@ -21,6 +21,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Backend `0.2.0`, MT5 Bridge `1.5.0` və frontend `0.1.0` üçün qəbul sübutlarını,
+  geriyə uyğunluğu və Stable keçid şərtlərini göstərən Phase 1 RC1 release qeydləri.
 - `7343` tarixi rədd edilmiş event üzrə kök səbəb, audit izi, düzəlişlər və qalıq
   riskləri ayıran yekun Phase 1 məlumat itkisi hesabatı.
 - Bütün izlənən layihə mətnləri üçün UTF-8 auditi və kodlaşdırmanı sabitləşdirən

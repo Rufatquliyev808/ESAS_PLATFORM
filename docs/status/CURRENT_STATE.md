@@ -190,7 +190,16 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Phase 1 release qeydlərini hazırlamaq.
+Bazar açıldıqda 24 saatlıq fasiləsiz canlı sabitlik sınağını yenidən başlatmaq.
+
+## Phase 1 RC1 release qeydləri
+
+`docs/releases/PHASE_1_RC1.md` faylında backend `0.2.0`, MT5 Bridge `1.5.0`,
+frontend `0.1.0`, qəbul sübutları, geriyə uyğunluq, məlum məlumat itkisi və qalıq
+risklər sənədləşdirildi.
+
+Buraxılış `Release Candidate` statusundadır. 24 saatlıq canlı qəbul sınağı
+keçmədən `Stable` elan edilməyəcək.
 
 ## Məlumat itkisi üzrə yekun hesabat
 
