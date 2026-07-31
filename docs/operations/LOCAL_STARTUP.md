@@ -37,6 +37,10 @@ Hər uğurlu giriş serverdə ayrıca aktiv sessiya kimi qeydə alınır. Paneld
 `Çıxış` seçildikdə sessiya backend-də dərhal ləğv edilir. Backend restartı da
 bütün aktiv sessiyaları təhlükəsizlik məqsədilə bağlayır.
 
+Backend və frontend monitorinq cavabları brauzer keşinə yazılmır. Cavablarda
+clickjacking, MIME sniffing, referrer sızması və kamera, mikrofon, məkan
+icazələrini məhdudlaşdıran təhlükəsizlik başlıqları mövcuddur.
+
 ## Phase 1 qəbul göstəricilərinin avtomatik saxlanması
 
 24 saatlıq sınağın əvvəlində cari göstəriciləri məxfi məlumatları göstərmədən

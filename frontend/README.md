@@ -57,3 +57,8 @@ sıfırlayır.
 `Çıxış` düyməsi sessiyanı yalnız brauzerdən silmir, backend-də də dərhal
 etibarsızlaşdırır. Backend yenidən başladıqda bütün aktiv monitorinq sessiyaları
 bağlanır və yenidən giriş tələb olunur.
+
+Panel və backend cavabları həssas monitorinq məlumatlarının keşlənməməsi üçün
+`no-store` qaydası ilə göndərilir. Clickjacking, MIME sniffing, referrer sızması
+və lazımsız kamera, mikrofon, məkan icazələri təhlükəsizlik başlıqları ilə
+məhdudlaşdırılır.

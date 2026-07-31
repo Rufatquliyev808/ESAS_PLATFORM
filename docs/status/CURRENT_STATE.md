@@ -175,6 +175,12 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Backend və frontend cavablarına keşdən qorunma, clickjacking, MIME sniffing,
+  referrer və lazımsız brauzer icazələrinə qarşı təhlükəsizlik başlıqları
+  əlavə edildi.
+- Təhlükəsizlik başlıqları backend API və frontend server-render testlərində
+  avtomatik təsdiqlənir; backend `15 / 15`, frontend lint, production build və
+  server-render testləri uğurla keçdi.
 - Monitorinq panelinin `Çıxış` əməliyyatı server tərəfli sessiya ləğvi ilə
   tamamlandı; çıxışdan sonra köhnə bearer nişanı yenidən istifadə edilə bilmir.
 - Hər giriş üçün unikal sessiya identifikatoru yaradılır və backend restartı

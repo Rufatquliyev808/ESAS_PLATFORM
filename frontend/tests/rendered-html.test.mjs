@@ -15,6 +15,15 @@ async function render() {
 test("server renders the ESAS monitoring dashboard shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(response.headers.get("pragma"), "no-cache");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(
+    response.headers.get("permissions-policy"),
+    "camera=(), microphone=(), geolocation=()",
+  );
   const html = await response.text();
   assert.match(html, /<title>ESAS Platform — Monitorinq<\/title>/i);
   assert.match(html, /Monitorinq panelinə giriş/);

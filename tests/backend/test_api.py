@@ -30,6 +30,14 @@ def test_health_endpoint() -> None:
         "service": "esas-platform-backend",
         "version": "0.2.0",
     }
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["pragma"] == "no-cache"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["permissions-policy"] == (
+        "camera=(), microphone=(), geolocation=()"
+    )
 
 def test_tick_endpoint_rejects_invalid_event() -> None:
     with TestClient(app) as client:
