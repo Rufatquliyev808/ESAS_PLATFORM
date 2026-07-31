@@ -39,6 +39,10 @@ Status: IN PROGRESS
 - Phase 2 audit və qəbul sübutu ixrac müqaviləsi hazırlanıb: sanitizasiya edilmiş
   ZIP/JSONL paket, manifest, checksum, rəqəmsal imza, offline verifier,
   chain-of-custody və acceptance `pass/fail/inconclusive` qaydaları müəyyən edilib.
+- Phase 3 tədqiqat və statistik validasiya müqaviləsi hazırlanıb: əvvəlcədən
+  qeydiyyat, zaman əsaslı train/validation/holdout bölgüsü, leakage və overfitting
+  qoruması, walk-forward, baseline, multiple-testing, real icra xərcləri və
+  SHADOW hazırlığına keçid qapıları müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

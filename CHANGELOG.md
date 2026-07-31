@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 3 statistik, texniki analiz və gələcək AI tədqiqatları üçün əvvəlcədən
+  qeydiyyat, leakage/overfitting qoruması, toxunulmaz holdout, walk-forward,
+  multiple-testing, real icra xərcləri və SHADOW qəbul qapıları müqaviləsi.
 - Phase 2 analiz işləri üçün Phase 1 tick növbəsindən ayrılmış davamlı job növbəsi,
   worker claim/lease/fencing, ədalətli scheduler, retry, qəza sonrası bərpa və
   təhlükəsiz shutdown müqaviləsi əlavə edildi.

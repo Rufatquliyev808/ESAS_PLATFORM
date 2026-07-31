@@ -108,6 +108,10 @@ Status: PLANNED
 
 Status: PLANNED
 
+Tədqiqat qeydiyyatı, məlumat sızması, zaman bölgüsü, holdout, walk-forward,
+multiple-testing, xərclər və qəbul qapıları:
+`docs/architecture/PHASE_3_RESEARCH_VALIDATION_CONTRACT.md`
+
 - [ ] Volatilite analizi
 - [ ] Spread davranışı
 - [ ] Həcm analizi
