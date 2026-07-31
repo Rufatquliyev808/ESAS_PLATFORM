@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 6 üçün xəbər mənbə/lisenziya reyestri, point-in-time xəbər və revision,
+  iqtisadi buraxılış, fundamental vintage, entity mapping, sentiment sərhədi,
+  causal təsir ölçümü və təhlükəsiz event əlaqəsi müqaviləsi.
 - Phase 5 üçün deterministik qrafik renderi, Visual AI dataset lineage-i, leakage
   qoruması, zaman əsaslı bölgü, model reproduksiyası, statistik baseline müqayisəsi
   və təhlükəsiz SHADOW hazırlığı müqaviləsi.

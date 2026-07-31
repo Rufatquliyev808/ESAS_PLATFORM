@@ -156,6 +156,10 @@ bölgü, model audit və statistik baseline müqayisəsi müqaviləsi:
 
 Status: PLANNED
 
+Mənbə və lisenziya reyestri, point-in-time xəbər/revision, iqtisadi buraxılış,
+fundamental vintage, entity mapping və causal təsir ölçümü müqaviləsi:
+`docs/architecture/PHASE_6_NEWS_FUNDAMENTAL_ANALYSIS_CONTRACT.md`
+
 - [ ] Xəbər məlumatlarının toplanması
 - [ ] Hadisələrin zaman uyğunlaşdırılması
 - [ ] Xəbər təsirinin ölçülməsi

@@ -7,6 +7,10 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 6 üçün xəbər mənbə/lisenziya reyestri, dərc və qəbul vaxtının ayrılması,
+  revision və fundamental vintage qorunması, entity mapping, point-in-time analiz,
+  təsir ölçümü və standart event sərhədi müqaviləsi hazırlandı; tətbiq Phase 1–5
+  qəbulundan asılıdır.
 - Phase 5 üçün deterministik qrafik renderi, Visual AI dataset lineage-i, zaman və
   label sızması qoruması, model reproduksiyası, statistik baseline müqayisəsi və
   SHADOW sərhədi müqaviləsi hazırlandı; tətbiq Phase 1–4 qəbulundan asılıdır.
