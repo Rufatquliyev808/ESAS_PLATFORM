@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 konfiqurasiya və təhlükəsiz startup müqaviləsi: mühit profilləri,
+  məxfi açar sərhədi, startup preflight, funksiya açarları, rotasiya, rollback
+  və uzaq giriş tələbləri.
 - Phase 2 saxlama və ehtiyat nüsxə müqaviləsi: xam məlumat və auditin qorunması,
   backup manifesti, bərpa sınağı, RPO/RTO hədəfləri, disk təzyiqi və iki mərhələli
   təhlükəsiz təmizləmə qaydaları.

@@ -6,6 +6,9 @@ Bu müqavilə Phase 2 məlumatlarının saxlanması, ehtiyatlanması, yoxlanmas�
 bərpası və təhlükəsiz təmizlənməsi qaydalarını müəyyən edir. Phase 1 qəbulu
 tamamlanmadan icraya icazə vermir.
 
+Konfiqurasiya, açar və startup sərhədləri:
+`docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
+
 ## Əsas prinsiplər
 
 1. Xam bazar məlumatı əsas aktivdir və standart olaraq qorunur.

@@ -27,6 +27,9 @@ Status: IN PROGRESS
 - Phase 2 saxlama və ehtiyat nüsxə müqaviləsi hazırlanıb: xam tick və auditin
   müddətsiz qorunması, backup manifesti, bərpa sınağı, disk hədləri və təhlükəsiz
   təmizləmə qaydaları müəyyən edilib.
+- Phase 2 konfiqurasiya və təhlükəsiz startup müqaviləsi hazırlanıb: mühit
+  profilləri, secret sərhədi, startup preflight, funksiya açarları, rotasiya,
+  rollback və uzaq giriş tələbləri müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 

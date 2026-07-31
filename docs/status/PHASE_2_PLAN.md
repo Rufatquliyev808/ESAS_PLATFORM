@@ -30,6 +30,9 @@ Müşahidə, xəta kateqoriyası və xəbərdarlıq müqaviləsi:
 Saxlama, ehtiyat nüsxə, bərpa və təhlükəsiz təmizləmə müqaviləsi:
 `docs/architecture/PHASE_2_RETENTION_BACKUP_CONTRACT.md`
 
+Konfiqurasiya, məxfi açarlar və təhlükəsiz startup müqaviləsi:
+`docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

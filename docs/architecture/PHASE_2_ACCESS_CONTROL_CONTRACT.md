@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: DESIGN READY — NOT IMPLEMENTED
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Konfiqurasiya, secret və təhlükəsiz bootstrap qaydaları:
+`docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
+
 ## Məqsəd
 
 Bu müqavilə Phase 2 replay, məlumat keyfiyyəti və audit funksiyalarına kimin baxa
