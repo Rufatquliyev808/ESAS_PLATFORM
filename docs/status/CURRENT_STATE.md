@@ -1,6 +1,6 @@
 # ESAS Platform — Cari Vəziyyət
 
-Son yenilənmə: 2026-07-30
+Son yenilənmə: 2026-07-31
 Cari mərhələ: Phase 1  
 Status: IN PROGRESS  
 Əsas budaq: `main`
@@ -163,42 +163,27 @@ MT5 Tick
 
 1. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
    qədər `waiting` olur.
-2. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
+2. Çox yüksək tick sürəti üçün retry batch ölçüsünün yekun uzunmüddətli yoxlaması
+   24 saatlıq canlı qəbul sınağında aparılacaq.
 3. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
    şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
-4. Backend test transportu Starlette-in rəsmi `httpx2` keçidinə
-   uyğunlaşdırılıb və köhnəlmə xəbərdarlığı aradan qaldırılıb.
-5. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
-   deprecation xəbərdarlığı verir.
 
 ## Son tamamlanan texniki dəyişiklik
 
-MT5 Bridge backend kəsilməsi zamanı event-ləri disk əsaslı davamlı FIFO
-növbəsində saxlayır. EA və ya MT5 yenidən başladıqda növbəni bərpa edir. Backend
-bərpa olduqda gözləyən event-ləri konfiqurasiya olunan batch ölçüsü ilə avtomatik
-göndərir.
-
-Real MT5 sınağında:
-
-- backend dayandırıldıqda event-lər buferdə saxlanılıb;
-- uğursuz retry zamanı event-lər silinməyib;
-- backend bərpa olduqda 3 event göndərilib;
-- sınağın sonunda `buffer_count=0` olub;
-- MT5 kompilyasiyası `0 errors, 0 warnings` nəticəsi verib;
-- backend testləri `5 passed` nəticəsi verib.
+Phase 1 uzunmüddətli qəbul sınağı üçün başlanğıc və son göstəriciləri lokal JSON
+sübutunda saxlayan avtomatik müqayisə aləti əlavə edilib. Alət minimum sınaq
+müddətini, tick artımını, növbəni, rejection sayını, məlumat itkisi təsdiqini,
+SQLite `quick_check` nəticəsini və audit izini yoxlayır. Backend testləri
+`12 passed` nəticəsi ilə xəbərdarlıqsız, frontend və GitHub Actions yoxlamaları
+isə uğurla keçib.
 
 ## Phase 1-in tamamlanması üçün qalan əsas işlər
 
-1. Layihə yaddaşı və yol xəritəsini tamamlamaq.
-2. Sənədlərin kodlaşdırmasını düzəltmək.
-3. MT5 buferinin retry mexanizmini yaratmaq.
-4. Disk əsaslı davamlı event növbəsini layihələndirmək.
-5. Backend monitorinq göstəricilərini genişləndirmək.
-6. Avtomatlaşdırılmış testləri artırmaq.
-7. İlk frontend monitorinq panelini yaratmaq.
-8. Uzunmüddətli sabitlik testi aparmaq.
-9. Phase 1 nəticələrini sənədləşdirmək.
-10. Phase 1-i rəsmi şəkildə bağlamaq.
+1. Bazar açıq olduqda 24 saatlıq fasiləsiz canlı sabitlik sınağını keçirmək.
+2. Sınağın sonunda avtomatik qəbul müqayisəsini və bütün əsas testləri yenidən
+   keçirmək.
+3. Nəticələri sənədləşdirib Phase 1-i yekun review üçün hazırlamaq.
+4. Bütün qəbul qapıları keçərsə Phase 1-i rəsmi bağlamaq.
 
 ## Növbəti əsas texniki prioritet
 

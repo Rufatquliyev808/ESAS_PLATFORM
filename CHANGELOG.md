@@ -10,6 +10,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Fixed
 
+- Cari vəziyyət və dəyişiklik tarixçəsində artıq tamamlanmış Phase 1 işlərinin
+  qalan və planlaşdırılmış işlər kimi göstərilməsi aradan qaldırıldı.
 - GitHub Actions checkout, Python və Node qurulum addımları Node 24 əsaslı rəsmi
   major versiyalara yeniləndi.
 - Starlette `TestClient` üçün rəsmi `httpx2` keçidi tamamlandı və backend
@@ -94,13 +96,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Planned
 
-- `PROJECT_ROADMAP.md` yol xəritəsinin hazırlanması.
-- Azərbaycan dilindəki sənədlərin kodlaşdırmasının düzəldilməsi.
-- MT5 buferindəki event-lərin avtomatik təkrar göndərilməsi.
-- Disk əsaslı davamlı event növbəsi.
-- Backend monitorinq göstəricilərinin genişləndirilməsi.
-- Phase 1 frontend monitorinq paneli.
-- Uzunmüddətli sabitlik sınağı.
+- Bazar açıq olduqda 24 saatlıq fasiləsiz canlı qəbul sınağı.
+- Uğurlu sınaqdan sonra Phase 1-in yekun review və Stable qərarı.
 
 ## Backend 0.1.0 — 2026-07-27
 

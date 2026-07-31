@@ -1,6 +1,6 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-07-30
+Son yenilənmə: 2026-07-31
 Cari mərhələ: Phase 1  
 Ümumi status: IN PROGRESS
 

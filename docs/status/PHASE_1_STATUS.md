@@ -2,7 +2,7 @@
 
 Versiya: 1.1
 Status: IN PROGRESS
-Son yenilənmə: 2026-07-30
+Son yenilənmə: 2026-07-31
 
 ## Məqsəd
 
@@ -66,6 +66,6 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 
 ## Qərar
 
-Phase 1 funksional olaraq işləyir, lakin uzunmüddətli qəbul və sənəd qapıları
-tamamlanmadığı üçün rəsmi olaraq bağlanmır. Phase 2 kodlaşdırılması bu qapılar
-keçilmədən başlanmamalıdır.
+Phase 1 funksional olaraq işləyir və sənəd qapıları tamamlanıb. Yalnız 24 saatlıq
+fasiləsiz canlı qəbul sınağı qaldığı üçün mərhələ hələ rəsmi bağlanmır. Phase 2
+kodlaşdırılması bu son qapı keçilmədən başlanmamalıdır.
