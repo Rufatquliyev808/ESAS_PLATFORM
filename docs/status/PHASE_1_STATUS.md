@@ -52,7 +52,7 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 - [x] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
 - [ ] Məlumat itkisi üzrə yekun hesabat
 - [ ] Phase 1 release qeydləri
-- [ ] Əsas status və konstitusiya sənədlərindəki köhnə kodlaşdırma problemlərinin aradan qaldırılması
+- [x] Əsas status və konstitusiya sənədlərindəki köhnə kodlaşdırma problemlərinin aradan qaldırılması
 
 ## Cari risklər
 

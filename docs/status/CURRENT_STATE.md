@@ -150,14 +150,13 @@ MT5 Tick
 
 ## Məlum problemlər
 
-1. Azərbaycan hərfləri bəzi köhnə sənədlərdə pozulmuş görünür.
-2. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
+1. Bridge operational vəziyyəti backend restartından sonra ilk status hesabatına
    qədər `waiting` olur.
-3. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
-4. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
+2. Çox yüksək tick sürəti üçün retry batch ölçüsünün uzunmüddətli testi aparılmayıb.
+3. Frontend yalnız lokal backend ilə işləyir; production hostinq üçün backend-in
    şəbəkədən əlçatan HTTPS ünvanı tələb olunur.
-5. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
-6. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
+4. Backend testlərində `httpx` ilə bağlı deprecation xəbərdarlığı mövcuddur.
+5. GitHub Actions istifadə etdiyi bəzi action versiyaları üçün Node.js 20
    deprecation xəbərdarlığı verir.
 
 ## Son tamamlanan texniki dəyişiklik
@@ -191,7 +190,22 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Azərbaycan dilindəki köhnə sənədlərin UTF-8 kodlaşdırmasını düzəltmək.
+Məlumat itkisi üzrə yekun hesabatı hazırlamaq.
+
+## UTF-8 kodlaşdırma auditi
+
+2026-07-31 tarixində Git-də izlənən bütün `64` layihə faylı sərt UTF-8 decoder
+ilə yoxlanıldı.
+
+- Etibarsız UTF-8 faylı: `0`.
+- Mojibake nümunəsi olan mətn faylı: `0`.
+- Lazımsız UTF-8 BOM olan fayl: `0`.
+- Repo üçün UTF-8 və LF qaydasını sabitləşdirən `.editorconfig` əlavə edildi.
+
+Əvvəl Windows PowerShell-də görünən pozulmuş hərflər fayl məlumatının korlanması
+deyil, Windows PowerShell 5-in BOM-suz UTF-8 fayllarını default kodlaşdırma ilə
+oxumasının nəticəsi idi. Belə fayllar `Get-Content -Encoding utf8` ilə düzgün
+göstərilir.
 
 ## Avtomatlaşdırılmış MT5 queue və retry qəbul testi
 

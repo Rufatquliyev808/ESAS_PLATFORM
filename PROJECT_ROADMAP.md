@@ -60,7 +60,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 ## Qalan işlər
 
-- [ ] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
+- [x] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
 - [x] Phase 1 status sənədini düzəltmək
 - [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
 - [x] README sənədini yeniləmək
@@ -202,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Azərbaycan dilindəki köhnə sənədlərin UTF-8 kodlaşdırmasını düzəltmək.
+Məlumat itkisi üzrə yekun hesabatı hazırlamaq.
 
 Ətraflı tapşırıq:
 
