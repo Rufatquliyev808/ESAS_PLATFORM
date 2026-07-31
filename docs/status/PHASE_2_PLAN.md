@@ -33,6 +33,9 @@ Saxlama, ehtiyat nüsxə, bərpa və təhlükəsiz təmizləmə müqaviləsi:
 Konfiqurasiya, məxfi açarlar və təhlükəsiz startup müqaviləsi:
 `docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
 
+API versiyalanması, cursor, limit və xəta cavabı müqaviləsi:
+`docs/architecture/PHASE_2_API_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd
@@ -78,6 +81,8 @@ versiyası ilə audit edilə bilir.
 - Replay yaratmaq və vəziyyətini oxumaq üçün backend endpoint-ləri.
 - Məlumat keyfiyyəti hesabatını oxumaq üçün qorunan endpoint.
 - Böyük məlumat aralığında yaddaş limitini qoruyan səhifələmə və ya streaming.
+- `/api/v2`, imzalanmış snapshot cursor-u, idempotency, rate limit və standart
+  xəta envelope-u tətbiq etmək.
 
 Tamamlanma meyarı: frontend bazaya birbaşa qoşulmadan bütün nəticələri API-dən alır.
 

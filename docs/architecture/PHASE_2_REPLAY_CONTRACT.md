@@ -3,6 +3,9 @@
 Status: DESIGN READY — NOT IMPLEMENTED  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+HTTP API, cursor, limit və xəta cavabı qaydaları:
+`docs/architecture/PHASE_2_API_CONTRACT.md`
+
 ## Məqsəd və sərhəd
 
 Bu müqavilə saxlanmış xam tick məlumatını dəyişdirmədən, təkrarlana bilən ardıcıllıqla

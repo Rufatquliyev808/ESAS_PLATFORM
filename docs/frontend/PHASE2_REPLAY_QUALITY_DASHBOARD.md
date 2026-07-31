@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: DESIGN READY — NOT IMPLEMENTED  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Frontend-in istifadə etdiyi versiyalanmış API və cursor qaydaları:
+`docs/architecture/PHASE_2_API_CONTRACT.md`
+
 ## Məqsəd və sərhəd
 
 Phase 2 frontend-i texniki biliyi olmayan istifadəçiyə aşağıdakı suallara aydın

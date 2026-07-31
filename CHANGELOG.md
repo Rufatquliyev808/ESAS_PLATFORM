@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 API müqaviləsi: `/api/v2` versiyalanması, asinxron replay və keyfiyyət
+  işi, imzalanmış snapshot cursor-u, sorğu və rate limitləri, idempotency,
+  optimistic locking və standart xəta envelope-u.
 - Phase 2 konfiqurasiya və təhlükəsiz startup müqaviləsi: mühit profilləri,
   məxfi açar sərhədi, startup preflight, funksiya açarları, rotasiya, rollback
   və uzaq giriş tələbləri.

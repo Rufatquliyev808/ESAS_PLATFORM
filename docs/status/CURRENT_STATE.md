@@ -30,6 +30,9 @@ Status: IN PROGRESS
 - Phase 2 konfiqurasiya və təhlükəsiz startup müqaviləsi hazırlanıb: mühit
   profilləri, secret sərhədi, startup preflight, funksiya açarları, rotasiya,
   rollback və uzaq giriş tələbləri müəyyən edilib.
+- Phase 2 API müqaviləsi hazırlanıb: `/api/v2` versiyalanması, asinxron işlər,
+  imzalanmış snapshot cursor-u, ölçü və rate limitləri, idempotency, optimistic
+  locking və sabit xəta envelope-u müəyyən edilib.
 - Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
   başladılmayıb.
 
