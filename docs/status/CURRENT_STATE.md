@@ -7,6 +7,9 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 5 üçün deterministik qrafik renderi, Visual AI dataset lineage-i, zaman və
+  label sızması qoruması, model reproduksiyası, statistik baseline müqayisəsi və
+  SHADOW sərhədi müqaviləsi hazırlandı; tətbiq Phase 1–4 qəbulundan asılıdır.
 - Replay oxuması, məlumat keyfiyyəti, sessiya həyat dövrü, frontend ekranları və
   təhlükəsiz database migration müqavilələri hazırlanıb.
 - Performans və yaddaş sınağı müqaviləsi hazırlanıb: kiçik, orta, böyük və stress

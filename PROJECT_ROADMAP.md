@@ -142,6 +142,10 @@ hazırlığı müqaviləsi:
 
 Status: PLANNED
 
+Deterministik qrafik renderi, visual dataset lineage-i, leakage qoruması, zaman əsaslı
+bölgü, model audit və statistik baseline müqayisəsi müqaviləsi:
+`docs/architecture/PHASE_5_VISUAL_AI_CONTRACT.md`
+
 - [ ] Qrafik görüntülərinin standartlaşdırılması
 - [ ] Visual pattern məlumat dəsti
 - [ ] Visual AI eksperimentləri

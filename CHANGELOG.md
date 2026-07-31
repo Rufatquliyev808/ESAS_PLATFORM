@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 5 üçün deterministik qrafik renderi, Visual AI dataset lineage-i, leakage
+  qoruması, zaman əsaslı bölgü, model reproduksiyası, statistik baseline müqayisəsi
+  və təhlükəsiz SHADOW hazırlığı müqaviləsi.
 - Phase 4 üçün deterministik bar, causal texniki feature, pattern namizədi, label,
   realist backtest, xərc/risk nəticələri və SHADOW hazırlığı müqaviləsi.
 - Phase 3 üçün volatilite, spread, tick sürəti, MT5 tick-volume, sessiya müqayisəsi,
