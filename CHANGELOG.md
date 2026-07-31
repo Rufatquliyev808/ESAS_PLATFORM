@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 11 üçün tam feedback lineage-i, selection-bias və label maturity qoruması,
+  performans/drift monitorinqi, təhlükəsiz REVIEW cavabı, immutable model versiyası,
+  yenidən SHADOW promotion qapısı, Knowledge Base governance-i və rollback müqaviləsi.
 - Phase 10 üçün default-bağlı məhdud icra, execution lease və dəyişməz manifest,
   manual təsdiq, atomik pre-trade risk qapısı, idempotent order həyatı, broker
   reconciliation, kill switch, audit və rollback müqaviləsi.

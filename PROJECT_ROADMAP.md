@@ -230,6 +230,11 @@ rollback müqaviləsi:
 
 Status: PLANNED
 
+Tam qərar-nəticə lineage-i, selection-bias qoruması, yetişmiş label, performans/drift
+monitorinqi, təhlükəsiz REVIEW cavabı, dəyişməz model versiyası, yenidən SHADOW qapısı,
+Knowledge Base governance-i və deterministik rollback müqaviləsi:
+`docs/architecture/PHASE_11_FEEDBACK_CONTINUOUS_LEARNING_CONTRACT.md`
+
 - [ ] Əməliyyat nəticələrinin analizə qaytarılması
 - [ ] Model performansının davamlı ölçülməsi
 - [ ] Performansı zəifləyən modulların REVIEW statusuna keçirilməsi

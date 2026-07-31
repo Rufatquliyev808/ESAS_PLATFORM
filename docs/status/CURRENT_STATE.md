@@ -7,6 +7,10 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
+  qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,
+  dəyişməz yeni model versiyası, yenidən SHADOW qapısı, Knowledge Base governance-i və
+  rollback müqaviləsi hazırlandı; canlı model özbaşına dəyişmir və risk artırılmır.
 - Phase 10 üçün default-bağlı məhdud icra, dəyişməz run manifesti, təzə manual təsdiq,
   atomik pre-trade risk qapısı, idempotent order həyatı, broker reconciliation, davamlı
   kill switch və audit müqaviləsi hazırlandı; bu yalnız gələcək dizayndır, MT5 order
