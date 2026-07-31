@@ -7,7 +7,7 @@ import secrets
 import threading
 import time
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,22 @@ _active_sessions_lock = threading.Lock()
 class LoginRequest(BaseModel):
     user_code: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=8, max_length=200)
+
+
+def require_bridge_key(
+    bridge_key: str | None = Header(default=None, alias="X-ESAS-Bridge-Key"),
+) -> None:
+    expected_key = _credential("ESAS_BRIDGE_API_KEY")
+    if len(expected_key) < 32:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Bridge authentication is not configured securely",
+        )
+    if bridge_key is None or not secrets.compare_digest(bridge_key, expected_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid bridge credentials",
+        )
 
 
 def _credential(name: str) -> str:

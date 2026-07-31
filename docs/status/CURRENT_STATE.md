@@ -132,14 +132,14 @@ MT5 Tick
 
 - Texnologiya: FastAPI
 - Verilənlər bazası: SQLite
-- Versiya: `0.2.0`
+- Versiya: `0.3.0`
 - Tick doğrulaması və saxlanması işləyir.
 - Operational monitoring işləyir.
 
 ### MT5 Bridge
 
 - Status: `EXPERIMENTAL`
-- Sənədləşdirilmiş versiya: `1.5.0`
+- Sənədləşdirilmiş versiya: `1.6.0`
 - Canlı tick oxunması işləyir.
 - Event yaradılması işləyir.
 - HTTP göndərişi işləyir.
@@ -175,6 +175,11 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- MT5 tick və status qəbulu minimum 32 simvolluq ayrıca Bridge açarı ilə
+  qorundu; açarsız və səhv açarlı sorğular `401` cavabı alır.
+- Backend versiyası `0.3.0`, MT5 Bridge versiyası `1.6.0` edildi.
+- Backend `16 / 16` test, MQL5 kompilyasiyası `0 errors, 0 warnings` nəticəsi
+  verdi.
 - Backend və frontend cavablarına keşdən qorunma, clickjacking, MIME sniffing,
   referrer və lazımsız brauzer icazələrinə qarşı təhlükəsizlik başlıqları
   əlavə edildi.

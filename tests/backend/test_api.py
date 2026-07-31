@@ -20,6 +20,10 @@ def dashboard_headers(client: TestClient) -> dict[str, str]:
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
+def bridge_headers() -> dict[str, str]:
+    return {"X-ESAS-Bridge-Key": "test-bridge-api-key-at-least-32-chars"}
+
+
 def test_health_endpoint() -> None:
     with TestClient(app) as client:
         response = client.get("/health")
@@ -28,7 +32,7 @@ def test_health_endpoint() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "esas-platform-backend",
-        "version": "0.2.0",
+        "version": "0.3.0",
     }
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["pragma"] == "no-cache"
@@ -43,10 +47,26 @@ def test_tick_endpoint_rejects_invalid_event() -> None:
     with TestClient(app) as client:
         response = client.post(
             "/events/ticks",
+            headers=bridge_headers(),
             json={"event_id": "invalid-event"},
         )
 
     assert response.status_code == 422
+
+
+def test_bridge_ingestion_requires_valid_key() -> None:
+    with TestClient(app) as client:
+        missing_key = client.post("/events/ticks", json={})
+        wrong_key = client.post(
+            "/status/bridge",
+            headers={"X-ESAS-Bridge-Key": "wrong-key"},
+            json={},
+        )
+
+    assert missing_key.status_code == 401
+    assert missing_key.json()["detail"] == "Invalid bridge credentials"
+    assert wrong_key.status_code == 401
+    assert wrong_key.json()["detail"] == "Invalid bridge credentials"
 
 def test_tick_endpoint_stores_event_only_once() -> None:
     event = {
@@ -70,8 +90,16 @@ def test_tick_endpoint_stores_event_only_once() -> None:
     }
 
     with TestClient(app) as client:
-        first_response = client.post("/events/ticks", json=event)
-        second_response = client.post("/events/ticks", json=event)
+        first_response = client.post(
+            "/events/ticks",
+            headers=bridge_headers(),
+            json=event,
+        )
+        second_response = client.post(
+            "/events/ticks",
+            headers=bridge_headers(),
+            json=event,
+        )
 
     assert first_response.status_code == 202
     assert second_response.status_code == 202
@@ -169,7 +197,11 @@ def test_bridge_status_is_exposed_by_operational_endpoint() -> None:
     }
 
     with TestClient(app) as client:
-        post_response = client.post("/status/bridge", json=report)
+        post_response = client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        )
         status_response = client.get(
             "/status/operational",
             headers=dashboard_headers(client),
@@ -211,7 +243,11 @@ def test_bridge_status_rejects_inconsistent_queue_count() -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/status/bridge", json=report)
+        response = client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        )
 
     assert response.status_code == 422
 
@@ -230,7 +266,11 @@ def test_data_loss_acknowledgement_is_audited_and_versioned() -> None:
 
     with TestClient(app) as client:
         headers = dashboard_headers(client)
-        assert client.post("/status/bridge", json=report).status_code == 202
+        assert client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        ).status_code == 202
 
         before = client.get(
             "/status/operational",
@@ -270,7 +310,11 @@ def test_data_loss_acknowledgement_is_audited_and_versioned() -> None:
         assert after_bridge["loss_acknowledged_at"].endswith("Z")
 
         report["rejected_events"] = 8
-        assert client.post("/status/bridge", json=report).status_code == 202
+        assert client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        ).status_code == 202
         increased = client.get(
             "/status/operational",
             headers=headers,

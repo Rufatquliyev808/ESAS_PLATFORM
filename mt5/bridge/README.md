@@ -1,6 +1,6 @@
 # ESAS MT5 Bridge
 
-Version: 1.5.0
+Version: 1.6.0
 
 Status: EXPERIMENTAL
 
@@ -42,6 +42,8 @@ This module does not:
 - `InpSendTicksToBackend` — sends tick events to the backend.
 - `InpBackendTickUrl` — backend tick endpoint.
 - `InpBackendStatusUrl` — backend Bridge status endpoint.
+- `InpBackendBridgeKey` — backend `.env` faylındakı `ESAS_BRIDGE_API_KEY` ilə
+  eyni olan, minimum 32 simvolluq məxfi Bridge açarı.
 - `InpHttpTimeoutMs` — HTTP request timeout.
 - `InpTickBufferCapacity` — maximum number of pending events stored on disk.
 - `InpRetryIntervalSeconds` — interval between queued delivery attempts.
@@ -58,7 +60,11 @@ MT5 must allow WebRequest access to:
 
 ## Current Transport Limitation
 
-Version 1.5.0 uses synchronous HTTP requests.
+Version 1.6.0 uses synchronous HTTP requests.
+
+Tick və status sorğuları `X-ESAS-Bridge-Key` başlığı ilə qorunur. Açar boş,
+32 simvoldan qısa və ya sətirsonu simvolu ehtiva etdikdə Bridge backend
+göndərişi aktiv vəziyyətdə başlamır. Açar loglara yazılmır.
 
 When delivery fails, events are appended to a persistent FIFO journal in the
 MQL5 common file sandbox. The bridge retries queued events in configurable

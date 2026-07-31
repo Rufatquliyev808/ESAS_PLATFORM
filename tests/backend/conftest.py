@@ -13,6 +13,7 @@ def isolated_database(tmp_path: Path) -> Iterator[Path]:
     os.environ["ESAS_USER_CODE"] = "TEST-USER"
     os.environ["ESAS_USER_PASSWORD"] = "test-password-123"
     os.environ["ESAS_SESSION_SECRET"] = "test-session-secret-at-least-32-chars"
+    os.environ["ESAS_BRIDGE_API_KEY"] = "test-bridge-api-key-at-least-32-chars"
     reset_login_attempts()
     reset_active_sessions()
     database_path = tmp_path / "ESAS_PLATFORM_TEST.sqlite"

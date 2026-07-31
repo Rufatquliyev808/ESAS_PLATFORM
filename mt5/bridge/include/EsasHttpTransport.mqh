@@ -4,6 +4,7 @@
 bool EsasHttpPostJson(
    const string url,
    const string json,
+   const string bridge_api_key,
    const int timeout_ms,
    int &http_status,
    string &response_body,
@@ -27,7 +28,8 @@ bool EsasHttpPostJson(
    http_status = WebRequest(
       "POST",
       url,
-      "Content-Type: application/json\r\n",
+      "Content-Type: application/json\r\n" +
+      "X-ESAS-Bridge-Key: " + bridge_api_key + "\r\n",
       timeout_ms,
       request_body,
       response_data,

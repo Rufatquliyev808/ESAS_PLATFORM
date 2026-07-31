@@ -21,8 +21,8 @@ canlı qəbul sınağı keçmədən Phase 1 tamamlanmış və ya stabil elan edi
 
 | Komponent | Versiya | Vəziyyət |
 |---|---|---|
-| Backend API | `0.2.0` | Release Candidate |
-| ESAS MT5 Bridge | `1.5.0` | `EXPERIMENTAL` |
+| Backend API | `0.3.0` | Release Candidate |
+| ESAS MT5 Bridge | `1.6.0` | `EXPERIMENTAL` |
 | Frontend monitorinq paneli | `0.1.0` | Release Candidate |
 | Event Contract | `1.0` | Draft |
 
@@ -37,6 +37,7 @@ canlı qəbul sınağı keçmədən Phase 1 tamamlanmış və ya stabil elan edi
 - runtime SQLite yazma xətası üçün `503` cavabı;
 - istifadəçi kodu və parol ilə qorunan monitorinq sessiyası;
 - məlumat itkisi təsdiqi və dəyişdirilməz audit izi.
+- Bridge məlumat qəbulu üçün məxfi açar yoxlaması.
 
 ### ESAS MT5 Bridge
 
@@ -49,6 +50,7 @@ canlı qəbul sınağı keçmədən Phase 1 tamamlanmış və ya stabil elan edi
 - davamlı rejection metriyi və queue xəta kateqoriyaları;
 - backend-ə periodik queue health hesabatı;
 - avtomatlaşdırılmış queue/retry qəbul testi.
+- tick və status sorğularında məxfi `X-ESAS-Bridge-Key` başlığı.
 
 ### Frontend
 
@@ -74,11 +76,13 @@ canlı qəbul sınağı keçmədən Phase 1 tamamlanmış və ya stabil elan edi
 - MT5 Bridge dəyişiklikləri event payload-ını dəyişmir.
 - Frontend verilənlər bazasına birbaşa qoşulmur və yalnız backend API istifadə edir.
 
-Breaking change: yoxdur.
+Breaking change: tick və Bridge status qəbulu artıq minimum 32 simvolluq
+`ESAS_BRIDGE_API_KEY` tələb edir. Eyni dəyər MT5-də `InpBackendBridgeKey`
+parametrinə daxil edilməlidir.
 
 ## Qəbul sübutları
 
-- Backend regressiya testləri: `12 passed`.
+- Backend regressiya testləri: `16 passed`.
 - Frontend lint: passed.
 - Frontend production build: passed.
 - Frontend render testi: `1 passed`.

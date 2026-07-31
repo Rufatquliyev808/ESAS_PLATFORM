@@ -10,12 +10,22 @@ powershell -ExecutionPolicy Bypass -File .\tools\start-local-platform.ps1
 Skript:
 
 - `.env` və Python virtual mühitinin mövcudluğunu yoxlayır;
+- `.env` daxilində minimum 32 simvolluq `ESAS_BRIDGE_API_KEY` olduğunu yoxlayır;
 - artıq işləyən backend və frontend üçün ikinci proses yaratmır;
 - backend-i lokal `127.0.0.1:8000` ünvanında başladır;
 - verilənlər bazasının yazıla bildiyini `/health` vasitəsilə təsdiqləyir;
 - frontend-i lokal `127.0.0.1:3000` ünvanında başladır;
 - prosesləri gizli pəncərədə saxlayır;
 - lokal proses qeydlərini və logları Git-ə düşməyən `.runtime` qovluğunda saxlayır.
+
+Backend başlamazdan əvvəl `.env` faylında ayrıca məxfi Bridge açarı olmalıdır:
+
+```dotenv
+ESAS_BRIDGE_API_KEY=<minimum-32-simvolluq-məxfi-açar>
+```
+
+Eyni dəyər MT5 Bridge parametrlərində `InpBackendBridgeKey` sahəsinə daxil
+edilməlidir. Açarı Git-ə, ekran görüntüsünə və loglara əlavə etməyin.
 
 Platformanı bu skriptlə başladılmış proseslər üzrə dayandırmaq üçün:
 

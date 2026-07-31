@@ -1,5 +1,5 @@
 #property copyright "ESAS Platform"
-#property version   "1.500"
+#property version   "1.600"
 #property strict
 
 #include "../include/EsasTickEvent.mqh"
@@ -10,6 +10,7 @@ input bool   InpEmitTickEvents       = true;
 input bool   InpSendTicksToBackend   = false;
 input string InpBackendTickUrl       = "http://127.0.0.1:8000/events/ticks";
 input string InpBackendStatusUrl     = "http://127.0.0.1:8000/status/bridge";
+input string InpBackendBridgeKey     = "";
 input int    InpHttpTimeoutMs        = 500;
 input int    InpTickBufferCapacity   = 1000;
 input int    InpRetryIntervalSeconds = 1;
@@ -18,6 +19,18 @@ input int    InpStatusIntervalSeconds = 5;
 
 int OnInit()
 {
+   if(InpSendTicksToBackend &&
+      (StringLen(InpBackendBridgeKey) < 32 ||
+       StringFind(InpBackendBridgeKey, "\r") >= 0 ||
+       StringFind(InpBackendBridgeKey, "\n") >= 0))
+   {
+      Print(
+         "ESAS MT5 Bridge: backend bridge key is missing or invalid",
+         " | minimum_length=32"
+      );
+      return INIT_FAILED;
+   }
+
    const string queue_key =
       "ticks_" + IntegerToString((int)AccountInfoInteger(ACCOUNT_LOGIN)) +
       "_" + _Symbol;
@@ -117,6 +130,7 @@ void EsasReportBridgeStatus()
    const bool sent = EsasHttpPostJson(
       InpBackendStatusUrl,
       status_json,
+      InpBackendBridgeKey,
       InpHttpTimeoutMs,
       http_status,
       response_body,
@@ -160,6 +174,7 @@ void EsasRetryBufferedEvents()
       const bool sent = EsasHttpPostJson(
          InpBackendTickUrl,
          event_json,
+         InpBackendBridgeKey,
          InpHttpTimeoutMs,
          http_status,
          response_body,
@@ -278,6 +293,7 @@ void OnTick()
    const bool sent = EsasHttpPostJson(
       InpBackendTickUrl,
       event_json,
+      InpBackendBridgeKey,
       InpHttpTimeoutMs,
       http_status,
       response_body,

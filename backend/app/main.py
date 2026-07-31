@@ -26,12 +26,13 @@ from backend.app.models.bridge_status import (
 from backend.app.auth import (
     LoginRequest,
     create_session,
+    require_bridge_key,
     require_dashboard_session,
     revoke_dashboard_session,
 )
 
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 
 
 @asynccontextmanager
@@ -92,7 +93,10 @@ def health() -> dict[str, str]:
 
 
 @app.post("/events/ticks", status_code=status.HTTP_202_ACCEPTED)
-def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
+def receive_tick(
+    event: TickReceivedEvent,
+    _: None = Depends(require_bridge_key),
+) -> dict[str, str]:
     try:
         was_inserted = save_tick_event(event)
     except sqlite3.Error as error:
@@ -123,7 +127,10 @@ def logout(_: None = Depends(revoke_dashboard_session)) -> None:
 
 
 @app.post("/status/bridge", status_code=status.HTTP_202_ACCEPTED)
-def receive_bridge_status(report: BridgeStatusReport) -> dict[str, object]:
+def receive_bridge_status(
+    report: BridgeStatusReport,
+    _: None = Depends(require_bridge_key),
+) -> dict[str, object]:
     stored_report = save_bridge_status(report)
 
     return {
