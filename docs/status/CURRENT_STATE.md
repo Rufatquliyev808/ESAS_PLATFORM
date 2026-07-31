@@ -175,6 +175,12 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Phase 2 frontend replay və məlumat keyfiyyəti ekranlarının funksional
+  müqaviləsi hazırlandı. Qorunan naviqasiya, sessiya yaratma, addım və maksimum
+  sürət idarəsi, progress, keyfiyyət tapıntıları və təhlükəsiz xəta davranışı
+  müəyyən edildi.
+- Frontend-in analiz qaydalarını özü hesablamaması, bazar fasiləsini məlumat
+  itkisi kimi təqdim etməməsi, order və al/sat idarəsi göstərməməsi qorundu.
 - Phase 2 replay sessiyasının həyat dövrü hazırlandı. `step` və `max_speed`
   rejimləri, dəyişməz giriş parametrləri, dataset fingerprint, checkpoint,
   backend restartından sonra `interrupted` vəziyyəti və idempotent idarəetmə

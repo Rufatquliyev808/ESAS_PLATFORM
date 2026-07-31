@@ -12,6 +12,9 @@ Məlumat keyfiyyəti müqaviləsi:
 Replay sessiyası və həyat dövrü müqaviləsi:
 `docs/architecture/PHASE_2_REPLAY_SESSION_CONTRACT.md`
 
+Frontend replay və məlumat keyfiyyəti ekran müqaviləsi:
+`docs/frontend/PHASE2_REPLAY_QUALITY_DASHBOARD.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

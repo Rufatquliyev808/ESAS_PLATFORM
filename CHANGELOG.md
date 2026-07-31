@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 frontend funksional müqaviləsi: replay sessiyası yaratma və idarəetmə,
+  addım rejimi, progress, məlumat keyfiyyəti hesabatı, təhlükəsiz xəta davranışı,
+  responsive və əlçatanlıq qəbul meyarları.
 - Phase 2 replay sessiyasının həyat dövrü müqaviləsi: dəyişməz giriş,
   dataset fingerprint, `step` və `max_speed` rejimləri, checkpoint, restart
   davranışı, idempotent idarəetmə əmrləri və append-only audit tələbləri.
