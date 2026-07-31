@@ -199,6 +199,11 @@ nəzəri mövqe ölçüsü, limit/halt və SHADOW eligibility müqaviləsi:
 
 Status: PLANNED
 
+Real bazar axınında order-siz qərar izlənməsi, səbəbiyyətə uyğun nəzəri fill,
+champion/challenger müqayisəsi, restart təhlükəsizliyi, statistik qəbul qapısı və
+məhdud icra baxışına keçid müqaviləsi:
+`docs/architecture/PHASE_9_SHADOW_VALIDATION_CONTRACT.md`
+
 - [ ] Real bazarda qərarların hesablanması
 - [ ] Real əməliyyat açmadan nəticələrin saxlanması
 - [ ] Alternativ modulların müqayisəsi

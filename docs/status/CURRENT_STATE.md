@@ -7,6 +7,10 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 9 üçün real bazar axınında order-siz SHADOW müşahidəsi, səbəbiyyətə uyğun
+  nəzəri fill və portfolio, champion/challenger müqayisəsi, restart/kəsinti qoruması,
+  statistik qəbul qapısı və yalnız məhdud icra baxışına tövsiyə müqaviləsi hazırlandı;
+  tətbiq Phase 1–8 qəbulundan asılıdır və brokerə heç bir əmr göndərmir.
 - Phase 8 üçün deterministik analiz birləşdirməsi, izahlı qərar proposal-u, abstain,
   müstəqil risk qapısı, nəzəri mövqe ölçüsü, portfolio limitləri, halt, manual
   müdaxilə və SHADOW eligibility müqaviləsi hazırlandı; tətbiq Phase 1–7 qəbulundan

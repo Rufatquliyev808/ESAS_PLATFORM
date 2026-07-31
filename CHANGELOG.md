@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 9 üçün real bazar axınında order-siz SHADOW müşahidəsi, causal nəzəri fill,
+  xərc və nəzəri portfolio hesabı, champion/challenger müqayisəsi, restart təhlükəsizliyi,
+  statistik qəbul və məhdud icra baxışına keçid müqaviləsi.
 - Phase 8 üçün deterministik analiz birləşdirməsi, izahlı qərar proposal-u,
   abstain, müstəqil risk qapısı, nəzəri mövqe ölçüsü, portfolio limitləri, halt,
   manual müdaxilə və order-siz SHADOW eligibility müqaviləsi.
