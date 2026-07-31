@@ -180,6 +180,9 @@ MT5 Tick
 - Backend versiyası `0.3.0`, MT5 Bridge versiyası `1.6.0` edildi.
 - Backend `16 / 16` test, MQL5 kompilyasiyası `0 errors, 0 warnings` nəticəsi
   verdi.
+- Backend `0.3.0` və MT5 Bridge `1.6.0` eyni məxfi açarla canlı qoşuldu.
+  Qısa qəbul müqayisəsində 3 saniyədə `15` yeni tick qəbul edildi, axın
+  `active`, növbə `0 / 1000` və ümumi status `ok` oldu.
 - Backend və frontend cavablarına keşdən qorunma, clickjacking, MIME sniffing,
   referrer və lazımsız brauzer icazələrinə qarşı təhlükəsizlik başlıqları
   əlavə edildi.

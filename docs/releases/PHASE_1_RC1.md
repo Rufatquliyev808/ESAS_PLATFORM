@@ -87,6 +87,7 @@ parametrinə daxil edilməlidir.
 - Frontend production build: passed.
 - Frontend render testi: `1 passed`.
 - MQL5 Bridge kompilyasiyası: `0 errors, 0 warnings`.
+- Bridge açarı ilə canlı qəbul: `1.6.0`, tick axını `active`, növbə `0 / 1000`.
 - MQL5 queue/retry qəbul testi: `44 / 44`, uğursuzluq `0`.
 - 30 dəqiqəlik canlı sınaq: `31844` yeni tick, yeni rejection `0`.
 - 1 saatlıq canlı sınaq: `36506` yeni tick, yeni rejection `0`.

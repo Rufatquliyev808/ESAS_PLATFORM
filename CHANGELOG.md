@@ -29,6 +29,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 - Tick və Bridge status qəbulunu qoruyan minimum 32 simvolluq
   `X-ESAS-Bridge-Key` autentifikasiyası və MT5 `InpBackendBridgeKey` parametri.
+- Backend `0.3.0` və MT5 Bridge `1.6.0` məxfi açarla canlı qoşuldu; qısa qəbul
+  yoxlamasında tick sayı artdı, axın `active`, növbə `0 / 1000` qaldı.
 - Backend və frontend cavabları üçün `no-store`, clickjacking, MIME sniffing,
   referrer və lazımsız brauzer icazələrinə qarşı təhlükəsizlik başlıqları.
 - Server tərəfindən izlənən unikal sessiya identifikatoru və çıxış zamanı həmin
