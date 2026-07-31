@@ -175,6 +175,12 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Monitorinq panelinin `Çıxış` əməliyyatı server tərəfli sessiya ləğvi ilə
+  tamamlandı; çıxışdan sonra köhnə bearer nişanı yenidən istifadə edilə bilmir.
+- Hər giriş üçün unikal sessiya identifikatoru yaradılır və backend restartı
+  bütün əvvəlki monitorinq sessiyalarını etibarsız edir.
+- Sessiya ləğvi testi daxil olmaqla backend `15 / 15`, frontend lint,
+  production build və server-render testləri uğurla keçdi.
 - Monitorinq girişinə eyni şəbəkə ünvanı üzrə uğursuz cəhd məhdudiyyəti əlavə
   edildi: 5 ardıcıl səhvdən sonra 15 dəqiqəlik müvəqqəti bloklama tətbiq olunur.
 - Uğurlu giriş əvvəlki səhv cəhd sayğacını sıfırlayır və bloklanmış giriş

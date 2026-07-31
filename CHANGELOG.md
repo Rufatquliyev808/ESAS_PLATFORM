@@ -27,6 +27,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Server tərəfindən izlənən unikal sessiya identifikatoru və çıxış zamanı həmin
+  sessiyanı dərhal etibarsızlaşdıran qorunan `POST /auth/logout` endpoint-i.
 - Eyni şəbəkə ünvanından ardıcıl 5 uğursuz giriş cəhdindən sonra 15 dəqiqəlik
   müvəqqəti bloklama və uğurlu girişdə səhv sayğacının sıfırlanması.
 - Monitorinq panelində əl ilə yeniləmə düyməsi və yenilənmə vəziyyəti.

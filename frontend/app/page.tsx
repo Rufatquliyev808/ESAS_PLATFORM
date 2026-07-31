@@ -294,6 +294,21 @@ export default function Home() {
     }
   }
 
+  async function handleLogout() {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Lokal sessiya istənilən halda dərhal bağlanır.
+      }
+    }
+    setToken(null);
+    setData(null);
+  }
+
   async function handleLossAcknowledgement(bridge: Bridge) {
     const confirmed = window.confirm(
       `${formatNumber(bridge.rejected_events)} rədd edilmiş eventi gördüyünüzü təsdiqləyirsiniz? Sayğac silinməyəcək və audit tarixçəsində saxlanacaq.`,
@@ -449,10 +464,7 @@ export default function Home() {
           <button
             className="logout-button"
             type="button"
-            onClick={() => {
-              setToken(null);
-              setData(null);
-            }}
+            onClick={() => void handleLogout()}
           >
             Çıxış
           </button>

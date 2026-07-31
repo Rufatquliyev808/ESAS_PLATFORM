@@ -374,3 +374,18 @@ def test_successful_login_clears_previous_failures() -> None:
 
     assert successful_response.status_code == 200
     assert next_failure.status_code == 401
+
+
+def test_logout_revokes_dashboard_session() -> None:
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        assert client.get("/status/operational", headers=headers).status_code == 200
+
+        logout_response = client.post("/auth/logout", headers=headers)
+        rejected_after_logout = client.get(
+            "/status/operational",
+            headers=headers,
+        )
+
+    assert logout_response.status_code == 204
+    assert rejected_after_logout.status_code == 401

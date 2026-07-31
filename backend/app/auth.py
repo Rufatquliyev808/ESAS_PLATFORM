@@ -18,6 +18,8 @@ LOGIN_LOCK_SECONDS = 15 * 60
 _bearer = HTTPBearer(auto_error=False)
 _login_attempts: dict[str, tuple[int, float]] = {}
 _login_attempts_lock = threading.Lock()
+_active_sessions: dict[str, int] = {}
+_active_sessions_lock = threading.Lock()
 
 
 class LoginRequest(BaseModel):
@@ -91,6 +93,36 @@ def reset_login_attempts() -> None:
         _login_attempts.clear()
 
 
+def reset_active_sessions() -> None:
+    with _active_sessions_lock:
+        _active_sessions.clear()
+
+
+def _store_session(session_id: str, expires_at: int) -> None:
+    now = int(time.time())
+    with _active_sessions_lock:
+        expired = [
+            stored_id
+            for stored_id, stored_expiry in _active_sessions.items()
+            if stored_expiry < now
+        ]
+        for stored_id in expired:
+            _active_sessions.pop(stored_id, None)
+        _active_sessions[session_id] = expires_at
+
+
+def _session_is_active(session_id: str, expires_at: int) -> bool:
+    now = int(time.time())
+    with _active_sessions_lock:
+        stored_expiry = _active_sessions.get(session_id)
+        if stored_expiry is None or stored_expiry != expires_at:
+            return False
+        if stored_expiry < now:
+            _active_sessions.pop(session_id, None)
+            return False
+        return True
+
+
 def create_session(
     login: LoginRequest,
     client_key: str = "unknown",
@@ -112,12 +144,16 @@ def create_session(
 
     _clear_login_failures(client_key)
     expires_at = int(time.time()) + SESSION_SECONDS
-    payload = _encode({"sub": expected_code, "exp": expires_at})
+    session_id = secrets.token_urlsafe(24)
+    payload = _encode(
+        {"sub": expected_code, "exp": expires_at, "jti": session_id}
+    )
     signature = hmac.new(
         _credential("ESAS_SESSION_SECRET").encode(),
         payload.encode(),
         hashlib.sha256,
     ).hexdigest()
+    _store_session(session_id, expires_at)
 
     return {
         "access_token": f"{payload}.{signature}",
@@ -126,9 +162,9 @@ def create_session(
     }
 
 
-def require_dashboard_session(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-) -> str:
+def _validate_session(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> tuple[str, str]:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -146,11 +182,30 @@ def require_dashboard_session(
             raise ValueError("Invalid signature")
 
         decoded = _decode(payload)
-        if int(decoded["exp"]) < int(time.time()):
+        expires_at = int(decoded["exp"])
+        session_id = str(decoded["jti"])
+        if expires_at < int(time.time()):
             raise ValueError("Expired token")
-        return str(decoded["sub"])
+        if not _session_is_active(session_id, expires_at):
+            raise ValueError("Inactive session")
+        return str(decoded["sub"]), session_id
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session",
         ) from None
+
+
+def require_dashboard_session(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str:
+    user_code, _ = _validate_session(credentials)
+    return user_code
+
+
+def revoke_dashboard_session(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> None:
+    _, session_id = _validate_session(credentials)
+    with _active_sessions_lock:
+        _active_sessions.pop(session_id, None)

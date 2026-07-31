@@ -53,3 +53,7 @@ nişanı olmadan `401 Unauthorized` qaytarır.
 Eyni şəbəkə ünvanından ardıcıl 5 səhv giriş cəhdi olduqda yeni girişlər
 15 dəqiqəlik müvəqqəti bloklanır. Uğurlu giriş əvvəlki səhv cəhd sayğacını
 sıfırlayır.
+
+`Çıxış` düyməsi sessiyanı yalnız brauzerdən silmir, backend-də də dərhal
+etibarsızlaşdırır. Backend yenidən başladıqda bütün aktiv monitorinq sessiyaları
+bağlanır və yenidən giriş tələb olunur.

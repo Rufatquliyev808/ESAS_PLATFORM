@@ -23,7 +23,12 @@ from backend.app.models.bridge_status import (
     BridgeStatusReport,
     LossAcknowledgementRequest,
 )
-from backend.app.auth import LoginRequest, create_session, require_dashboard_session
+from backend.app.auth import (
+    LoginRequest,
+    create_session,
+    require_dashboard_session,
+    revoke_dashboard_session,
+)
 
 
 APP_VERSION = "0.2.0"
@@ -96,6 +101,11 @@ def login(
 ) -> dict[str, object]:
     client_key = request.client.host if request.client else "unknown"
     return create_session(credentials, client_key)
+
+
+@app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(_: None = Depends(revoke_dashboard_session)) -> None:
+    return None
 
 
 @app.post("/status/bridge", status_code=status.HTTP_202_ACCEPTED)

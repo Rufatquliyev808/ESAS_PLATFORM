@@ -33,6 +33,10 @@ ardıcıl 5 səhv giriş cəhdi olduqda giriş 15 dəqiqəlik müvəqqəti blokl
 Uğurlu giriş əvvəlki səhv cəhd sayğacını sıfırlayır. Backend yenidən başladıldıqda
 yaddaşdakı müvəqqəti bloklama vəziyyəti də sıfırlanır.
 
+Hər uğurlu giriş serverdə ayrıca aktiv sessiya kimi qeydə alınır. Paneldə
+`Çıxış` seçildikdə sessiya backend-də dərhal ləğv edilir. Backend restartı da
+bütün aktiv sessiyaları təhlükəsizlik məqsədilə bağlayır.
+
 ## Phase 1 qəbul göstəricilərinin avtomatik saxlanması
 
 24 saatlıq sınağın əvvəlində cari göstəriciləri məxfi məlumatları göstərmədən
