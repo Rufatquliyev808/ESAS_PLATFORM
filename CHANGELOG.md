@@ -21,6 +21,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- `7343` tarixi rədd edilmiş event üzrə kök səbəb, audit izi, düzəlişlər və qalıq
+  riskləri ayıran yekun Phase 1 məlumat itkisi hesabatı.
 - Bütün izlənən layihə mətnləri üçün UTF-8 auditi və kodlaşdırmanı sabitləşdirən
   repo səviyyəli `.editorconfig`.
 - MT5 disk növbəsi və retry semantikası üçün real MQL5 fayl API-si ilə işləyən

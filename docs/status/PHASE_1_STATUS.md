@@ -50,7 +50,7 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 - [x] 8–12 saatlıq fasiləsiz canlı sabitlik sınağı
 - [ ] 24 saatlıq fasiləsiz canlı sabitlik sınağı
 - [x] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
-- [ ] Məlumat itkisi üzrə yekun hesabat
+- [x] Məlumat itkisi üzrə yekun hesabat
 - [ ] Phase 1 release qeydləri
 - [x] Əsas status və konstitusiya sənədlərindəki köhnə kodlaşdırma problemlərinin aradan qaldırılması
 

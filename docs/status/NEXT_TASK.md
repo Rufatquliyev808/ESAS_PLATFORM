@@ -6,26 +6,25 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-Phase 1 zamanı baş vermiş məlumat itkisi hadisəsi üzrə yekun, audit edilə bilən
-hesabat hazırlamaq.
+Phase 1 üçün versiyalı release qeydlərini hazırlamaq.
 
-## Hesabatın əhatəsi
+## Release qeydlərinin əhatəsi
 
-- Hadisənin səbəbi və təsir dairəsi.
-- Rədd edilmiş eventlərin dəyişdirilməmiş yekun sayı.
-- Hadisənin aşkarlanma və istifadəçi təsdiqi audit izi.
-- Tətbiq edilmiş texniki düzəlişlər.
-- Təkrar başvermənin qarşısını alan monitorinq və testlər.
-- Qalıq risklər və 24 saatlıq qəbul sınağına təsir.
+- buraxılış versiyası və tarixi;
+- dəyişən backend, MT5 Bridge, frontend və sənədlər;
+- əsas yeni imkanlar və düzəlişlər;
+- geriyə uyğunluq və məlum məhdudiyyətlər;
+- qəbul testlərinin nəticələri;
+- 24 saatlıq canlı sınağın hələ gözlənildiyi barədə aydın qeyd.
 
 ## Tamamlanma meyarları
 
-- Hesabat xam məlumatı və mövcud sayğacları dəyişdirməməlidir.
-- Bütün rəqəmlər API, SQLite audit sətri və qəbul sınaqları ilə uyğun olmalıdır.
-- Hadisə “həll edildi” və tarixi itki “bərpa edildi” anlayışlarını qarışdırmamalıdır.
-- Qalıq risklər açıq şəkildə göstərilməlidir.
+- Version Policy tələblərinə uyğun olmalıdır.
+- Məlumat itkisi hesabatına istinad etməlidir.
+- Tamamlanmamış 24 saatlıq sınağa görə Phase 1-i `Stable` elan etməməlidir.
+- Dəyişikliklər mövcud modul versiyaları ilə uyğun göstərilməlidir.
 
 ## Sonrakı addım
 
-Hesabat təsdiqləndikdən sonra Phase 1 release qeydləri hazırlanacaq. Rəsmi
-24 saatlıq canlı sınaq bazar açıldıqdan sonra yenidən başladılacaq.
+Release qeydləri hazırlandıqdan sonra rəsmi 24 saatlıq canlı sınaq bazar
+açıldıqda yenidən başladılacaq.

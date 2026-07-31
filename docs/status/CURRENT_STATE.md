@@ -190,7 +190,17 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-Məlumat itkisi üzrə yekun hesabatı hazırlamaq.
+Phase 1 release qeydlərini hazırlamaq.
+
+## Məlumat itkisi üzrə yekun hesabat
+
+`docs/status/DATA_LOSS_REPORT.md` faylında `7343` tarixi rədd edilmiş event üzrə
+kök səbəb, təsir dairəsi, audit izi, düzəlişlər, qəbul sübutları və qalıq risklər
+sənədləşdirildi.
+
+Hesabat tarixi məlumat itkisini bərpa edilmiş kimi göstərmir. Audit təsdiqi
+itkinin görüldüyünü və qəbul edildiyini bildirir; payload-ları saxlanmayan
+`7343` event bərpa edilə bilməz.
 
 ## UTF-8 kodlaşdırma auditi
 
