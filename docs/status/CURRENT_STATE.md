@@ -45,6 +45,11 @@ Status: IN PROGRESS
   `36506` yeni tick qəbul edildi.
 - Sınağın sonunda yeni rədd edilmiş event `0`, disk növbəsi `0 / 1000`, backend
   health `ok`, operational status `ok` və SQLite `quick_check=ok` oldu.
+- 12.62 saatlıq fasiləsiz canlı sınaqda tick sayı `209018`-dən `419186`-ya
+  yüksəldi: `210168` yeni tick qəbul edildi.
+- 12.62 saatlıq sınağın sonunda yeni rədd edilmiş event `0`, disk növbəsi
+  `0 / 1000`, backend health `ok`, operational status `ok` və SQLite
+  `quick_check=ok` oldu.
 - Sınaqdan sonra backend `12 passed`, frontend lint, build və render testləri keçdi.
 - PR #1 üçün GitHub Actions daxilində iki Backend və iki Frontend check-i uğurla
   tamamlandı.
@@ -189,7 +194,7 @@ Real MT5 sınağında:
 
 ## Növbəti əsas texniki prioritet
 
-8–12 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
+24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
 
 ## Queue health monitorinqinin son canlı sınağı
 

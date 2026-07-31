@@ -36,6 +36,8 @@ MT5 Tick
 - Sınağın sonunda növbə `0 / 1000`, SQLite `quick_check=ok` olub.
 - 1 saatlıq canlı sınaqda `36506` yeni tick qəbul edilib, yeni rədd edilmiş event
   yaranmayıb və disk növbəsi `0 / 1000` qalıb.
+- 12.62 saatlıq canlı sınaqda `210168` yeni tick qəbul edilib, yeni rədd edilmiş
+  event yaranmayıb, disk növbəsi `0 / 1000` və SQLite `quick_check=ok` qalıb.
 - Lokal backend testləri: `12 passed`.
 - GitHub Actions backend və frontend testləri `main` budağında keçib.
 - PR #1 `main` budağına uğurla birləşdirilib.
@@ -45,7 +47,7 @@ MT5 Tick
 Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər:
 
 - [x] 1 saatlıq fasiləsiz canlı sabitlik sınağı
-- [ ] 8–12 saatlıq fasiləsiz canlı sabitlik sınağı
+- [x] 8–12 saatlıq fasiləsiz canlı sabitlik sınağı
 - [ ] 24 saatlıq fasiləsiz canlı sabitlik sınağı
 - [ ] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
 - [ ] Məlumat itkisi üzrə yekun hesabat

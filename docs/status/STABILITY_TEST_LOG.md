@@ -39,9 +39,9 @@ Tamamlanma: `2026-07-30 18:14:47 +04:00`
 
 Nəticə: 1 saatlıq qəbul qapısı keçildi.
 
-## 8 saatlıq sınaq — 2026-07-30/31
+## 8–12 saatlıq sınaq — 2026-07-30/31
 
-Status: RUNNING
+Status: PASSED
 
 Başlanğıc: `2026-07-30 18:19:21 +04:00`
 
@@ -56,6 +56,27 @@ Başlanğıc: `2026-07-30 18:19:21 +04:00`
 | Məlumat itkisi təsdiqi | `true` |
 | SQLite quick check | `ok` |
 
-Ən erkən tamamlanma: `2026-07-31 02:19:21 +04:00`.
+Tamamlanma: `2026-07-31 06:56:33 +04:00`
 
-Sınaq tamamlandıqda son göstəricilər və fərq bu fayla əlavə ediləcək.
+Müddət: `12 saat 37 dəqiqə` (`12.62 saat`)
+
+| Göstərici | Son dəyər | Fərq |
+|---|---:|---:|
+| Backend health | `ok` | dəyişmədi |
+| Ümumi operational status | `ok` | dəyişmədi |
+| Tick axını | `active` | dəyişmədi |
+| Ümumi tick | `419186` | `+210168` |
+| Disk növbəsi | `0 / 1000` | dəyişmədi |
+| Rədd edilmiş event | `7343` | `+0` |
+| Məlumat itkisi təsdiqi | `true` | qorundu |
+| SQLite quick check | `ok` | dəyişmədi |
+| Audit sətri | `1` | qorundu |
+
+Əlavə yoxlamalar:
+
+- Backend: `12 passed`
+- Frontend lint: passed
+- Frontend production build: passed
+- Frontend render testi: `1 passed`
+
+Nəticə: 8–12 saatlıq qəbul qapısı 12.62 saatlıq fasiləsiz işlə keçildi.

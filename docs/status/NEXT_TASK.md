@@ -6,7 +6,7 @@ Mərhələ: Phase 1
 
 ## Tapşırıq
 
-8–12 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu
+24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq və nəticəni qəbul sübutu
 kimi qeyd etmək.
 
 ## Başlanğıc göstəriciləri
@@ -33,4 +33,4 @@ Sınağın başlanğıcında aşağıdakılar qeyd edilməlidir:
 
 ## Sonrakı addım
 
-8–12 saatlıq sınaq keçərsə 24 saatlıq son sabitlik sınağı planlaşdırılacaq.
+24 saatlıq sınaq keçərsə yekun məlumat itkisi hesabatı hazırlanacaq.

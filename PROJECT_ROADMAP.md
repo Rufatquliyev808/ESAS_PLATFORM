@@ -75,7 +75,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] Phase 1 frontend monitorinq paneli
 - [x] 30 dəqiqəlik sabitlik sınağı
 - [x] 1 saatlıq sabitlik testi
-- [ ] 8–12 saatlıq sabitlik testi
+- [x] 8–12 saatlıq sabitlik testi
 - [ ] 24 saatlıq sabitlik testi
 - [ ] Məlumat itkisi hesabatı
 - [ ] Phase 1 release qeydləri
@@ -202,7 +202,7 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-8–12 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
+24 saatlıq fasiləsiz canlı sabitlik sınağını aparmaq.
 
 Ətraflı tapşırıq:
 
