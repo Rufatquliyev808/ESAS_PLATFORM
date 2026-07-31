@@ -3,6 +3,9 @@
 Status: DESIGN READY — NOT IMPLEMENTED  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Worker claim, lease, fencing və scheduler qaydaları:
+`docs/architecture/PHASE_2_WORKER_SCHEDULER_CONTRACT.md`
+
 ## Məqsəd və sərhəd
 
 Bu müqavilə sabit tick aralığını idarə olunan sessiya daxilində deterministik replay

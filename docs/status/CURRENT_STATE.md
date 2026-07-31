@@ -33,6 +33,9 @@ Status: IN PROGRESS
 - Phase 2 API müqaviləsi hazırlanıb: `/api/v2` versiyalanması, asinxron işlər,
   imzalanmış snapshot cursor-u, ölçü və rate limitləri, idempotency, optimistic
   locking və sabit xəta envelope-u müəyyən edilib.
+- Phase 2 worker və scheduler müqaviləsi hazırlanıb: Phase 1-dən ayrı davamlı job
+  növbəsi, claim/lease/fencing, prioritet və ədalət, retry, checkpoint, restart
+  bərpası, backpressure və təhlükəsiz shutdown qaydaları müəyyən edilib.
 - Phase 2 audit və qəbul sübutu ixrac müqaviləsi hazırlanıb: sanitizasiya edilmiş
   ZIP/JSONL paket, manifest, checksum, rəqəmsal imza, offline verifier,
   chain-of-custody və acceptance `pass/fail/inconclusive` qaydaları müəyyən edilib.

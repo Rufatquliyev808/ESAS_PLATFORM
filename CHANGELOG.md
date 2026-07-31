@@ -8,6 +8,12 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added
+
+- Phase 2 analiz işləri üçün Phase 1 tick növbəsindən ayrılmış davamlı job növbəsi,
+  worker claim/lease/fencing, ədalətli scheduler, retry, qəza sonrası bərpa və
+  təhlükəsiz shutdown müqaviləsi əlavə edildi.
+
 ### Fixed
 
 - Cari vəziyyət və dəyişiklik tarixçəsində artıq tamamlanmış Phase 1 işlərinin

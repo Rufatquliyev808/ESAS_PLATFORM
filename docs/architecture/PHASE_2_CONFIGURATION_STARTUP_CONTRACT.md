@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: **DESIGN READY — NOT IMPLEMENTED**
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Worker və scheduler-in təhlükəsiz icra qaydaları:
+`docs/architecture/PHASE_2_WORKER_SCHEDULER_CONTRACT.md`
+
 ## Məqsəd
 
 Bu müqavilə Phase 2 servislərinin hansı konfiqurasiya ilə, hansı yoxlamalardan

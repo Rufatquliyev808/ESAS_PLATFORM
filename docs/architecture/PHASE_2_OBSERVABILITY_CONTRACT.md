@@ -4,6 +4,9 @@ Versiya: 1.0
 Status: DESIGN READY — NOT IMPLEMENTED
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
+Worker claim, heartbeat, retry və scheduler qaydaları:
+`docs/architecture/PHASE_2_WORKER_SCHEDULER_CONTRACT.md`
+
 Metric, log, alert və sübutların saxlanma qaydaları:
 `docs/architecture/PHASE_2_RETENTION_BACKUP_CONTRACT.md`
 

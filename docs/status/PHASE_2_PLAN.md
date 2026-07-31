@@ -33,6 +33,9 @@ Saxlama, ehtiyat nüsxə, bərpa və təhlükəsiz təmizləmə müqaviləsi:
 Konfiqurasiya, məxfi açarlar və təhlükəsiz startup müqaviləsi:
 `docs/architecture/PHASE_2_CONFIGURATION_STARTUP_CONTRACT.md`
 
+Worker, job növbəsi, prioritet və qəza sonrası bərpa müqaviləsi:
+`docs/architecture/PHASE_2_WORKER_SCHEDULER_CONTRACT.md`
+
 API versiyalanması, cursor, limit və xəta cavabı müqaviləsi:
 `docs/architecture/PHASE_2_API_CONTRACT.md`
 
