@@ -184,6 +184,10 @@ müddəti, conflict, REVIEW və təhlükəsiz retrieval müqaviləsi:
 
 Status: PLANNED
 
+Deterministik analiz birləşdirməsi, izahlı proposal, abstain, müstəqil risk qapısı,
+nəzəri mövqe ölçüsü, limit/halt və SHADOW eligibility müqaviləsi:
+`docs/architecture/PHASE_8_DECISION_RISK_CONTRACT.md`
+
 - [ ] Analiz nəticələrinin birləşdirilməsi
 - [ ] Qərarın izah edilə bilməsi
 - [ ] Risk limitləri

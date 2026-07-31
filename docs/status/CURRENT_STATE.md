@@ -7,6 +7,10 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 8 üçün deterministik analiz birləşdirməsi, izahlı qərar proposal-u, abstain,
+  müstəqil risk qapısı, nəzəri mövqe ölçüsü, portfolio limitləri, halt, manual
+  müdaxilə və SHADOW eligibility müqaviləsi hazırlandı; tətbiq Phase 1–7 qəbulundan
+  asılıdır və real order yaratmır.
 - Phase 7 üçün versiyalanmış bilik claim-i, evidence graph, scope və bazar rejimi
   uyğunluğu, etibarlılıq müddəti, zidd sübut, REVIEW trigger-ləri, governance və
   təhlükəsiz retrieval müqaviləsi hazırlandı; tətbiq Phase 1–6 qəbulundan asılıdır.

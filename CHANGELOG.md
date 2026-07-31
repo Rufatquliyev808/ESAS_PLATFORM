@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 8 üçün deterministik analiz birləşdirməsi, izahlı qərar proposal-u,
+  abstain, müstəqil risk qapısı, nəzəri mövqe ölçüsü, portfolio limitləri, halt,
+  manual müdaxilə və order-siz SHADOW eligibility müqaviləsi.
 - Phase 7 üçün versiyalanmış bilik claim-i, dəyişməz sübut qrafı, scope/rejim
   uyğunluğu, etibarlılıq müddəti, zidd bilik, REVIEW, governance və təhlükəsiz
   retrieval müqaviləsi.
