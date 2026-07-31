@@ -27,6 +27,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 replay sessiyasının həyat dövrü müqaviləsi: dəyişməz giriş,
+  dataset fingerprint, `step` və `max_speed` rejimləri, checkpoint, restart
+  davranışı, idempotent idarəetmə əmrləri və append-only audit tələbləri.
 - Phase 2 tick məlumat keyfiyyəti müqaviləsi: versiyalanmış boşluq, timestamp,
   spread, qiymət, gecikmə və müqavilə uyğunluğu qaydaları; audit edilən hesabat
   formatı və sintetik qəbul testləri. Bazar sessiyası məlum olmadan fasilə

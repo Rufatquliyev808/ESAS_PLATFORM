@@ -175,6 +175,12 @@ MT5 Tick
 
 ## Son tamamlanan texniki dəyişiklik
 
+- Phase 2 replay sessiyasının həyat dövrü hazırlandı. `step` və `max_speed`
+  rejimləri, dəyişməz giriş parametrləri, dataset fingerprint, checkpoint,
+  backend restartından sonra `interrupted` vəziyyəti və idempotent idarəetmə
+  əmrləri müəyyən edildi.
+- Replay sessiyası yalnız törəmə vəziyyət və audit yaza bilər; xam tick məlumatını
+  dəyişdirmək, siqnal yaratmaq və order açmaq müqavilə ilə qadağandır.
 - Phase 2 məlumat keyfiyyəti müqaviləsi hazırlandı. Boşluq, timestamp,
   mənfi spread, natamam qiymət, qəbul gecikməsi və müqavilə uyğunsuzluğu
   qaydaları versiyalanmış formada müəyyən edildi.

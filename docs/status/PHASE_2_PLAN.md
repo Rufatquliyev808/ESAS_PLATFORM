@@ -9,6 +9,9 @@ Detallı oxuma müqaviləsi:
 Məlumat keyfiyyəti müqaviləsi:
 `docs/architecture/PHASE_2_DATA_QUALITY_CONTRACT.md`
 
+Replay sessiyası və həyat dövrü müqaviləsi:
+`docs/architecture/PHASE_2_REPLAY_SESSION_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd
