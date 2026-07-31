@@ -18,6 +18,9 @@ Frontend replay və məlumat keyfiyyəti ekran müqaviləsi:
 Verilənlər bazası sxemi və təhlükəsiz migration müqaviləsi:
 `docs/architecture/PHASE_2_DATABASE_SCHEMA.md`
 
+Performans, yaddaş və yük sınağı müqaviləsi:
+`docs/architecture/PHASE_2_PERFORMANCE_TEST_CONTRACT.md`
+
 Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
 
 ## Məqsəd

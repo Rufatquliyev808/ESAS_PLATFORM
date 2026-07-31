@@ -27,6 +27,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 performans və yaddaş sınağı müqaviləsi: yalnız sintetik müvəqqəti
+  bazada işləyən ölçü pillələri, replay, keyfiyyət analizi, paralel SQLite
+  yazma/oxuma, migration, qorunan API və frontend üçün ölçülə bilən qəbul
+  hədləri, bütövlük qapıları və audit edilən sübut formatı.
 - Phase 2 SQLite sxem və migration müqaviləsi: replay sessiyası, checkpoint,
   append-only audit, idempotency, keyfiyyət hesabatı cədvəlləri, replay indeksi,
   online backup, bütövlük sübutu və təhlükəsiz bərpa meyarları.

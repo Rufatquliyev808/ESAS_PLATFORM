@@ -5,6 +5,18 @@ Cari mərhələ: Phase 1
 Status: IN PROGRESS  
 Əsas budaq: `main`
 
+## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
+
+- Replay oxuması, məlumat keyfiyyəti, sessiya həyat dövrü, frontend ekranları və
+  təhlükəsiz database migration müqavilələri hazırlanıb.
+- Performans və yaddaş sınağı müqaviləsi hazırlanıb: kiçik, orta, böyük və stress
+  dataset pillələri; replay, keyfiyyət analizi, paralel SQLite yazma/oxuma,
+  migration, qorunan API və frontend ölçüləri müəyyən edilib.
+- Yük və migration sınaqlarının canlı `database/ESAS_PLATFORM.sqlite` üzərində
+  aparılması qadağandır; onlar yalnız sintetik müvəqqəti bazada işləyəcək.
+- Bu işlər dizayndır. Phase 2 istehsal kodu Phase 1-in rəsmi qəbulundan əvvəl
+  başladılmayıb.
+
 ## 2026-07-30 canlı bərpa sınağı
 
 - Backend-in verilənlər bazasına yaza bilmədiyi real nasazlıq aşkarlandı.
