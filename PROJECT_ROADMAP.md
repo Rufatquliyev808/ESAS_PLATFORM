@@ -170,6 +170,10 @@ fundamental vintage, entity mapping və causal təsir ölçümü müqaviləsi:
 
 Status: PLANNED
 
+Versiyalanmış bilik claim-i, sübut qrafı, scope və rejim uyğunluğu, etibarlılıq
+müddəti, conflict, REVIEW və təhlükəsiz retrieval müqaviləsi:
+`docs/architecture/PHASE_7_KNOWLEDGE_BASE_CONTRACT.md`
+
 - [ ] Sübut edilmiş nəticələrin saxlanması
 - [ ] Model və pattern versiyalandırması
 - [ ] Etibarlılıq və istifadə müddəti göstəriciləri

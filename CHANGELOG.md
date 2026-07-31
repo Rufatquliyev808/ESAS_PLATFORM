@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 7 üçün versiyalanmış bilik claim-i, dəyişməz sübut qrafı, scope/rejim
+  uyğunluğu, etibarlılıq müddəti, zidd bilik, REVIEW, governance və təhlükəsiz
+  retrieval müqaviləsi.
 - Phase 6 üçün xəbər mənbə/lisenziya reyestri, point-in-time xəbər və revision,
   iqtisadi buraxılış, fundamental vintage, entity mapping, sentiment sərhədi,
   causal təsir ölçümü və təhlükəsiz event əlaqəsi müqaviləsi.

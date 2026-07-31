@@ -7,6 +7,9 @@ Status: IN PROGRESS
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
 
+- Phase 7 üçün versiyalanmış bilik claim-i, evidence graph, scope və bazar rejimi
+  uyğunluğu, etibarlılıq müddəti, zidd sübut, REVIEW trigger-ləri, governance və
+  təhlükəsiz retrieval müqaviləsi hazırlandı; tətbiq Phase 1–6 qəbulundan asılıdır.
 - Phase 6 üçün xəbər mənbə/lisenziya reyestri, dərc və qəbul vaxtının ayrılması,
   revision və fundamental vintage qorunması, entity mapping, point-in-time analiz,
   təsir ölçümü və standart event sərhədi müqaviləsi hazırlandı; tətbiq Phase 1–5
