@@ -6,8 +6,8 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Tamamlanmış replay keyfiyyət hesabatını və `DQ-010` statistikalarını daxili,
-yalnız oxuma üçün nəzərdə tutulmuş API repository qatına çıxarmaq.
+Replay keyfiyyət hesabatını frontend-də yalnız müşahidə üçün təqdim edən təhlükəsiz
+detal görünüşünü hazırlamaq.
 
 ## Sərhədlər
 

@@ -10,6 +10,8 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Tamamlanmış replay keyfiyyət hesabatı autentifikasiyalı, yalnız oxuma üçün daxili
+  endpoint-dən təqdim edilir; təhlükəsiz 404/409 cavabları ilə tam backend `110 passed`.
 - `DQ-010` üçün sabit yaddaşlı, deterministik tick intervalı və spread statistikaları
   əlavə edildi və replay keyfiyyət hesabatının fingerprint-inə bağlandı; tam backend
   `108 passed`.

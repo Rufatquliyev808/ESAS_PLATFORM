@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 import sqlite3
+from dataclasses import asdict
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,11 @@ from backend.app.auth import (
     require_dashboard_session,
     revoke_dashboard_session,
 )
+from backend.app.database.replay_session_repository import (
+    ReplaySessionNotFoundError,
+    ReplayTransitionConflictError,
+)
+from backend.app.quality.report import create_replay_quality_report
 
 
 APP_VERSION = "0.3.0"
@@ -183,3 +189,22 @@ def operational_status(
     _: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     return get_operational_status()
+
+
+@app.get("/internal/replay/{session_id}/quality-report")
+def replay_quality_report(
+    session_id: str,
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        return asdict(create_replay_quality_report(session_id=session_id))
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay session is not completed",
+        ) from error

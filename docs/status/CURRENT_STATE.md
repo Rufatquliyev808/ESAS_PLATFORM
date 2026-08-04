@@ -110,6 +110,9 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
 - `DQ-010` tick sürəti, interval və spread paylanmalarını sabit yaddaşla hesablayır;
   sıfır/natamam qiymət cütləri ayrıca sayılır və nəticə replay hesabatının məzmun
   fingerprint-inə daxildir. Tam backend üzrə `108 passed` nəticəsi əldə edildi.
+- Tamamlanmış replay keyfiyyət hesabatı autentifikasiyalı daxili read-only endpoint-ə
+  çıxarıldı; giriş, mövcud olmayan və tamamlanmamış sessiya sərhədləri yoxlanıldı.
+  Tam backend üzrə `110 passed` nəticəsi əldə edildi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

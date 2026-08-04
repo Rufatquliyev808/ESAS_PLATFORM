@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
@@ -12,6 +13,7 @@ from backend.app.database.replay_session_repository import (
     transition_replay_session,
 )
 from backend.app.quality.report import create_replay_quality_report
+from backend.app.main import app
 
 
 BASE_TIME = datetime(2026, 8, 4, 21, 0, tzinfo=UTC)
@@ -99,3 +101,41 @@ def test_incomplete_replay_is_rejected(isolated_database: Path) -> None:
     session = prepare(isolated_database, [1000, 2000, 3000])
     with pytest.raises(ReplayTransitionConflictError, match="completed"):
         create_replay_quality_report(session_id=session.session_id)
+
+
+def dashboard_headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/auth/login",
+        json={"user_code": "TEST-USER", "password": "test-password-123"},
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_quality_report_api_is_authenticated_and_complete(isolated_database: Path) -> None:
+    session = prepare(isolated_database, [1000, 2000, 3000])
+    complete(session)
+    with TestClient(app) as client:
+        unauthorized = client.get(f"/internal/replay/{session.session_id}/quality-report")
+        response = client.get(
+            f"/internal/replay/{session.session_id}/quality-report",
+            headers=dashboard_headers(client),
+        )
+    assert unauthorized.status_code == 401
+    assert response.status_code == 200
+    assert response.json()["session_id"] == session.session_id
+    assert response.json()["summary"]["status"] == "pass"
+    assert response.json()["statistics"]["tick_count"] == 3
+
+
+def test_quality_report_api_maps_safe_errors(isolated_database: Path) -> None:
+    session = prepare(isolated_database, [1000])
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        missing = client.get("/internal/replay/missing/quality-report", headers=headers)
+        incomplete = client.get(
+            f"/internal/replay/{session.session_id}/quality-report", headers=headers
+        )
+    assert missing.status_code == 404
+    assert missing.json() == {"detail": "Replay session was not found"}
+    assert incomplete.status_code == 409
+    assert incomplete.json() == {"detail": "Replay session is not completed"}
