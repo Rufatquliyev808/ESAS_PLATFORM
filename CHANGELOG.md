@@ -10,6 +10,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- `rsi_regime_observation` `1.0.0` müstəqil tədqiqat modulu əlavə edildi. Modul causal
+  RSI-ni konfiqurasiya olunan aşağı/neytral/yüksək rejimlərə ayırır, inclusive sərhədləri,
+  warm-up, determinizm və no-lookahead davranışını test edir. EMA və RSI frontend-də ayrıca
+  kartlarda müqayisə olunur. Tam backend `173 passed`, frontend lint/build və `3` test keçdi.
+
 - Tamamlanmış replay sessiyalarında versiyalanmış strategiyaları işlədən qorunan
   `strategy-analysis` API-si və müasir müqayisə laboratoriyası əlavə edildi. İlk
   `ema_close_relation` kartı EMA-dan yuxarı/aşağı/bərabər müşahidələri, warm-up,

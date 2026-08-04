@@ -9,6 +9,9 @@ test("strategy comparison stays modular, traceable and research-only", async () 
   assert.match(source, /strategy-analysis\?/);
   assert.match(source, /strategiya müqayisə laboratoriyası/);
   assert.match(source, /Qiymətin EMA ilə münasibəti/);
+  assert.match(source, /RSI momentum rejimi/);
+  assert.match(source, /rsi_regime_observation/);
+  assert.match(source, /RSI aşağı hədd/);
   assert.match(source, /definition\.version/);
   assert.match(source, /Nəticə izi/);
   assert.match(source, /alış\/satış qərarı vermir/);

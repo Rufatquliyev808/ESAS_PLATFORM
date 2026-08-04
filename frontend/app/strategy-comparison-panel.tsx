@@ -24,15 +24,18 @@ function CountBar({ label, value, total, tone }: { label: string; value: number;
 export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [emaPeriod, setEmaPeriod] = useState(20);
+  const [rsiPeriod, setRsiPeriod] = useState(14);
+  const [rsiLow, setRsiLow] = useState(30);
+  const [rsiHigh, setRsiHigh] = useState(70);
   const [barLimit, setBarLimit] = useState(500);
-  const [query, setQuery] = useState({ timeframe: "M5" as Timeframe, emaPeriod: 20, barLimit: 500 });
+  const [query, setQuery] = useState({ timeframe: "M5" as Timeframe, emaPeriod: 20, rsiPeriod: 14, rsiLow: 30, rsiHigh: 70, barLimit: 500 });
   const [result, setResult] = useState<StrategyAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    const params = new URLSearchParams({ timeframe: query.timeframe, ema_period: String(query.emaPeriod), bar_limit: String(query.barLimit) });
+    const params = new URLSearchParams({ timeframe: query.timeframe, ema_period: String(query.emaPeriod), rsi_period: String(query.rsiPeriod), rsi_low: String(query.rsiLow), rsi_high: String(query.rsiHigh), bar_limit: String(query.barLimit) });
     try {
       const response = await fetch(`${API_BASE}/api/v2/replay-sessions/${sessionId}/strategy-analysis?${params}`, { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
       if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
@@ -49,22 +52,26 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
     <div className="strategy-heading"><div><p className="eyebrow">Phase 4 · ayrıca versiyalanan modullar</p><h3 id="strategy-lab-title">{symbol} strategiya müqayisə laboratoriyası</h3><p>Hər metod ayrıca kartda hesablanır ki, sonrakı düzəlişlər bir-birindən asılı olmasın.</p></div><span className="research-pill">Araşdırma müşahidəsidir · siqnal deyil</span></div>
     <form className="strategy-controls" onSubmit={(event) => {
       event.preventDefault();
-      const next = { timeframe, emaPeriod, barLimit };
+      const next = { timeframe, emaPeriod, rsiPeriod, rsiLow, rsiHigh, barLimit };
       if (JSON.stringify(next) === JSON.stringify(query)) void load();
       else setQuery(next);
     }}>
       <label>Vaxt çərçivəsi<select value={timeframe} onChange={(event) => setTimeframe(event.target.value as Timeframe)}><option>M1</option><option>M5</option><option>M15</option><option>H1</option></select></label>
       <label>EMA dövrü<input type="number" min="2" max="500" value={emaPeriod} onChange={(event) => setEmaPeriod(Number(event.target.value))} /></label>
+      <label>RSI dövrü<input type="number" min="2" max="500" value={rsiPeriod} onChange={(event) => setRsiPeriod(Number(event.target.value))} /></label>
+      <label>RSI aşağı hədd<input type="number" min="0" max="99" value={rsiLow} onChange={(event) => setRsiLow(Number(event.target.value))} /></label>
+      <label>RSI yuxarı hədd<input type="number" min="1" max="100" value={rsiHigh} onChange={(event) => setRsiHigh(Number(event.target.value))} /></label>
       <label>Görünən bar<select value={barLimit} onChange={(event) => setBarLimit(Number(event.target.value))}><option value="100">100</option><option value="250">250</option><option value="500">500</option><option value="1000">1 000</option></select></label>
       <button disabled={loading}>{loading ? "Hesablanır…" : "Müşahidələri hesabla"}</button>
     </form>
     {error && <div className="analysis-error" role="alert"><strong>Strategiya bölməsi göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void load()}>Yenidən yoxla</button></div>}
     {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Modullar ayrıca hesablanır</strong><p>Nəticələr ticarət əmrinə çevrilmir.</p></div></div> : result && <div className="strategy-grid">{result.strategies.map((strategy) => {
       const total = strategy.summary.ready;
+      const isRsi = strategy.definition.strategy_id === "rsi_regime_observation";
       return <article className="strategy-card" key={`${strategy.definition.strategy_id}:${strategy.definition.version}`}>
-        <header><div><p className="eyebrow">Bağlanış / trend istinadı</p><h4>Qiymətin EMA ilə münasibəti</h4></div><div className="strategy-tags"><span>v{strategy.definition.version}</span><span>{strategy.definition.lifecycle}</span></div></header>
-        <p className="strategy-explanation">Hər bağlanmış barın son qiyməti öz səbəbli EMA dəyərindən yuxarı, aşağı və ya bərabər kimi təsnif edilir. Bu, yalnız bazar vəziyyətinin təsviridir.</p>
-        <div className="strategy-counts"><CountBar label="EMA-dan yuxarı" value={strategy.summary.above} total={total} tone="above" /><CountBar label="EMA-dan aşağı" value={strategy.summary.below} total={total} tone="below" /><CountBar label="EMA-ya bərabər" value={strategy.summary.equal} total={total} tone="equal" /></div>
+        <header><div><p className="eyebrow">{isRsi ? "Momentum / bazar rejimi" : "Bağlanış / trend istinadı"}</p><h4>{isRsi ? "RSI momentum rejimi" : "Qiymətin EMA ilə münasibəti"}</h4></div><div className="strategy-tags"><span>v{strategy.definition.version}</span><span>{strategy.definition.lifecycle}</span></div></header>
+        <p className="strategy-explanation">{isRsi ? `RSI ${rsiLow}-dan aşağı, ${rsiHigh}-dan yuxarı və ya bu hədlərin arasında neytral rejim kimi təsnif edilir. Sərhədə bərabərlik aşağı/yuxarı rejimə daxildir.` : "Hər bağlanmış barın son qiyməti öz səbəbli EMA dəyərindən yuxarı, aşağı və ya bərabər kimi təsnif edilir. Bu, yalnız bazar vəziyyətinin təsviridir."}</p>
+        <div className="strategy-counts"><CountBar label={isRsi ? "Yüksək RSI rejimi" : "EMA-dan yuxarı"} value={strategy.summary.above} total={total} tone="above" /><CountBar label={isRsi ? "Aşağı RSI rejimi" : "EMA-dan aşağı"} value={strategy.summary.below} total={total} tone="below" /><CountBar label={isRsi ? "Neytral RSI rejimi" : "EMA-ya bərabər"} value={strategy.summary.equal} total={total} tone="equal" /></div>
         <div className="strategy-summary"><div><span>Hazır müşahidə</span><strong>{strategy.summary.ready}</strong></div><div><span>Warm-up</span><strong>{strategy.summary.insufficient_data}</strong></div><div><span>Vaxt çərçivəsi</span><strong>{result.timeframe}</strong></div></div>
         <details><summary>Versiya və hesablama izi</summary><dl><div><dt>Modul</dt><dd>{strategy.definition.strategy_id}</dd></div><div><dt>Tələb olunan xüsusiyyət</dt><dd>{strategy.definition.required_features.join(", ")}</dd></div><div><dt>Nəticə izi</dt><dd title={strategy.fingerprint}>{strategy.fingerprint.slice(0, 22)}…</dd></div><div><dt>Bar izi</dt><dd title={strategy.bar_fingerprint}>{strategy.bar_fingerprint.slice(0, 22)}…</dd></div></dl></details>
       </article>;

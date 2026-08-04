@@ -1,5 +1,14 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 ikinci strategiya müşahidə modulu
+
+2026-08-04 tarixində `rsi_regime_observation 1.0.0` əlavə edildi. Causal RSI yalnız
+bağlanmış barlarda aşağı, neytral və yüksək rejimlərə ayrılır; hədlər konfiqurasiya olunur.
+Warm-up, inclusive sərhədlər, determinizm və no-lookahead sınaqları keçir. EMA və RSI
+frontend laboratoriyasında ayrı kartlardır və hər biri öz versiya/fingerprint izini göstərir.
+Qat yalnız tədqiqat üçündür, siqnal və order yaratmır. Tam backend `173 passed`, frontend
+lint/build və `3` test nəticəsi uğurludur.
+
 ## Phase 2 real replay qəbul sübutu
 
 2026-08-04 tarixində production bazası yoxlanmış SQLite backup-dan sonra Phase 2

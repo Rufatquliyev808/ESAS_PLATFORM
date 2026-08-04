@@ -184,7 +184,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     session = _prepare(isolated_database)
     url = (
         f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
-        "?timeframe=M1&ema_period=2&bar_limit=10"
+        "?timeframe=M1&ema_period=2&rsi_period=2&rsi_low=30&rsi_high=70&bar_limit=10"
     )
     with TestClient(app) as client:
         assert client.get(url).status_code == 401
@@ -196,7 +196,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert first.json() == second.json()
     data = first.json()["data"]
     assert data["interpretation"] == "research_observation_not_trading_signal"
-    assert len(data["strategies"]) == 1
+    assert len(data["strategies"]) == 2
     strategy = data["strategies"][0]
     assert strategy["definition"]["strategy_id"] == "ema_close_relation"
     assert strategy["definition"]["version"] == "1.0.0"
@@ -209,9 +209,24 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
         "equal": 0,
     }
     assert strategy["fingerprint"].startswith("sha256:")
+    rsi = data["strategies"][1]
+    assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
+    assert rsi["definition"]["version"] == "1.0.0"
+    assert rsi["summary"]["ready"] == 1
+    assert rsi["summary"]["insufficient_data"] == 2
     serialized = str(first.json()).lower()
     assert "order" not in serialized
     assert "position_size" not in serialized
+
+
+def test_strategy_analysis_rejects_crossed_rsi_thresholds(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis?rsi_low=70&rsi_high=30",
+            headers=_headers(client),
+        )
+    assert response.status_code == 422
 
 
 def test_strategy_analysis_api_enforces_owner_and_completed_state(

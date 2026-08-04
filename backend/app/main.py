@@ -313,6 +313,9 @@ def replay_strategy_analysis(
     session_id: str,
     timeframe: str = Query(default="M5", pattern="^(M1|M5|M15|H1)$"),
     ema_period: int = Query(default=20, ge=2, le=500),
+    rsi_period: int = Query(default=14, ge=2, le=500),
+    rsi_low: float = Query(default=30, ge=0, le=100),
+    rsi_high: float = Query(default=70, ge=0, le=100),
     bar_limit: int = Query(default=500, ge=1, le=5_000),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
@@ -324,7 +327,9 @@ def replay_strategy_analysis(
         raise HTTPException(status_code=403, detail="Replay session belongs to another user")
     try:
         analysis = create_replay_strategy_analysis(
-            session=session, timeframe=timeframe, ema_period=ema_period, bar_limit=bar_limit
+            session=session, timeframe=timeframe, ema_period=ema_period,
+            rsi_period=rsi_period, rsi_low=rsi_low, rsi_high=rsi_high,
+            bar_limit=bar_limit,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(status_code=409, detail="Replay session is not completed") from error
@@ -333,6 +338,8 @@ def replay_strategy_analysis(
             status_code=409,
             detail="Replay dataset no longer matches the session snapshot",
         ) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(analysis), "meta": {"api_version": "2"}}
 
 

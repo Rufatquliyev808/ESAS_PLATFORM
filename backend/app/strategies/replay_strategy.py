@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from backend.app.analysis.replay_analysis import create_replay_analysis_context
 from backend.app.database.replay_session_repository import ReplaySession
 from backend.app.strategies.ema_close_relation import evaluate_ema_close_relation
+from backend.app.strategies.rsi_regime_observation import evaluate_rsi_regime_observation
 
 
 STRATEGY_ANALYSIS_API_VERSION = "1.0.0"
@@ -21,29 +22,36 @@ class ReplayStrategyAnalysis:
 
 
 def create_replay_strategy_analysis(
-    *, session: ReplaySession, timeframe: str, ema_period: int, bar_limit: int
+    *, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int,
+    rsi_low: float, rsi_high: float, bar_limit: int
 ) -> ReplayStrategyAnalysis:
     """Evaluate independently versioned research strategies on completed replay bars."""
     context = create_replay_analysis_context(
         session=session,
         timeframe=timeframe,
         ema_period=ema_period,
-        rsi_period=14,
+        rsi_period=rsi_period,
         atr_period=14,
         bar_limit=bar_limit,
     )
-    result = evaluate_ema_close_relation(
+    ema_result = evaluate_ema_close_relation(
         symbol=session.symbol,
         timeframe=timeframe,
         bars=context.bars.bars,
         indicators=context.indicators,
         dataset_fingerprint=session.dataset_fingerprint,
     )
+    rsi_result = evaluate_rsi_regime_observation(
+        symbol=session.symbol, timeframe=timeframe, bars=context.bars.bars,
+        indicators=context.indicators, dataset_fingerprint=session.dataset_fingerprint,
+        low_threshold=rsi_low, high_threshold=rsi_high,
+    )
     return ReplayStrategyAnalysis(
         session_id=session.session_id,
         symbol=session.symbol,
         timeframe=timeframe,
-        parameters={"ema_period": ema_period, "bar_limit": bar_limit},
+        parameters={"ema_period": ema_period, "rsi_period": rsi_period,
+                    "rsi_low": rsi_low, "rsi_high": rsi_high, "bar_limit": bar_limit},
         lineage=context.analysis.lineage,
-        strategies=(asdict(result),),
+        strategies=(asdict(ema_result), asdict(rsi_result)),
     )

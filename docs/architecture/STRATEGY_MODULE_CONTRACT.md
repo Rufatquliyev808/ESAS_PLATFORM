@@ -26,6 +26,10 @@ capital-risk decisions.
 `ema_close_relation` version `1.0.0` classifies each closed bar as `above_ema`,
 `below_ema`, or `at_ema`. It is a reference implementation, not a trade recommendation.
 
+`rsi_regime_observation` version `1.0.0` independently classifies causal RSI values as
+`low_rsi` (value <= low threshold), `high_rsi` (value >= high threshold), or
+`neutral_rsi` (strictly between the thresholds). It remains a research observation.
+
 ## Result lineage
 
 Every result includes symbol, timeframe, parameters, dataset fingerprint, bar
