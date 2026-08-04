@@ -47,6 +47,7 @@ class ReplaySession:
     end_at: str
     mode: str
     state: str
+    state_version: int
     replay_contract_version: str
     quality_rule_version: str
     dataset_tick_count: int
@@ -243,6 +244,7 @@ def _store_session_and_initial_audit(
         end_at=end_text,
         mode=mode,
         state=state,
+        state_version=0,
         replay_contract_version=replay_contract_version,
         quality_rule_version=quality_rule_version,
         dataset_tick_count=snapshot.tick_count,
@@ -286,6 +288,7 @@ def _session_from_row(row: object) -> ReplaySession:
         end_at=row["end_at"],
         mode=row["mode"],
         state=row["state"],
+        state_version=row["state_version"],
         replay_contract_version=row["replay_contract_version"],
         quality_rule_version=row["quality_rule_version"],
         dataset_tick_count=row["dataset_tick_count"],
@@ -492,6 +495,7 @@ def transition_replay_session(
             """
             UPDATE replay_sessions
             SET state = ?,
+                state_version = state_version + 1,
                 processed_ticks = ?,
                 checkpoint_event_timestamp = ?,
                 checkpoint_event_id = ?,
@@ -727,7 +731,7 @@ def process_replay_step(
         updated = connection.execute(
             """
             UPDATE replay_sessions
-            SET state = ?, processed_ticks = ?,
+            SET state = ?, state_version = state_version + 1, processed_ticks = ?,
                 checkpoint_event_timestamp = ?, checkpoint_event_id = ?,
                 last_batch_at = ?, updated_at = ?, completed_at = ?
             WHERE session_id = ? AND state = 'running'
@@ -878,7 +882,7 @@ def _process_max_speed_batch(
         updated = connection.execute(
             """
             UPDATE replay_sessions
-            SET state = ?, processed_ticks = ?,
+            SET state = ?, state_version = state_version + 1, processed_ticks = ?,
                 checkpoint_event_timestamp = ?, checkpoint_event_id = ?,
                 last_batch_at = ?, updated_at = ?, completed_at = ?
             WHERE session_id = ? AND state = 'running'

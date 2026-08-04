@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Qorunan replay lifecycle command API-si əlavə edildi: `start`, `step`, `pause`,
+  `resume` və `cancel` əmrləri üçün ownership, hash-lənmiş idempotency açarı,
+  `state_version` optimistic lock, atomik session/audit/command yazısı və xam tick
+  toxunulmazlığı; tam backend `125 passed`, frontend lint/build keçdi.
 - Qorunan `POST /api/v2/replay-sessions` endpoint-i əlavə edildi: ciddi giriş
   validation-u, autentifikasiyalı yaradıcı audit izi, atomik snapshot/session/audit
   yazısı, boş dataset üçün təhlükəsiz `completed` davranışı və xam tick

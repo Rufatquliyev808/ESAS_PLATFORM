@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import sqlite3
 from dataclasses import asdict
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -25,6 +25,7 @@ from backend.app.models.bridge_status import (
     LossAcknowledgementRequest,
 )
 from backend.app.models.replay_session import ReplaySessionCreateRequest
+from backend.app.models.replay_command import ReplayCommandRequest
 from backend.app.auth import (
     LoginRequest,
     create_session,
@@ -39,6 +40,10 @@ from backend.app.database.replay_session_repository import (
     create_replay_session,
     get_replay_session,
     list_replay_sessions,
+)
+from backend.app.database.replay_command_repository import (
+    ReplayOwnershipError,
+    execute_replay_command,
 )
 from backend.app.quality.report import create_replay_quality_report
 from backend.app.replay.cursor import (
@@ -289,6 +294,55 @@ def create_replay_session_endpoint(
 
     return {
         "data": asdict(session),
+        "meta": {"api_version": "2"},
+    }
+
+
+@app.post("/api/v2/replay-sessions/{session_id}/commands")
+def replay_session_command(
+    session_id: str,
+    command_request: ReplayCommandRequest,
+    idempotency_key: str = Header(alias="Idempotency-Key", min_length=1),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        result = execute_replay_command(
+            session_id=session_id,
+            actor=user_code,
+            actor_role="operator",
+            idempotency_key=idempotency_key,
+            command=command_request.command,
+            expected_state_version=command_request.expected_state_version,
+            requested_ticks=command_request.requested_ticks,
+        )
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    except ReplayOwnershipError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Replay session belongs to another user",
+        ) from error
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay command conflicts with current session state",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Replay command request is invalid",
+        ) from error
+    except sqlite3.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Replay command could not be stored",
+        ) from error
+
+    return {
+        "data": asdict(result),
         "meta": {"api_version": "2"},
     }
 
