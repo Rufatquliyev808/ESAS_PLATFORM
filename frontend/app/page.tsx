@@ -45,7 +45,9 @@ type Tone = "good" | "warning" | "danger" | "info" | "neutral";
 const API_BASE =
   process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 const REFRESH_INTERVAL_MS = 5000;
-const REQUEST_TIMEOUT_MS = 3000;
+// Operational aggregates can take several seconds on a large live database.
+// Keep the browser responsive without declaring a healthy backend unavailable.
+const REQUEST_TIMEOUT_MS = 10000;
 const numberFormatter = new Intl.NumberFormat("az-AZ");
 const dateTimeFormatter = new Intl.DateTimeFormat("az-AZ", {
   dateStyle: "medium",
