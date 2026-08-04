@@ -4,7 +4,7 @@
 #define ESAS_TICK_EVENT_TYPE              "TICK_RECEIVED"
 #define ESAS_TICK_EVENT_VERSION           "1.0"
 #define ESAS_MT5_BRIDGE_SOURCE            "esas.mt5.bridge"
-#define ESAS_MT5_BRIDGE_MODULE_VERSION "1.6.0"
+#define ESAS_MT5_BRIDGE_MODULE_VERSION "1.6.1"
 
 struct EsasTickEvent
 {
@@ -54,6 +54,23 @@ string EsasUtcTimestamp(const long time_msc)
    );
 }
 
+long EsasServerUtcOffsetSeconds()
+{
+   const long raw_offset = (long)TimeTradeServer() - (long)TimeGMT();
+   const long rounding_seconds = 15 * 60;
+   const long half_rounding_seconds = rounding_seconds / 2;
+
+   if(raw_offset >= 0)
+      return ((raw_offset + half_rounding_seconds) / rounding_seconds) * rounding_seconds;
+
+   return ((raw_offset - half_rounding_seconds) / rounding_seconds) * rounding_seconds;
+}
+
+long EsasUtcTimeMilliseconds(const long server_time_msc)
+{
+   return server_time_msc - EsasServerUtcOffsetSeconds() * 1000;
+}
+
 string EsasCreateEventId(const string symbol, const long time_msc)
 {
    static ulong sequence = 0;
@@ -70,10 +87,11 @@ string EsasCreateEventId(const string symbol, const long time_msc)
 EsasTickEvent EsasCreateTickEvent(const MqlTick &tick)
 {
    EsasTickEvent event;
+   const long utc_time_msc = EsasUtcTimeMilliseconds(tick.time_msc);
 
-   event.event_id       = EsasCreateEventId(_Symbol, tick.time_msc);
+   event.event_id       = EsasCreateEventId(_Symbol, utc_time_msc);
    event.event_type     = ESAS_TICK_EVENT_TYPE;
-   event.timestamp      = EsasUtcTimestamp(tick.time_msc);
+   event.timestamp      = EsasUtcTimestamp(utc_time_msc);
    event.source         = ESAS_MT5_BRIDGE_SOURCE;
    event.version        = ESAS_TICK_EVENT_VERSION;
    event.symbol         = _Symbol;
@@ -82,7 +100,7 @@ EsasTickEvent EsasCreateTickEvent(const MqlTick &tick)
    event.last           = tick.last;
    event.volume         = tick.volume;
    event.flags          = tick.flags;
-   event.source_time_msc = tick.time_msc;
+   event.source_time_msc = utc_time_msc;
    event.module_version = ESAS_MT5_BRIDGE_MODULE_VERSION;
 
    return event;

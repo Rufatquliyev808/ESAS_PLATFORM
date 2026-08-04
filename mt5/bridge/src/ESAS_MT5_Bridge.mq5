@@ -1,5 +1,5 @@
 #property copyright "ESAS Platform"
-#property version   "1.600"
+#property version   "1.601"
 #property strict
 
 #include "../include/EsasTickEvent.mqh"
