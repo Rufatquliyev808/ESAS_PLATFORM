@@ -1,5 +1,18 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Replay lifecycle command API-si
+
+2026-08-04 tarixində qorunan
+`POST /api/v2/replay-sessions/{session_id}/commands` endpoint-i əlavə edildi.
+
+- `start`, `step`, `pause`, `resume` və `cancel` qanuni vəziyyətlərdə işləyir.
+- Dəyişiklik yalnız sessiyanın sahibinə icazə verilir.
+- `Idempotency-Key` açıq saxlanmır; SHA-256 hash-i append-only command jurnalına yazılır.
+- `expected_state_version` köhnə yazını `409` ilə təhlükəsiz rədd edir.
+- Session, progress/checkpoint, audit və idempotency qeydi eyni transaction-da saxlanır.
+- Audit xətası bütün əməliyyatı geri qaytarır və xam tick-lər dəyişmir.
+- Tam backend nəticəsi `125 passed`; frontend lint və production build keçdi.
+
 Son yenilənmə: 2026-08-04
 Cari mərhələ: Phase 2
 Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
