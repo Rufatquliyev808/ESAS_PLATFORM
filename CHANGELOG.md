@@ -10,6 +10,12 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Tamamlanmış replay sessiyası üçün qorunan, yalnız-oxuma texniki analiz API-si əlavə
+  edildi. Endpoint `M1`, `M5`, `M15`, `H1`, EMA/RSI/ATR periodları və təhlükəsiz şam
+  limitini qəbul edir; yalnız sessiya sahibinə xidmət göstərir, açıq sessiyanı və dataset
+  driftini rədd edir, warm-up statusunu və dataset/bar/indicator lineage fingerprint-lərini
+  cavabda saxlayır. Nəticə ticarət siqnalı və order yaratmır.
+
 - Bağlanmış replay şamları üçün deterministik, yalnız-oxuma `EMA`, `RSI` və `ATR`
   indikator paketi əlavə edildi. Hər indikator ayrıca versiyalanmış series yaradır,
   warm-up nöqtələrini `insufficient_data` kimi saxlayır, gələcək şamın keçmiş nəticəyə

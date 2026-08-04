@@ -1,0 +1,178 @@
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from backend.app.database.connection import get_connection, initialize_database
+from backend.app.database.migration_runner import apply_migrations
+from backend.app.database.replay_session_repository import (
+    create_replay_session,
+    run_max_speed_replay,
+    transition_replay_session,
+)
+from backend.app.main import app
+
+
+BASE_TIME = datetime(2026, 8, 4, 21, 0, tzinfo=UTC)
+
+
+def _prepare(database_path: Path, *, owner: str = "TEST-USER", completed: bool = True):
+    initialize_database()
+    apply_migrations(database_path, application_version="0.3.0")
+    with get_connection() as connection:
+        connection.executemany(
+            """
+            INSERT INTO tick_events
+            (
+                event_id, event_type, event_timestamp, received_at, source, event_version,
+                symbol, bid, ask, last, volume, flags, source_time_msc,
+                module_version, raw_event_json
+            ) VALUES (?, 'TICK_RECEIVED', ?, ?, 'esas.mt5.bridge', '1.0',
+                      'GOLD', ?, ?, ?, 1, 6, ?, '1.6.0', '{}');
+            """,
+            [
+                (
+                    f"GOLD:analysis:{index:04d}",
+                    (BASE_TIME + timedelta(seconds=index * 5)).isoformat(timespec="microseconds"),
+                    (BASE_TIME + timedelta(seconds=index * 5)).isoformat(timespec="microseconds"),
+                    4100.0 + index,
+                    4100.4 + index,
+                    4100.2 + index,
+                    int(BASE_TIME.timestamp() * 1000) + index * 5_000,
+                )
+                for index in range(1, 36)
+            ],
+        )
+    created = create_replay_session(
+        created_by=owner,
+        actor_role="operator",
+        symbol="GOLD",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(minutes=3),
+        mode="max_speed",
+    )
+    running = transition_replay_session(
+        session_id=created.session_id,
+        actor=owner,
+        actor_role="operator",
+        action="start",
+        expected_state="created",
+    )
+    if completed:
+        run_max_speed_replay(
+            session_id=running.session_id,
+            actor="WORKER",
+            actor_role="worker",
+            batch_size=10,
+        )
+    return running
+
+
+def _headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/auth/login",
+        json={"user_code": "TEST-USER", "password": "test-password-123"},
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_analysis_api_is_protected_deterministic_and_read_only(
+    isolated_database: Path,
+) -> None:
+    session = _prepare(isolated_database)
+    url = (
+        f"/api/v2/replay-sessions/{session.session_id}/technical-analysis"
+        "?timeframe=M1&ema_period=2&rsi_period=2&atr_period=2&bar_limit=10"
+    )
+    with get_connection() as connection:
+        before = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
+        ).fetchall()
+    with TestClient(app) as client:
+        unauthorized = client.get(url)
+        headers = _headers(client)
+        first = client.get(url, headers=headers)
+        second = client.get(url, headers=headers)
+
+    assert unauthorized.status_code == 401
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    data = first.json()["data"]
+    assert data["session_id"] == session.session_id
+    assert data["timeframe"] == "M1"
+    assert data["interpretation"] == "research_observation_not_trading_signal"
+    assert len(data["bars"]) == 3
+    assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["indicator_fingerprint"].startswith("sha256:")
+    assert data["indicators"]["ema"]["points"][0]["status"] == "insufficient_data"
+    with get_connection() as connection:
+        after = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
+        ).fetchall()
+    assert [tuple(row) for row in after] == [tuple(row) for row in before]
+
+
+def test_analysis_api_enforces_owner_completed_state_and_safe_parameters(
+    isolated_database: Path,
+) -> None:
+    incomplete = _prepare(isolated_database, completed=False)
+    foreign = create_replay_session(
+        created_by="OTHER",
+        actor_role="operator",
+        symbol="GOLD",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(minutes=3),
+        mode="max_speed",
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        unfinished = client.get(
+            f"/api/v2/replay-sessions/{incomplete.session_id}/technical-analysis",
+            headers=headers,
+        )
+        forbidden = client.get(
+            f"/api/v2/replay-sessions/{foreign.session_id}/technical-analysis",
+            headers=headers,
+        )
+        invalid = client.get(
+            f"/api/v2/replay-sessions/{incomplete.session_id}/technical-analysis"
+            "?timeframe=M2&bar_limit=5001",
+            headers=headers,
+        )
+        missing = client.get(
+            "/api/v2/replay-sessions/missing/technical-analysis",
+            headers=headers,
+        )
+    assert unfinished.status_code == 409
+    assert forbidden.status_code == 403
+    assert invalid.status_code == 422
+    assert missing.status_code == 404
+
+
+def test_analysis_api_detects_dataset_drift(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with get_connection() as connection:
+        timestamp = (BASE_TIME + timedelta(seconds=2)).isoformat(timespec="microseconds")
+        connection.execute(
+            """
+            INSERT INTO tick_events
+            (
+                event_id, event_type, event_timestamp, received_at, source, event_version,
+                symbol, bid, ask, last, volume, flags, source_time_msc,
+                module_version, raw_event_json
+            ) VALUES ('GOLD:late', 'TICK_RECEIVED', ?, ?, 'esas.mt5.bridge', '1.0',
+                      'GOLD', 4100.0, 4100.4, 4100.2, 1, 6, 1,
+                      '1.6.0', '{}');
+            """,
+            (timestamp, timestamp),
+        )
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/technical-analysis",
+            headers=_headers(client),
+        )
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Replay dataset no longer matches the session snapshot"
+    }
