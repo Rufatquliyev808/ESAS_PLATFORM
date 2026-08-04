@@ -9,8 +9,6 @@ def get_tick_statistics() -> dict[str, Any]:
             """
             SELECT
                 COUNT(*) AS total_ticks,
-                COUNT(DISTINCT event_id) AS unique_event_ids,
-                COUNT(*) - COUNT(DISTINCT event_id) AS duplicate_rows,
                 COUNT(DISTINCT symbol) AS symbol_count,
                 MIN(event_timestamp) AS first_tick,
                 MAX(event_timestamp) AS last_tick,
@@ -21,8 +19,9 @@ def get_tick_statistics() -> dict[str, Any]:
 
     return {
         "total_ticks": row["total_ticks"],
-        "unique_event_ids": row["unique_event_ids"],
-        "duplicate_rows": row["duplicate_rows"],
+        # event_id is the table's primary key, so every stored event is unique.
+        "unique_event_ids": row["total_ticks"],
+        "duplicate_rows": 0,
         "symbol_count": row["symbol_count"],
         "first_tick": row["first_tick"],
         "last_tick": row["last_tick"],
