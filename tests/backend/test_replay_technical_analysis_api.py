@@ -105,6 +105,14 @@ def test_analysis_api_is_protected_deterministic_and_read_only(
     assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
     assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
     assert data["lineage"]["indicator_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["market_structure_version"] == "1.0.0"
+    assert data["lineage"]["market_structure_fingerprint"].startswith("sha256:")
+    structure = data["market_structure"]
+    assert structure["version"] == "1.0.0"
+    assert structure["interpretation"] == "research_observation_not_trading_signal"
+    assert structure["long_observation"]["side"] == "long"
+    assert structure["short_observation"]["side"] == "short"
+    assert structure["fingerprint"].startswith("sha256:")
     assert data["indicators"]["ema"]["points"][0]["status"] == "insufficient_data"
     with get_connection() as connection:
         after = connection.execute(

@@ -8,6 +8,16 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Causal market structure detector
+
+- `market_structure 1.0.0` əlavə edildi. Detektor yalnız bağlanmış barlardan və sağ
+  tərəfdə təsdiqlənmiş pivotlardan istifadə edərək HH/HL və LH/LL müşahidələrini hesablayır.
+- LONG və SHORT müşahidələri, yetərsiz və ziddiyyətli hallar frontend-də ayrı göstərilir.
+- Bərabərlik toleransı, pivot qaydası, təsdiq vaxtı və deterministik SHA-256 izi saxlanılır;
+  gələcək bar əvvəlki nəticəyə daxil edilmir.
+- Tam yoxlama: backend `227 passed`; frontend `4` test, lint və production build keçdi.
+- Bu qat yalnız tədqiqat üçündür; siqnal, giriş, risk ölçüsü və order yaratmır.
+
 ### Added — Pattern hypothesis registry
 
 - `pattern_hypothesis_registry 1.0.0` əlavə edildi. Bazar strukturu, likvidlik süpürməsi,

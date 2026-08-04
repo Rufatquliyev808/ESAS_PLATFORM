@@ -10,6 +10,12 @@ test("technical analysis UI keeps indicators separate and research-only", async 
   assert.match(source, /Bağlanış qiyməti və EMA/);
   assert.match(source, /RSI göstəricisi/);
   assert.match(source, /ATR göstəricisi/);
+  assert.match(source, /HH\/HL və LH\/LL detektoru/);
+  assert.match(source, /YÜKSƏLİŞ MÜŞAHİDƏSİ/);
+  assert.match(source, /ENİŞ MÜŞAHİDƏSİ/);
+  assert.match(source, /yalnız sağdakı/);
+  assert.match(source, /bar bağlandıqdan sonra təsdiqlənir/);
+  assert.match(source, /StructurePanel/);
   assert.match(source, /warm-up nöqtəsi/);
   assert.match(source, /Məlumat mənbəyi və hesablamanın izi/);
   assert.match(source, /alış\/satış siqnalı vermir və əməliyyat açmır/);

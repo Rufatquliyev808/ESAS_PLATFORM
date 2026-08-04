@@ -1,5 +1,15 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 causal bazar strukturu detektoru
+
+2026-08-05 tarixində `market_structure 1.0.0` tamamlandı. Yalnız bağlanmış barlardan
+istifadə edən pivot qaydası sağ tərəfdəki barlar bağlandıqdan sonra təsdiq verir; buna görə
+gələcək məlumat əvvəlki HH/HL və LH/LL nəticəsinə sızmır. Yüksəliş və eniş müşahidələri,
+yetərsiz və ziddiyyətli hallar, pivotun bar vaxtı ilə təsdiq vaxtı və deterministik fingerprint
+ayrıca saxlanılır. Frontend nəticəni iki müstəqil araşdırma kartında göstərir. Tam backend
+`227 passed`; frontend `4` test, lint və production build keçdi. Qat ticarət siqnalı,
+mövqe ölçüsü və order yaratmır.
+
 ## Phase 4 xronoloji walk-forward müqayisə təməli
 
 2026-08-04 tarixində `chronological_holdout_comparison 1.0.0` əlavə edildi. EMA və

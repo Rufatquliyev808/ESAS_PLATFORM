@@ -283,6 +283,9 @@ def replay_technical_analysis(
     rsi_period: int = Query(default=14, ge=2, le=500),
     atr_period: int = Query(default=14, ge=2, le=500),
     bar_limit: int = Query(default=500, ge=1, le=5_000),
+    pivot_left: int = Query(default=2, ge=1, le=20),
+    pivot_right: int = Query(default=2, ge=1, le=20),
+    equality_tolerance_bps: float = Query(default=0.0, ge=0, le=100),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -305,6 +308,9 @@ def replay_technical_analysis(
             rsi_period=rsi_period,
             atr_period=atr_period,
             bar_limit=bar_limit,
+            pivot_left=pivot_left,
+            pivot_right=pivot_right,
+            equality_tolerance_bps=equality_tolerance_bps,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(
