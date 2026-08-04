@@ -2,34 +2,37 @@
 
 Status: READY — ayrıca təsdiq gözləyir
 Prioritet: HIGH
-Mərhələ: Phase 4 tarixi əməliyyat xərci və stress ssenariləri
+Mərhələ: Phase 4 statistik etibarlılıq və sadə baseline müqayisəsi
 
 ## Tapşırıq
 
-EMA və RSI üçün tamamlanmış xam tarixi nəticəni dəyişmədən onun yanında şəffaf,
-versiyalanmış xərc ssenarisi qatı yaratmaq. Məqsəd spread, komissiya və slippage
-fərziyyələrinin nəticəyə təsirini göstərməkdir; bu, real gəlir və ya ticarət icazəsi deyil.
+EMA və RSI üzrə tamamlanmış, xərclərdən sonrakı walk-forward nəticələrinə statistik
+etibarlılıq qatı əlavə etmək. Məqsəd müşahidə olunan fərqin təsadüfi dalğalanmadan
+ayrılıb-ayrılmadığını və ən sadə müqayisə bazasını keçib-keçmədiyini göstərməkdir.
 
 ## Sərhədlər
 
-- Xam xərcsiz nəticə həmişə ayrıca və dəyişməz qalacaq.
-- Normal, pis və stress ssenarilərinin hər fərziyyəsi vahidi ilə açıq göstəriləcək.
-- Brokerə aid təsdiqlənməmiş rəqəm fakt kimi təqdim edilməyəcək; yalnız istifadəçi
-  tərəfindən verilən və ya açıq “fərziyyə” kimi işarələnən dəyər işlənəcək.
-- Eyni xərc qaydası EMA və RSI pəncərələrinə ayrı-ayrılıqda tətbiq ediləcək.
+- Mövcud xam və xərcdən sonrakı nəticələr dəyişdirilməyəcək.
+- Əsas metric, baseline və qəbul həddi hesablamadan əvvəl açıq qeyd ediləcək.
+- Confidence interval, effect size, nümunə sayı və uncertainty ayrı göstəriləcək.
+- EMA və RSI nəticələri eyni qayda ilə qiymətləndiriləcək, yalnız uğurlu variantlar
+  seçilib gizli saxlanmayacaq.
+- Nəticə `accepted_for_shadow` statusu verməyəcək; yalnız növbəti araşdırma qərarı üçün
+  sübut yaradacaq.
 - Canlı siqnal, mövqe ölçüsü, risk icazəsi və order yaradılmayacaq.
 
 ## Tamamlanma meyarları
 
-- Xərc modeli və ssenari konfiqurasiyası ayrıca versiyalanır və fingerprint saxlayır.
-- Ümumi xərc, xalis tarixi dəyişiklik və əhatə bir-birindən ayrı göstərilir.
-- Sıfır, mənfi, həddən artıq və natamam parametr testləri mövcuddur.
-- Bütün walk-forward pəncərələrində eyni deterministik ssenari tətbiq olunur.
-- Frontend xam və xalis nəticəni, fərziyyələri və xəbərdarlığı sadə Azərbaycan dilində göstərir.
+- Versiyalanmış və fingerprint-li statistik qiymətləndirici mövcuddur.
+- Sadə baseline, əsas metric və qeyri-müəyyənlik vahidləri açıq göstərilir.
+- Kiçik nümunə, sıfır variasiya, mənfi nəticə və natamam məlumat testləri mövcuddur.
+- Xərcli normal, pis və stress nəticələri qarışdırılmadan müqayisə edilir.
+- Frontend nəticəni sadə Azərbaycan dilində, “sübut yetərlidir/yetərli deyil” sərhədi
+  ilə göstərir və mənfəət vədi vermir.
 - Tam backend və frontend yoxlamaları yaşıl qalır.
 
-## Sonrakı addım
+## Başlama şərti
 
-Bu mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Çoxpəncərəli
-sabitlik ölçümünün tamamlanması xərc modelini avtomatik təsdiqləmir və ticarətə
+Bu mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Xərc və stress
+ssenarilərinin tamamlanması statistik nəticəni avtomatik etibarlı etmir və ticarətə
 başlamaq hüququ vermir.

@@ -320,6 +320,12 @@ def replay_strategy_analysis(
     outcome_horizon: int = Query(default=3, ge=1, le=100),
     development_ratio: float = Query(default=0.7, ge=0.5, le=0.9),
     walk_forward_windows: int = Query(default=3, ge=2, le=8),
+    cost_spread_bps: float = Query(default=2.0, ge=0, le=1_000),
+    cost_commission_bps: float = Query(default=1.0, ge=0, le=1_000),
+    cost_slippage_bps: float = Query(default=1.0, ge=0, le=1_000),
+    cost_latency_bps: float = Query(default=0.5, ge=0, le=1_000),
+    adverse_cost_multiplier: float = Query(default=1.5, ge=1, le=10),
+    stress_cost_multiplier: float = Query(default=2.5, ge=1, le=10),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -335,6 +341,12 @@ def replay_strategy_analysis(
             bar_limit=bar_limit, outcome_horizon=outcome_horizon,
             development_ratio=development_ratio,
             walk_forward_windows=walk_forward_windows,
+            cost_spread_bps=cost_spread_bps,
+            cost_commission_bps=cost_commission_bps,
+            cost_slippage_bps=cost_slippage_bps,
+            cost_latency_bps=cost_latency_bps,
+            adverse_cost_multiplier=adverse_cost_multiplier,
+            stress_cost_multiplier=stress_cost_multiplier,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(status_code=409, detail="Replay session is not completed") from error

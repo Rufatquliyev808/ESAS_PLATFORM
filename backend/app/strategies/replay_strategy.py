@@ -9,9 +9,10 @@ from backend.app.strategies.walk_forward_evaluation import evaluate_walk_forward
 from backend.app.strategies.multi_window_walk_forward import (
     evaluate_multi_window_walk_forward,
 )
+from backend.app.strategies.cost_scenario_evaluation import evaluate_cost_scenarios
 
 
-STRATEGY_ANALYSIS_API_VERSION = "1.0.0"
+STRATEGY_ANALYSIS_API_VERSION = "1.1.0"
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,9 @@ def create_replay_strategy_analysis(
     *, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int,
     rsi_low: float, rsi_high: float, bar_limit: int, outcome_horizon: int,
     development_ratio: float, walk_forward_windows: int,
+    cost_spread_bps: float = 2.0, cost_commission_bps: float = 1.0,
+    cost_slippage_bps: float = 1.0, cost_latency_bps: float = 0.5,
+    adverse_cost_multiplier: float = 1.5, stress_cost_multiplier: float = 2.5,
 ) -> ReplayStrategyAnalysis:
     """Evaluate independently versioned research strategies on completed replay bars."""
     context = create_replay_analysis_context(
@@ -65,10 +69,18 @@ def create_replay_strategy_analysis(
             strategy=strategy, outcome=outcome, bars=context.bars.bars,
             development_ratio=development_ratio,
         ))
-        payload["multi_window_evaluation"] = asdict(evaluate_multi_window_walk_forward(
+        multi_window = evaluate_multi_window_walk_forward(
             strategy=strategy, outcome=outcome, bars=context.bars.bars,
             development_ratio=development_ratio,
             window_count=walk_forward_windows,
+        )
+        payload["multi_window_evaluation"] = asdict(multi_window)
+        payload["cost_scenario_evaluation"] = asdict(evaluate_cost_scenarios(
+            multi_window=multi_window, spread_bps=cost_spread_bps,
+            commission_bps=cost_commission_bps, slippage_bps=cost_slippage_bps,
+            latency_bps=cost_latency_bps,
+            adverse_multiplier=adverse_cost_multiplier,
+            stress_multiplier=stress_cost_multiplier,
         ))
         strategy_payloads.append(payload)
 
@@ -80,7 +92,13 @@ def create_replay_strategy_analysis(
                     "rsi_low": rsi_low, "rsi_high": rsi_high, "bar_limit": bar_limit,
                     "outcome_horizon": outcome_horizon,
                     "development_ratio": development_ratio,
-                    "walk_forward_windows": walk_forward_windows},
+                    "walk_forward_windows": walk_forward_windows,
+                    "cost_spread_bps": cost_spread_bps,
+                    "cost_commission_bps": cost_commission_bps,
+                    "cost_slippage_bps": cost_slippage_bps,
+                    "cost_latency_bps": cost_latency_bps,
+                    "adverse_cost_multiplier": adverse_cost_multiplier,
+                    "stress_cost_multiplier": stress_cost_multiplier},
         lineage=context.analysis.lineage,
         strategies=tuple(strategy_payloads),
     )

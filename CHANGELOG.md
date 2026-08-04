@@ -10,6 +10,16 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Versiyalanmış `historical_cost_stress_adjustment 1.0.0` xərc və stress qatı əlavə
+  edildi. EMA və RSI-nin dəyişməz xam walk-forward nəticələri yanında spread,
+  komissiya, slippage və gecikmənin normal, pis və stress fərziyyələri eyni
+  deterministik qayda ilə göstərilir. Hər ssenari ümumi xərc, xərcdən sonrakı tarixi
+  dəyişiklik, əhatə, bütün pəncərələrin nəticəsi və SHA-256 fingerprint saxlayır.
+  Frontend fərziyyələri `bps` vahidi ilə, broker faktı olmadığını və nəticənin siqnal,
+  risk icazəsi və order yaratmadığını Azərbaycan dilində göstərir. Hədəf backend
+  yoxlamaları `27 passed`, tam backend regressiyası `216 passed`, frontend lint/build
+  və `3` test uğurla keçdi.
+
 - Versiyalanmış `expanding_chronological_validation_windows 1.0.0` sabitlik ölçümü
   əlavə edildi. EMA və RSI nəticələri yalnız keçmişi genişlənən inkişaf məlumatı və
   üst-üstə düşməyən ardıcıl yoxlama pəncərələri ilə ölçülür. Hər pəncərə ayrıca manifest,

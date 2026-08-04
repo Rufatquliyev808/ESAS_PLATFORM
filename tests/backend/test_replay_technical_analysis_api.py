@@ -233,11 +233,24 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert multi_window["summary"]["completed_windows"] == 1
     assert len(multi_window["windows"]) == 1
     assert multi_window["windows"][0]["manifest"]["upstream_strategy_fingerprint"] == strategy["fingerprint"]
+    cost = strategy["cost_scenario_evaluation"]
+    assert cost["definition"]["version"] == "1.0.0"
+    assert [item["assumption"]["scenario"] for item in cost["scenarios"]] == [
+        "normal", "adverse", "stress",
+    ]
+    assert cost["manifest"]["upstream_multi_window_fingerprint"] == multi_window["fingerprint"]
+    assert cost["manifest"]["source"] == "generic_research_assumption_not_broker_fact"
+    assert cost["scenarios"][0]["assumption"]["total_cost_bps"] == 4.5
+    assert cost["scenarios"][0]["summary"]["raw_weighted_mean_return_percent"] == multi_window["summary"]["weighted_mean_return_percent"]
     rsi = data["strategies"][1]
     assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
     assert rsi["definition"]["version"] == "1.0.0"
     assert rsi["summary"]["ready"] == 1
     assert rsi["summary"]["insufficient_data"] == 2
+    assert (
+        rsi["cost_scenario_evaluation"]["scenarios"][0]["assumption"]
+        == cost["scenarios"][0]["assumption"]
+    )
     serialized = str(first.json()).lower()
     assert "order" not in serialized
     assert "position_size" not in serialized
@@ -286,6 +299,28 @@ def test_strategy_analysis_rejects_unsafe_walk_forward_window_count(
             headers=_headers(client),
         )
     assert response.status_code == 422
+
+
+def test_strategy_analysis_rejects_unsafe_cost_assumptions(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        negative = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis?cost_spread_bps=-1",
+            headers=headers,
+        )
+        excessive = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis?cost_slippage_bps=1001",
+            headers=headers,
+        )
+        crossed = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
+            "?adverse_cost_multiplier=3&stress_cost_multiplier=2",
+            headers=headers,
+        )
+    assert negative.status_code == 422
+    assert excessive.status_code == 422
+    assert crossed.status_code == 422
 
 
 def test_strategy_analysis_api_enforces_owner_and_completed_state(

@@ -773,3 +773,24 @@ sabitliyini ayrıca göstərən çoxpəncərəli qiymətləndirmə qatı tamamla
 - Hədəf backend sınaqları `24 passed`, tam backend regressiyası `198 passed`,
   frontend lint, production build və `3` frontend testi uğurla keçdi.
 - Bu qat yalnız tarixi tədqiqat üçündür; canlı siqnal, risk ölçüsü və order yaratmır.
+
+## Tarixi əməliyyat xərci və stress ssenariləri
+
+2026-08-05 tarixində EMA və RSI walk-forward nəticələri üçün şəffaf xərc fərziyyəsi
+qatı tamamlandı.
+
+- `historical_cost_stress_adjustment 1.0.0` normal, pis və stress ssenarilərini eyni
+  deterministik qayda ilə bütün yoxlama pəncərələrinə tətbiq edir.
+- Xam xərcsiz nəticə dəyişdirilmir; xərcdən sonrakı nəticə, ümumi xərc və əhatə ayrıca
+  saxlanılır.
+- Spread, komissiya, slippage və gecikmə `basis point` vahidi ilə açıq göstərilir və
+  broker faktı deyil, tədqiqat fərziyyəsi kimi işarələnir.
+- Konfiqurasiya, upstream multi-window fingerprint-i və nəticə öz SHA-256 izi ilə
+  təkrar istehsal edilə bilir.
+- Sıfır, mənfi, həddən artıq və natamam xərc, yanlış stress sırası, determinism və
+  bütün pəncərələrdə eyni qayda testlərlə qorunur.
+- Frontend normal, pis və stress kartlarında xam/xalis tarixi dəyişikliyi və xərc
+  tərkibini sadə Azərbaycan dilində göstərir.
+- Hədəf backend yoxlamaları `27 passed`, tam backend regressiyası `216 passed`,
+  frontend lint, production build və `3` frontend testi uğurla keçdi.
+- Qat ticarət mənfəəti hesablamır; siqnal, mövqe ölçüsü, risk icazəsi və order yaratmır.
