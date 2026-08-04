@@ -6,24 +6,25 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Replay keyfiyyət hesabatını qorunan public v2 contract-a çıxarmaq:
-`GET /api/v2/replay-sessions/{session_id}/quality-report`.
+Dashboard-da Phase 2 replay idarəetmə görünüşünü hazırlamaq.
 
 ## Sərhədlər
 
-- Yalnız sessiyanın sahibi hesabatı oxuya bilməlidir.
-- Hesabat yalnız tamamlanmış replay üçün təqdim edilməlidir.
-- Mövcud deterministik report ID və fingerprint dəyişdirilməməlidir.
-- Daxili endpoint geriyə uyğun saxlanmalı, public cavab versiyalanmalıdır.
-- Xam tick-lər dəyişdirilməməli və testlər yalnız müvəqqəti bazada işləməlidir.
+- Sessiya yaratma formu simvol, interval və `step/max_speed` rejimini qəbul etməlidir.
+- Sessiya siyahısı və detalı mövcud v2 API-lərdən oxunmalıdır.
+- Qanuni lifecycle əmrləri `Idempotency-Key` və cari `state_version` ilə göndərilməlidir.
+- Event səhifələri cursor ilə, keyfiyyət hesabatı yalnız tamamlandıqda göstərilməlidir.
+- Frontend qərar və ticarət əməliyyatı verməməlidir; yalnız replay idarəetməsi və
+  müşahidə təmin etməlidir.
 
 ## Tamamlanma meyarları
 
-- Authentication, ownership, incomplete state və not-found sərhədləri test olunur.
-- Public cavab stabil `data` və `meta.api_version=2` contract-ı qaytarır.
-- Eyni replay üçün hesabat reproduksiya olunur.
-- Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
+- Loading, empty, error, conflict və unauthorized vəziyyətləri aydın göstərilir.
+- Köhnə və təkrar command cavabları təhlükəsiz idarə olunur.
+- Klaviatura istifadəsi və mobil görünüş qorunur.
+- Frontend lint, build və render yoxlamaları, tam backend regressiyası keçir.
 
 ## Sonrakı addım
 
-Public keyfiyyət hesabatından sonra Phase 2 replay idarəetmə frontend-i hazırlanacaq.
+Replay frontend-dən sonra Phase 2 qəbul sübutları və read-only analiz iş axını
+yekunlaşdırılacaq.

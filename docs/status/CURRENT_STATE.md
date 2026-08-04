@@ -1,5 +1,17 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Public replay keyfiyyət hesabatı
+
+2026-08-04 tarixində
+`GET /api/v2/replay-sessions/{session_id}/quality-report` endpoint-i əlavə edildi.
+
+- Yalnız sessiyanın sahibi tamamlanmış replay hesabatını oxuya bilir.
+- Public cavab `data` və `meta.api_version=2` contract-ı ilə versiyalanır.
+- Mövcud report ID və content fingerprint deterministik saxlanır.
+- Daxili quality-report endpoint-i geriyə uyğun qalıb.
+- Xam tick dəyişməzliyi və təkrar hesabat reproduksiyası testlərlə təsdiqlənib.
+- Tam backend nəticəsi `132 passed`.
+
 ## Replay event oxuma API-si
 
 2026-08-04 tarixində qorunan

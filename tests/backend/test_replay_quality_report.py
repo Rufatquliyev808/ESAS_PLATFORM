@@ -139,3 +139,85 @@ def test_quality_report_api_maps_safe_errors(isolated_database: Path) -> None:
     assert missing.json() == {"detail": "Replay session was not found"}
     assert incomplete.status_code == 409
     assert incomplete.json() == {"detail": "Replay session is not completed"}
+
+
+def test_public_quality_report_has_stable_v2_contract_and_is_reproducible(
+    isolated_database: Path,
+) -> None:
+    session = prepare(isolated_database, [1000, 2000, 3000])
+    complete(session)
+    with get_connection() as connection:
+        before = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id;"
+        ).fetchall()
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        first = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/quality-report",
+            headers=headers,
+        )
+        second = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/quality-report",
+            headers=headers,
+        )
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    assert first.json()["meta"] == {"api_version": "2"}
+    assert first.json()["data"]["session_id"] == session.session_id
+    assert first.json()["data"]["report_id"].startswith("dqr_")
+    assert first.json()["data"]["content_fingerprint"].startswith("sha256:")
+    with get_connection() as connection:
+        after = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id;"
+        ).fetchall()
+    assert [tuple(row) for row in after] == [tuple(row) for row in before]
+
+
+def test_public_quality_report_enforces_auth_owner_and_completed_state(
+    isolated_database: Path,
+) -> None:
+    incomplete = prepare(isolated_database, [1000])
+    foreign = create_replay_session(
+        created_by="OTHER",
+        actor_role="operator",
+        symbol="GOLD",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(minutes=1),
+        mode="max_speed",
+    )
+    url = f"/api/v2/replay-sessions/{incomplete.session_id}/quality-report"
+    with TestClient(app) as client:
+        unauthorized = client.get(url)
+        headers = dashboard_headers(client)
+        unfinished = client.get(url, headers=headers)
+        forbidden = client.get(
+            f"/api/v2/replay-sessions/{foreign.session_id}/quality-report",
+            headers=headers,
+        )
+        missing = client.get(
+            "/api/v2/replay-sessions/missing/quality-report",
+            headers=headers,
+        )
+    assert unauthorized.status_code == 401
+    assert unfinished.status_code == 409
+    assert forbidden.status_code == 403
+    assert missing.status_code == 404
+
+
+def test_internal_quality_report_remains_backward_compatible(
+    isolated_database: Path,
+) -> None:
+    session = prepare(isolated_database, [1000, 2000])
+    complete(session)
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        internal = client.get(
+            f"/internal/replay/{session.session_id}/quality-report",
+            headers=headers,
+        )
+        public = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/quality-report",
+            headers=headers,
+        )
+    assert internal.status_code == public.status_code == 200
+    assert internal.json() == public.json()["data"]

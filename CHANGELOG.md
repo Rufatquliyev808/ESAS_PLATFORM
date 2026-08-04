@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Replay keyfiyyət hesabatı qorunan public v2 API-yə çıxarıldı: ownership,
+  completed-state qapısı, stabil `data/meta` contract-ı, deterministik report
+  reproduksiyası və daxili endpoint geriyə uyğunluğu; tam backend `132 passed`.
 - Replay event-ləri üçün qorunan, yalnız-oxuma v2 API əlavə edildi: sessiya sahibinin
   girişi, deterministik `(event_timestamp, event_id)` səhifələməsi, sessiya və
   istifadəçiyə bağlı imzalanmış cursor, sabit snapshot son sərhədi və xam tick
