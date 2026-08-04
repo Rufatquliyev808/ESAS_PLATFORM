@@ -670,3 +670,21 @@ endpoint-i hazırlandı.
 - Endpoint strategiya, al/sat siqnalı və order yaratmır.
 - Yeni API testləri və tam backend regressiyası `156 passed` nəticəsi verdi; frontend
   lint və production build yoxlamaları keçdi.
+
+## Texniki analiz təqdimat qatı
+
+2026-08-04 tarixində tamamlanmış replay sessiyalarının texniki analiz nəticələri
+qorunan frontend panelinə çıxarıldı.
+
+- İstifadəçi `M1`, `M5`, `M15`, `H1` timeframe, EMA/RSI/ATR periodları və görünən
+  bar sayını seçə bilir.
+- Bağlanış qiyməti və EMA eyni qrafikdə, RSI və ATR isə bir-birindən asılı olmayan
+  ayrıca kartlarda göstərilir.
+- Kifayət etməyən warm-up barları gizlədilmir və Azərbaycan dilində izah olunur.
+- Dataset, bar və indikator fingerprint/versiya izi ayrıca açılan məlumat mənbəyi
+  bölməsində saxlanılır.
+- Boş nəticə, yüklənmə, API xətası və mobil görünüş üçün ayrıca vəziyyətlər quruldu.
+- Panel yalnız tamamlanmış və istifadəçiyə məxsus replay sessiyasından açılır; alış/satış
+  siqnalı vermir və order yaratmır.
+- Frontend lint, production build və `2` frontend testi keçdi; tam backend regressiyası
+  ayrıca runtime test qovluğu ilə `156 passed` nəticəsi verdi.

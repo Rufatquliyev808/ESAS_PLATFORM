@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TechnicalAnalysisPanel } from "./technical-analysis-panel";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 
@@ -206,6 +207,15 @@ export function ReplayPanel({ token, onUnauthorized }: { token: string; onUnauth
           </>}
         </div>
       </div>
+      {selected?.state === "completed" && (
+        <TechnicalAnalysisPanel
+          key={selected.session_id}
+          sessionId={selected.session_id}
+          symbol={selected.symbol}
+          token={token}
+          onUnauthorized={onUnauthorized}
+        />
+      )}
     </section>
   );
 }
