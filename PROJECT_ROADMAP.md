@@ -244,8 +244,8 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Phase 2 üçün yalnız-oxuma tick repository interfeysini və deterministik sıralama
-testlərini yaratmaq.
+Phase 2 üçün hazır deterministik batch sərhədi üzərində `max_speed` replay
+orchestrator-u, təhlükəsiz dayandırmanı və qəza sonrası davametməni yaratmaq.
 
 Ətraflı tapşırıq:
 

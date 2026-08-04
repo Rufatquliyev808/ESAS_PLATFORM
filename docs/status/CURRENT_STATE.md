@@ -65,6 +65,16 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   audit xətasında bütün keçid rollback edilir və immutable sessiya girişləri qorunur.
 - Sessiya yaradılması və həyat dövrü üzrə hədəf testlər `22 passed`, tam backend
   `67 passed` oldu; canlı baza, API, frontend və worker dəyişdirilmədi.
+- `step` rejimi üçün `1..1000` tick həddində atomik batch emalı əlavə edildi;
+  checkpoint-dən sonrakı tick-lər kanonik sıra ilə oxunur və son batch sessiyanı
+  avtomatik `completed` edir.
+- `0003` migration-u addım əmrlərini unikal idempotency açarı ilə append-only saxlayır;
+  eyni parametrli təkrar əmr əvvəlki nəticəni qaytarır, fərqli parametrli təkrar açar
+  fail-closed rədd edilir.
+- Progress, checkpoint, audit və idempotency qeydi bir transaction-dadır; məcburi
+  audit xətası bütün addımı rollback edir.
+- `step` repository-si üzrə `8` yeni test, hədəf paket üzrə `25 passed` və tam backend
+  üzrə `75 passed` nəticəsi əldə edildi; yalnız müvəqqəti test bazaları istifadə olundu.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

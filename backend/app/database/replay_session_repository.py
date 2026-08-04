@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import secrets
 
 from backend.app.database.connection import get_connection
-from backend.app.database.tick_replay_repository import TickPosition
+from backend.app.database.tick_replay_repository import ReplayTick, TickPosition
 from backend.app.replay.dataset_snapshot import (
     ReplayDatasetSnapshot,
     create_dataset_snapshot,
@@ -60,6 +60,16 @@ class ReplaySession:
     created_at: str
     updated_at: str
     completed_at: str | None
+
+
+@dataclass(frozen=True)
+class ReplayStepResult:
+    session_id: str
+    state: str
+    processed_ticks: int
+    checkpoint_position: TickPosition
+    ticks: tuple[ReplayTick, ...]
+    idempotent_replay: bool
 
 
 def _required_text(value: str, field_name: str) -> str:
@@ -454,3 +464,267 @@ def transition_replay_session(
         ).fetchone()
 
     return _session_from_row(result_row)
+
+
+def _read_step_ticks(
+    connection: object,
+    *,
+    symbol: str,
+    start_at: str,
+    end_at: str,
+    after_timestamp: str | None,
+    after_event_id: str | None,
+    limit: int,
+) -> tuple[ReplayTick, ...]:
+    continuation_sql = ""
+    parameters: list[object] = [symbol, start_at, end_at]
+    if after_timestamp is not None or after_event_id is not None:
+        if after_timestamp is None or after_event_id is None:
+            raise RuntimeError("stored replay checkpoint is incomplete")
+        continuation_sql = """
+          AND (
+              event_timestamp > ?
+              OR (event_timestamp = ? AND event_id > ?)
+          )
+        """
+        parameters.extend(
+            [after_timestamp, after_timestamp, after_event_id]
+        )
+    parameters.append(limit)
+    rows = connection.execute(
+        f"""
+        SELECT
+            event_id, event_timestamp, received_at, symbol, bid, ask, last,
+            volume, flags, source_time_msc, source, event_version,
+            module_version
+        FROM tick_events
+        WHERE symbol = ?
+          AND event_timestamp >= ?
+          AND event_timestamp < ?
+          {continuation_sql}
+        ORDER BY event_timestamp ASC, event_id ASC
+        LIMIT ?;
+        """,
+        parameters,
+    ).fetchall()
+    return tuple(ReplayTick(**dict(row)) for row in rows)
+
+
+def _step_result_from_command(
+    connection: object,
+    session_row: object,
+    command_row: object,
+) -> ReplayStepResult:
+    ticks = _read_step_ticks(
+        connection,
+        symbol=session_row["symbol"],
+        start_at=session_row["start_at"],
+        end_at=session_row["end_at"],
+        after_timestamp=command_row["previous_checkpoint_time"],
+        after_event_id=command_row["previous_checkpoint_event"],
+        limit=command_row["batch_tick_count"],
+    )
+    if len(ticks) != command_row["batch_tick_count"]:
+        raise ReplayTransitionConflictError(
+            "stored replay step no longer matches the dataset"
+        )
+    last_tick = ticks[-1]
+    if (
+        last_tick.event_timestamp
+        != command_row["resulting_checkpoint_time"]
+        or last_tick.event_id != command_row["resulting_checkpoint_event"]
+    ):
+        raise ReplayTransitionConflictError(
+            "stored replay step checkpoint no longer matches the dataset"
+        )
+    return ReplayStepResult(
+        session_id=session_row["session_id"],
+        state=command_row["resulting_state"],
+        processed_ticks=command_row["resulting_processed_ticks"],
+        checkpoint_position=TickPosition(
+            datetime.fromisoformat(
+                command_row["resulting_checkpoint_time"]
+            ),
+            command_row["resulting_checkpoint_event"],
+        ),
+        ticks=ticks,
+        idempotent_replay=True,
+    )
+
+
+def process_replay_step(
+    *,
+    session_id: str,
+    actor: str,
+    actor_role: str,
+    idempotency_key: str,
+    requested_ticks: int,
+) -> ReplayStepResult:
+    normalized_session_id = _required_text(session_id, "session_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+    normalized_key = _required_text(idempotency_key, "idempotency_key")
+    if not 1 <= requested_ticks <= 1000:
+        raise ValueError("requested_ticks must be between 1 and 1000")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        session_row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+        if session_row is None:
+            raise ReplaySessionNotFoundError("replay session was not found")
+
+        existing = connection.execute(
+            """
+            SELECT * FROM replay_step_commands
+            WHERE session_id = ? AND idempotency_key = ?;
+            """,
+            (normalized_session_id, normalized_key),
+        ).fetchone()
+        if existing is not None:
+            if (
+                existing["actor"] != normalized_actor
+                or existing["actor_role"] != normalized_role
+                or existing["requested_ticks"] != requested_ticks
+            ):
+                raise ReplayTransitionConflictError(
+                    "idempotency key was used with different step parameters"
+                )
+            return _step_result_from_command(
+                connection,
+                session_row,
+                existing,
+            )
+
+        if session_row["mode"] != "step":
+            raise ReplayTransitionConflictError(
+                "replay session is not in step mode"
+            )
+        if session_row["state"] != "running":
+            raise ReplayTransitionConflictError(
+                "replay session must be running for a step command"
+            )
+
+        remaining = (
+            session_row["dataset_tick_count"]
+            - session_row["processed_ticks"]
+        )
+        if remaining <= 0:
+            raise ReplayTransitionConflictError(
+                "replay session has no remaining ticks"
+            )
+        batch_limit = min(requested_ticks, remaining)
+        ticks = _read_step_ticks(
+            connection,
+            symbol=session_row["symbol"],
+            start_at=session_row["start_at"],
+            end_at=session_row["end_at"],
+            after_timestamp=session_row["checkpoint_event_timestamp"],
+            after_event_id=session_row["checkpoint_event_id"],
+            limit=batch_limit,
+        )
+        if len(ticks) != batch_limit:
+            raise ReplayTransitionConflictError(
+                "replay dataset changed after session creation"
+            )
+
+        last_tick = ticks[-1]
+        next_processed = session_row["processed_ticks"] + len(ticks)
+        next_state = (
+            "completed"
+            if next_processed == session_row["dataset_tick_count"]
+            else "running"
+        )
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        completed_at = now if next_state == "completed" else None
+        updated = connection.execute(
+            """
+            UPDATE replay_sessions
+            SET state = ?, processed_ticks = ?,
+                checkpoint_event_timestamp = ?, checkpoint_event_id = ?,
+                last_batch_at = ?, updated_at = ?, completed_at = ?
+            WHERE session_id = ? AND state = 'running'
+              AND processed_ticks = ?;
+            """,
+            (
+                next_state,
+                next_processed,
+                last_tick.event_timestamp,
+                last_tick.event_id,
+                now,
+                now,
+                completed_at,
+                normalized_session_id,
+                session_row["processed_ticks"],
+            ),
+        )
+        if updated.rowcount != 1:
+            raise ReplayTransitionConflictError(
+                "replay session changed during step processing"
+            )
+
+        connection.execute(
+            """
+            INSERT INTO replay_session_audit
+            (
+                session_id, actor, actor_role, action, previous_state,
+                next_state, processed_ticks, checkpoint_time,
+                checkpoint_event, occurred_at
+            )
+            VALUES (?, ?, ?, 'step', 'running', ?, ?, ?, ?, ?);
+            """,
+            (
+                normalized_session_id,
+                normalized_actor,
+                normalized_role,
+                next_state,
+                next_processed,
+                last_tick.event_timestamp,
+                last_tick.event_id,
+                now,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO replay_step_commands
+            (
+                session_id, idempotency_key, actor, actor_role,
+                requested_ticks, previous_processed_ticks,
+                previous_checkpoint_time, previous_checkpoint_event,
+                batch_tick_count, resulting_processed_ticks,
+                resulting_checkpoint_time, resulting_checkpoint_event,
+                resulting_state, occurred_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            (
+                normalized_session_id,
+                normalized_key,
+                normalized_actor,
+                normalized_role,
+                requested_ticks,
+                session_row["processed_ticks"],
+                session_row["checkpoint_event_timestamp"],
+                session_row["checkpoint_event_id"],
+                len(ticks),
+                next_processed,
+                last_tick.event_timestamp,
+                last_tick.event_id,
+                next_state,
+                now,
+            ),
+        )
+
+    return ReplayStepResult(
+        session_id=normalized_session_id,
+        state=next_state,
+        processed_ticks=next_processed,
+        checkpoint_position=TickPosition(
+            datetime.fromisoformat(last_tick.event_timestamp),
+            last_tick.event_id,
+        ),
+        ticks=ticks,
+        idempotent_replay=False,
+    )

@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 replay `step` rejimi əlavə edildi: hər əmrdə `1..1000` deterministik tick,
+  boşluqsuz checkpoint irəliləməsi, son batch-də atomik tamamlanma və persistent
+  idempotency; addım qeydləri append-only qorunur, `8` yeni test və tam backend
+  `75 passed`.
 - Replay sessiyası üçün qanuni vəziyyət keçidləri, terminal vəziyyət qoruması,
   optimistic conflict, monoton progress və datasetə bağlı checkpoint əlavə edildi;
   sessiya yenilənməsi ilə append-only audit eyni transaction-da yazılır, hədəf
