@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import sqlite3
 from dataclasses import asdict
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -32,10 +32,18 @@ from backend.app.auth import (
     revoke_dashboard_session,
 )
 from backend.app.database.replay_session_repository import (
+    ReplaySessionListPosition,
     ReplaySessionNotFoundError,
     ReplayTransitionConflictError,
+    get_replay_session,
+    list_replay_sessions,
 )
 from backend.app.quality.report import create_replay_quality_report
+from backend.app.replay.cursor import (
+    InvalidReplayCursorError,
+    decode_replay_session_cursor,
+    encode_replay_session_cursor,
+)
 
 
 APP_VERSION = "0.3.0"
@@ -208,3 +216,60 @@ def replay_quality_report(
             status_code=status.HTTP_409_CONFLICT,
             detail="Replay session is not completed",
         ) from error
+
+
+@app.get("/api/v2/replay-sessions")
+def replay_sessions(
+    cursor: str | None = None,
+    page_size: int = Query(default=50, ge=1, le=200),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    position = None
+    if cursor is not None:
+        try:
+            created_at, session_id = decode_replay_session_cursor(
+                cursor,
+                subject=user_code,
+            )
+            position = ReplaySessionListPosition(created_at, session_id)
+        except InvalidReplayCursorError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Replay cursor is invalid or expired",
+            ) from error
+
+    page = list_replay_sessions(page_size=page_size, after=position)
+    next_cursor = None
+    if page.next_position is not None:
+        next_cursor = encode_replay_session_cursor(
+            created_at=page.next_position.created_at,
+            session_id=page.next_position.session_id,
+            subject=user_code,
+        )
+    return {
+        "data": [asdict(session) for session in page.items],
+        "page": {
+            "limit": page_size,
+            "next_cursor": next_cursor,
+            "has_more": page.next_position is not None,
+        },
+        "meta": {"api_version": "2"},
+    }
+
+
+@app.get("/api/v2/replay-sessions/{session_id}")
+def replay_session_detail(
+    session_id: str,
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    return {
+        "data": asdict(session),
+        "meta": {"api_version": "2"},
+    }

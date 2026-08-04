@@ -63,6 +63,18 @@ class ReplaySession:
 
 
 @dataclass(frozen=True)
+class ReplaySessionListPosition:
+    created_at: str
+    session_id: str
+
+
+@dataclass(frozen=True)
+class ReplaySessionPage:
+    items: tuple[ReplaySession, ...]
+    next_position: ReplaySessionListPosition | None
+
+
+@dataclass(frozen=True)
 class ReplayStepResult:
     session_id: str
     state: str
@@ -299,6 +311,69 @@ def _session_from_row(row: object) -> ReplaySession:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         completed_at=row["completed_at"],
+    )
+
+
+def get_replay_session(session_id: str) -> ReplaySession:
+    normalized_session_id = _required_text(session_id, "session_id")
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+    if row is None:
+        raise ReplaySessionNotFoundError("replay session was not found")
+    return _session_from_row(row)
+
+
+def list_replay_sessions(
+    *,
+    page_size: int = 100,
+    after: ReplaySessionListPosition | None = None,
+) -> ReplaySessionPage:
+    if not 1 <= page_size <= 500:
+        raise ValueError("page_size must be between 1 and 500")
+
+    continuation_sql = ""
+    parameters: list[object] = []
+    if after is not None:
+        created_at = _required_text(after.created_at, "after.created_at")
+        session_id = _required_text(after.session_id, "after.session_id")
+        try:
+            datetime.fromisoformat(created_at)
+        except ValueError as error:
+            raise ValueError("after.created_at must be an ISO timestamp") from error
+        continuation_sql = """
+        WHERE created_at < ?
+           OR (created_at = ? AND session_id < ?)
+        """
+        parameters.extend((created_at, created_at, session_id))
+
+    parameters.append(page_size + 1)
+    with get_connection() as connection:
+        rows = connection.execute(
+            f"""
+            SELECT *
+            FROM replay_sessions
+            {continuation_sql}
+            ORDER BY created_at DESC, session_id DESC
+            LIMIT ?;
+            """,
+            parameters,
+        ).fetchall()
+
+    has_more = len(rows) > page_size
+    page_rows = rows[:page_size]
+    next_position = None
+    if has_more and page_rows:
+        last_row = page_rows[-1]
+        next_position = ReplaySessionListPosition(
+            created_at=last_row["created_at"],
+            session_id=last_row["session_id"],
+        )
+    return ReplaySessionPage(
+        items=tuple(_session_from_row(row) for row in page_rows),
+        next_position=next_position,
     )
 
 

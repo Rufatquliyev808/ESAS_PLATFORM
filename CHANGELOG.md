@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 replay sessiyalarının autentifikasiyalı siyahı və detal API-si əlavə
+  edildi: `created_at + session_id` deterministik keyset səhifələmə, istifadəçiyə
+  bağlı imzalanmış və vaxtı məhdud cursor, təhlükəsiz 400/404 cavabları; tam backend
+  `116 passed`, frontend lint/build/render yoxlamaları keçdi.
 - Tamamlanmış replay keyfiyyət hesabatı autentifikasiyalı, yalnız oxuma üçün daxili
   endpoint-dən təqdim edilir; təhlükəsiz 404/409 cavabları ilə tam backend `110 passed`.
 - `DQ-010` üçün sabit yaddaşlı, deterministik tick intervalı və spread statistikaları

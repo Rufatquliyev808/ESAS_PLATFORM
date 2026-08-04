@@ -100,7 +100,7 @@ Status: IN PROGRESS
 - [x] Müəyyən zaman aralığının replay edilməsi
 - [x] Məlumat boşluqlarının aşkarlanması
 - [x] Tick ardıcıllığının yoxlanması
-- [ ] Spread və tick sürəti statistikası
+- [x] Spread və tick sürəti statistikası
 - [x] Simvollar üzrə məlumat keyfiyyəti hesabatı
 - [x] Replay nəticələrinin təkrar istehsal edilə bilməsi
 
