@@ -10,6 +10,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Qorunan dashboard-a Phase 2 replay idarəetməsi əlavə edildi: sessiya yaratma,
+  siyahı/detal, qanuni lifecycle əmrləri, cursor-lu event baxışı və tamamlanmış
+  sessiyanın keyfiyyət hesabatı; API list/detail ownership sərtləşdirildi,
+  frontend lint/build/render və tam backend `133 passed`.
+
 - Replay keyfiyyət hesabatı qorunan public v2 API-yə çıxarıldı: ownership,
   completed-state qapısı, stabil `data/meta` contract-ı, deterministik report
   reproduksiyası və daxili endpoint geriyə uyğunluğu; tam backend `132 passed`.

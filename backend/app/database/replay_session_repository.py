@@ -333,12 +333,16 @@ def list_replay_sessions(
     *,
     page_size: int = 100,
     after: ReplaySessionListPosition | None = None,
+    owner: str | None = None,
 ) -> ReplaySessionPage:
     if not 1 <= page_size <= 500:
         raise ValueError("page_size must be between 1 and 500")
 
-    continuation_sql = ""
+    conditions: list[str] = []
     parameters: list[object] = []
+    if owner is not None:
+        conditions.append("created_by = ?")
+        parameters.append(_required_text(owner, "owner"))
     if after is not None:
         created_at = _required_text(after.created_at, "after.created_at")
         session_id = _required_text(after.session_id, "after.session_id")
@@ -346,11 +350,10 @@ def list_replay_sessions(
             datetime.fromisoformat(created_at)
         except ValueError as error:
             raise ValueError("after.created_at must be an ISO timestamp") from error
-        continuation_sql = """
-        WHERE created_at < ?
-           OR (created_at = ? AND session_id < ?)
-        """
+        conditions.append("(created_at < ? OR (created_at = ? AND session_id < ?))")
         parameters.extend((created_at, created_at, session_id))
+
+    where_sql = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
     parameters.append(page_size + 1)
     with get_connection() as connection:
@@ -358,7 +361,7 @@ def list_replay_sessions(
             f"""
             SELECT *
             FROM replay_sessions
-            {continuation_sql}
+            {where_sql}
             ORDER BY created_at DESC, session_id DESC
             LIMIT ?;
             """,
