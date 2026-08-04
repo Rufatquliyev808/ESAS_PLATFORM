@@ -6,30 +6,29 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Eyni dataset və immutable replay parametrləri ilə iki müstəqil icranın eyni
-checkpoint ardıcıllığı və nəticə fingerprint-i verdiyini sübut edən deterministik
-replay nəticə manifesti hazırlamaq.
+Phase 2 məlumat keyfiyyəti qatının ilk deterministik qaydalarını hazırlamaq:
+zaman boşluğu, geriyə gedən timestamp və dublikat aşkarlanması.
 
 ## Sərhədlər
 
-- Manifest sessiyanın dataset fingerprint-i, müqavilə versiyası, rejim və intervalını
-  daşımalıdır.
-- Nəticə fingerprint-i kanonik emal ardıcıllığından axın şəklində hesablanmalıdır.
-- Eyni giriş iki müstəqil sessiyada eyni nəticə fingerprint-i verməlidir.
-- Fərqli batch ölçüsü nəticənin mənasını və fingerprint-i dəyişməməlidir.
-- Dataset, müqavilə versiyası və ya interval fərqi müqayisəni fail-closed rədd etməlidir.
-- Manifest replay bitmədən yekun kimi təqdim edilməməlidir.
+- Qaydalar versiyalanmış olmalı və eyni dataset üçün eyni nəticəni verməlidir.
+- Zaman boşluğu həddi simvol və müşahidə kontekstinə açıq parametr kimi bağlanmalıdır.
+- Geriyə gedən timestamp mənbə vaxtı ilə qəbul vaxtını qarışdırmadan aşkarlanmalıdır.
+- Dublikat anlayışı `event_id` dublikatından və eyni payload namizədindən ayrılmalıdır.
+- Hər tapıntı səbəb, mövqe və qayda versiyası ilə izah edilə bilməlidir.
+- Hesablama bütün dataset-i yaddaşa yükləməməlidir.
 - Xam tick-lər dəyişdirilməməli; API, frontend və canlı migration hələ əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- `step` və `max_speed` üçün tamamlanmış sessiyadan nəticə manifesti yaradılır.
-- Eyni dataset-in fərqli batch ölçülü iki icrası eyni nəticə fingerprint-i verir.
-- Natamam və uyğun olmayan sessiyalar müqayisə edilmir.
-- Manifest hesablanması bütün dataset-i yaddaşa yükləmir.
+- Boşluq, geriyə timestamp və dublikat üçün sərhəd testləri keçir.
+- Eyni timestamp-li qanuni tick-lər səhvən problem sayılmır.
+- Fərqli batch ölçüləri eyni keyfiyyət tapıntılarını verir.
+- Tapıntılar deterministik sıra və stabil identifikatorla qaytarılır.
+- Analiz bütün dataset-i yaddaşa yükləmir.
 - Mövcud backend testləri keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-Replay reproduksiyası qəbul edildikdən sonra məlumat keyfiyyəti analiz qatının ilk
-qaydaları: zaman boşluğu, geriyə gedən timestamp və dublikat aşkarlanması hazırlanacaq.
+İlk keyfiyyət qaydaları qəbul edildikdən sonra nəticə hesabatı replay sessiyası ilə
+əlaqələndiriləcək və keyfiyyət qapısının ilkin status modeli hazırlanacaq.

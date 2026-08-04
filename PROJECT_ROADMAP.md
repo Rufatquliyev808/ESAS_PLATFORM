@@ -96,13 +96,13 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 Status: IN PROGRESS
 
-- [ ] Tarixi tick məlumatının oxunması
-- [ ] Müəyyən zaman aralığının replay edilməsi
+- [x] Tarixi tick məlumatının oxunması
+- [x] Müəyyən zaman aralığının replay edilməsi
 - [ ] Məlumat boşluqlarının aşkarlanması
-- [ ] Tick ardıcıllığının yoxlanması
+- [x] Tick ardıcıllığının yoxlanması
 - [ ] Spread və tick sürəti statistikası
 - [ ] Simvollar üzrə məlumat keyfiyyəti hesabatı
-- [ ] Replay nəticələrinin təkrar istehsal edilə bilməsi
+- [x] Replay nəticələrinin təkrar istehsal edilə bilməsi
 
 # Phase 3 — Statistik analiz
 
@@ -244,8 +244,8 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Phase 2 replay mühərriki üçün iki müstəqil icranın eyni checkpoint ardıcıllığı və
-nəticə fingerprint-i verdiyini təsdiqləyən reproduksiya sübutu yaratmaq.
+Phase 2 məlumat keyfiyyəti analizinin ilk qaydalarını — zaman boşluğu, geriyə gedən
+timestamp və dublikat aşkarlanmasını — deterministik və versiyalanmış formada qurmaq.
 
 Ətraflı tapşırıq:
 

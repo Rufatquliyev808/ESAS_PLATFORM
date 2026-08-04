@@ -84,6 +84,13 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   təsdiqlənir; tick sayı eyni qalsa belə event əvəzlənməsi fail-closed aşkarlanır.
 - `max_speed` üzrə `9` yeni test və tam backend üzrə `84 passed` nəticəsi əldə edildi;
   canlı baza, API, frontend və ticarət sərhədləri dəyişdirilmədi.
+- Tamamlanmış `step` və `max_speed` sessiyaları üçün dəyişməz nəticə manifesti əlavə
+  edildi. Manifest intervalı, rejimi, müqavilə versiyalarını, dataset izini və
+  domen-ayrılmış kanonik nəticə fingerprint-ini daşıyır.
+- Eyni dataset-in fərqli icra və manifest batch ölçülərində eyni fingerprint verməsi,
+  natamam sessiyanın və dəyişmiş/uyğun olmayan dataset və müqavilələrin fail-closed
+  rəddi yoxlanıldı. `8` yeni test və tam backend üzrə `92 passed` nəticəsi əldə edildi;
+  canlı baza, API, frontend və ticarət sərhədləri dəyişdirilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

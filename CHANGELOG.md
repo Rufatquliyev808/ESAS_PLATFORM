@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 deterministik replay nəticə manifesti əlavə edildi: tamamlanmış `step` və
+  `max_speed` sessiyaları üçün immutable giriş, dataset və müqavilə metadatası,
+  streaming kanonik nəticə fingerprint-i və iki müstəqil icra üçün fail-closed
+  reproduksiya sübutu; `8` yeni test, tam backend `92 passed`.
 - Phase 2 `max_speed` replay orchestrator-u əlavə edildi: maksimum `1000` tick-lik
   transaction batch-ləri, checkpoint əsaslı restart, pause sərhədi, terminal no-op,
   dataset fingerprint təsdiqi və audit rollback; `9` yeni test, tam backend

@@ -1,6 +1,6 @@
 # Phase 2 — Replay sessiyası və həyat dövrü müqaviləsi
 
-Status: IMPLEMENTATION IN PROGRESS — REPLAY MODES READY
+Status: IMPLEMENTATION IN PROGRESS — REPLAY REPRODUCIBILITY READY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 Worker claim, lease, fencing və scheduler qaydaları:
@@ -119,6 +119,22 @@ Checkpoint ən son tam emal edilmiş `(event_timestamp, event_id)` açarını,
 - Fingerprint dəyişibsə sessiya `failed` olur və yeni sessiya tələb edilir.
 
 Bu davranış yarımçıq sessiyanı uğurla tamamlanmış kimi göstərməyin qarşısını alır.
+
+## Yekun nəticə manifesti
+
+Yalnız `completed` sessiya yekun nəticə manifesti yarada bilər. Manifest sessiyanın
+simvolunu, `[start_at, end_at)` intervalını, rejimini, replay və keyfiyyət müqaviləsi
+versiyalarını, dataset fingerprint-ini, emal sayını və kanonik nəticə fingerprint-ini
+daşıyır.
+
+Nəticə fingerprint-i tick-ləri tam yaddaşa yükləmədən, kanonik
+`(event_timestamp, event_id)` sırasındakı `event_id` axınından hesablanır. Daxili batch
+ölçüsü nəticənin mənasını və fingerprint-i dəyişmir. Manifest yaradılarkən sessiyanın
+say, ilk/son mövqe və son checkpoint-i dataset snapshot-u ilə yenidən tutuşdurulur.
+
+İki müstəqil manifest yalnız immutable girişləri, müqavilə versiyaları, dataset və
+nəticə fingerprint-ləri eyni olduqda reproduksiya sübutu yaradır. Interval, rejim,
+dataset və ya müqavilə fərqi fail-closed rədd edilir.
 
 ## Audit hadisələri
 
@@ -270,6 +286,9 @@ Avtomatik silmə ilkin versiyaya daxil deyil. Gələcək retention siyasəti:
 13. Xam `tick_events` sətir sayı və nəzarət cəmi replay-dən sonra dəyişmir.
 14. Audit bütün vəziyyət keçidlərini istifadəçi və UTC vaxtı ilə saxlayır.
 15. Xəta və audit cavablarında məxfi məlumat görünmür.
+16. `step` və `max_speed` tamamlanmış sessiyaları yekun manifest yaradır.
+17. Fərqli batch ölçüləri ilə iki eyni icra eyni nəticə fingerprint-i verir.
+18. Natamam, dəyişmiş datasetli və ya uyğun olmayan manifestlər fail-closed rədd edilir.
 
 ## Phase 1-dən sonra icra ardıcıllığı
 
@@ -278,12 +297,14 @@ Avtomatik silmə ilkin versiyaya daxil deyil. Gələcək retention siyasəti:
 3. Dataset fingerprint və checkpoint mexanizmi.
 4. `step` rejimi və idempotency testləri.
 5. `max_speed` worker-i və restart bərpası.
-6. Qorunan API və frontend sessiya monitorinqi.
-7. Məlumat keyfiyyəti hesabatının sessiya nəticəsinə bağlanması.
+6. Deterministik nəticə manifesti və reproduksiya sübutu.
+7. Qorunan API və frontend sessiya monitorinqi.
+8. Məlumat keyfiyyəti hesabatının sessiya nəticəsinə bağlanması.
 
 Dataset snapshot skeleti tətbiq edilib: tick sayı, ilk/son kanonik mövqe və
 uzunluq-prefiksli UTF-8 `event_id` axınından `sha256-event-id-v1` fingerprint
 hesablanır. Sessiya və append-only audit sxemi müvəqqəti bazada tətbiq və test edilib.
 Sessiya yaratma repository-si snapshot sahələrini və ilkin audit qeydini atomik yazır;
-boş dataset birbaşa `completed` olur. Vəziyyət keçidləri, worker və API hələ tətbiq
-edilməyib.
+boş dataset birbaşa `completed` olur. Vəziyyət keçidləri, `step`, `max_speed`, restart
+bərpası və nəticə manifesti repository qatında tətbiq edilib. API və frontend hələ
+tətbiq edilməyib.
