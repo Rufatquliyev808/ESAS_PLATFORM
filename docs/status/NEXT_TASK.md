@@ -6,24 +6,28 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Replay keyfiyyət hesabatını frontend-də yalnız müşahidə üçün təqdim edən təhlükəsiz
-detal görünüşünü hazırlamaq.
+Replay sessiyası yaratmaq üçün qorunan `POST /api/v2/replay-sessions` endpoint-ini
+hazırlamaq.
 
 ## Sərhədlər
 
-- Endpoint yalnız tamamlanmış replay sessiyasını qəbul etməlidir.
-- Cavab manifest, yekun status, tapıntılar və statistikaları dəyişmədən qaytarmalıdır.
-- Mövcud autentifikasiya sərhədi qorunmalı və xəta cavabları təhlükəsiz olmalıdır.
-- Xam tick-lər dəyişdirilməməli; API, frontend və canlı migration hələ əlavə edilməməlidir.
+- Sorğu `symbol`, `[start_at, end_at)` intervalı və `step|max_speed` rejimini qəbul
+  etməlidir.
+- Mövcud dashboard autentifikasiyası qorunmalı, yaradıcı istifadəçi auditə
+  yazılmalı və etibarsız giriş fail-closed rədd edilməlidir.
+- Snapshot, sessiya və ilkin append-only audit mövcud repository transaction-u ilə
+  atomik yaradılmalıdır.
+- Xam tick-lər dəyişdirilməməli və canlı bazada test məlumatı yaradılmamalıdır.
 
 ## Tamamlanma meyarları
 
-- API repository testi tam hesabatı və deterministik fingerprint-i yoxlayır.
-- Mövcud olmayan və tamamlanmamış sessiyalar təhlükəsiz rədd edilir.
+- Uğurlu sorğu yeni sessiya ID-si, state və snapshot metadatasını qaytarır.
+- Boş dataset təhlükəsiz `completed`, məlumatlı dataset `created` olur.
+- Yanlış interval, rejim və sahələr təhlükəsiz rədd edilir.
+- API testi sessiya/audit atomikliyini və xam məlumat dəyişməzliyini təsdiqləyir.
 - Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
-- Mövcud backend testləri keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-Statistika qatı qəbul edildikdən sonra qorunan Phase 2 replay/keyfiyyət API-sinin
-repository sərhədi hazırlanacaq.
+Yaratma endpoint-indən sonra replay lifecycle command API-si ownership,
+idempotency və optimistic state nəzarəti ilə əlavə ediləcək.

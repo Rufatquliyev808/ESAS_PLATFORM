@@ -428,8 +428,21 @@ Bütün qəbul qapıları keçib və Phase 1 `2026-08-04` tarixində rəsmi bağ
 
 ## Növbəti əsas texniki prioritet
 
-Phase 2 üçün yalnız-oxuma tick repository interfeysini və
-`event_timestamp + event_id` deterministik sıralama testlərini yaratmaq.
+Replay sessiyası yaratmaq üçün `POST /api/v2/replay-sessions` endpoint-ini mövcud
+snapshot və append-only audit repository sərhədinə bağlamaq; giriş məlumatlarını
+fail-closed yoxlamaq və dəyişdirici əməliyyat üçün ownership/audit əsasını qorumaq.
+
+## Phase 2 replay oxuma API-si
+
+- `GET /api/v2/replay-sessions` giriş sessiyası ilə qorunur və sessiyaları
+  `created_at DESC, session_id DESC` sabit sırası ilə qaytarır.
+- Səhifələmə cursor-u HMAC ilə imzalanır, istifadəçiyə və replay resursuna bağlanır,
+  bir saat sonra etibarsız olur; dəyişdirilmiş cursor təhlükəsiz `400` alır.
+- `GET /api/v2/replay-sessions/{session_id}` checkpoint daxil olmaqla saxlanmış
+  sessiya metadatasını qaytarır, mövcud olmayan sessiya təhlükəsiz `404` alır.
+- API yalnız oxuyur; xam tick, replay progress və audit məlumatını dəyişmir.
+- Yeni API testləri `6 passed`, tam backend `116 passed`; frontend lint, build və
+  render regressiyası keçib.
 
 ## Phase 1 RC1 release qeydləri
 

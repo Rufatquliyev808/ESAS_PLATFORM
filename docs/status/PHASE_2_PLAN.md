@@ -133,11 +133,18 @@ versiyası ilə audit edilə bilir.
 
 ### 4. API
 
-- Replay yaratmaq və vəziyyətini oxumaq üçün backend endpoint-ləri.
-- Məlumat keyfiyyəti hesabatını oxumaq üçün qorunan endpoint.
-- Böyük məlumat aralığında yaddaş limitini qoruyan səhifələmə və ya streaming.
-- `/api/v2`, imzalanmış snapshot cursor-u, idempotency, rate limit və standart
+- [ ] Replay yaratmaq və vəziyyətini oxumaq üçün backend endpoint-ləri.
+  - [x] Replay sessiyası siyahısı və detalı.
+  - [ ] Replay sessiyası yaratma endpoint-i.
+  - [ ] Replay lifecycle command endpoint-i.
+- [x] Məlumat keyfiyyəti hesabatını oxumaq üçün qorunan endpoint.
+- [x] Sessiya siyahısında yaddaş limitini qoruyan keyset səhifələmə.
+- [ ] `/api/v2`, imzalanmış snapshot cursor-u, idempotency, rate limit və standart
   xəta envelope-u tətbiq etmək.
+
+Aralıq nəticə: replay sessiyası siyahısı və detalı `/api/v2` altında qorunur;
+cursor resursa və istifadəçiyə bağlı HMAC imzası və vaxt limiti ilə verilir. Yeni
+API testləri `6 passed`, tam backend `116 passed` nəticəsi verdi.
 
 Tamamlanma meyarı: frontend bazaya birbaşa qoşulmadan bütün nəticələri API-dən alır.
 
