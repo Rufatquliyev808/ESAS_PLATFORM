@@ -36,6 +36,18 @@ Every result includes symbol, timeframe, parameters, dataset fingerprint, bar
 fingerprint, indicator fingerprint, observations, summary counts, and its own SHA-256
 fingerprint. A consumer must invalidate the result if an upstream fingerprint changes.
 
+## Historical outcome evaluation
+
+`forward_closed_bar_outcome` version `1.0.0` may be attached to any completed strategy
+result. It measures the close-to-close percentage change at a positive, explicit future
+closed-bar horizon. The evaluator must preserve the original strategy observations;
+future prices may label an outcome but may never participate in creating an observation.
+
+Each outcome is `matured`, `immature`, or `not_applicable`. Matured outcomes expose
+direction and return, while summaries keep relations separate and remain bound to the
+dataset, bar, and strategy fingerprints. These measurements are historical research,
+not prediction accuracy, trading signals, or authorization to place an order.
+
 ## Promotion rule
 
 An EXPERIMENTAL strategy cannot become SHADOW or ACTIVE here. Promotion requires a

@@ -10,6 +10,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Versiyalanmış `forward_closed_bar_outcome 1.0.0` tədqiqat qiymətləndiricisi əlavə edildi.
+  EMA və RSI müşahidələrinin yalnız sonrakı qapalı bar nəticələri seçilən üfüqdə ölçülür;
+  yetkin, yetkinləşməmiş və warm-up nəticələri, istiqamət və rejim üzrə orta dəyişiklik
+  ayrıca saxlanır. Gələcək məlumat ilkin müşahidəyə daxil olmur. Frontend hər modulda
+  ayrıca tarixi nəticə bölməsi və üfüq seçimi göstərir. Tam backend `181 passed`, frontend
+  lint/build və `3` test keçdi; qat siqnal və order yaratmır.
+
 - `rsi_regime_observation` `1.0.0` müstəqil tədqiqat modulu əlavə edildi. Modul causal
   RSI-ni konfiqurasiya olunan aşağı/neytral/yüksək rejimlərə ayırır, inclusive sərhədləri,
   warm-up, determinizm və no-lookahead davranışını test edir. EMA və RSI frontend-də ayrıca

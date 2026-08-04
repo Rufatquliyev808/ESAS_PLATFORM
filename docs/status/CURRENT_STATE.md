@@ -1,5 +1,16 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 tarixi nəticə ölçmə infrastrukturu
+
+2026-08-04 tarixində `forward_closed_bar_outcome 1.0.0` əlavə edildi. EMA və RSI
+müşahidələri seçilən üfüqdən sonrakı qapalı barın qiymət dəyişikliyi ilə ölçülür. Hazır,
+yetkinləşməmiş və warm-up nəticələri ayrıdır; yuxarı/aşağı/dəyişməz istiqamət və rejim üzrə
+orta dəyişiklik göstərilir. Gələcək bar yalnız nəticəni etiketləyir, ilkin müşahidəni və
+əvvəlki hesablamaları dəyişmir. Hər nəticə dataset, bar və strategiya fingerprint-inə
+bağlanır. Frontend-də hər strategiyanın öz tarixi nəticə bölməsi və üfüq seçimi var.
+Bu qat uğur və ya al/sat siqnalı deyil, order yaratmır. Tam backend `181 passed`, frontend
+lint/build və `3` test nəticəsi uğurludur.
+
 ## Phase 4 ikinci strategiya müşahidə modulu
 
 2026-08-04 tarixində `rsi_regime_observation 1.0.0` əlavə edildi. Causal RSI yalnız

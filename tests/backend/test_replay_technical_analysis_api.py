@@ -184,7 +184,8 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     session = _prepare(isolated_database)
     url = (
         f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
-        "?timeframe=M1&ema_period=2&rsi_period=2&rsi_low=30&rsi_high=70&bar_limit=10"
+        "?timeframe=M1&ema_period=2&rsi_period=2&rsi_low=30&rsi_high=70"
+        "&bar_limit=10&outcome_horizon=1"
     )
     with TestClient(app) as client:
         assert client.get(url).status_code == 401
@@ -209,6 +210,12 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
         "equal": 0,
     }
     assert strategy["fingerprint"].startswith("sha256:")
+    outcome = strategy["outcome_evaluation"]
+    assert outcome["definition"]["version"] == "1.0.0"
+    assert outcome["horizon_bars"] == 1
+    assert outcome["summary"]["matured"] == 1
+    assert outcome["summary"]["immature"] == 1
+    assert outcome["interpretation"] == "historical_outcome_measurement_not_trading_signal"
     rsi = data["strategies"][1]
     assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
     assert rsi["definition"]["version"] == "1.0.0"
@@ -224,6 +231,17 @@ def test_strategy_analysis_rejects_crossed_rsi_thresholds(isolated_database: Pat
     with TestClient(app) as client:
         response = client.get(
             f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis?rsi_low=70&rsi_high=30",
+            headers=_headers(client),
+        )
+    assert response.status_code == 422
+
+
+def test_strategy_analysis_rejects_unsafe_outcome_horizon(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
+            "?outcome_horizon=0",
             headers=_headers(client),
         )
     assert response.status_code == 422
