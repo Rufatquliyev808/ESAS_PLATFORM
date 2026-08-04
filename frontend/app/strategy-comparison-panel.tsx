@@ -23,6 +23,21 @@ type StrategyResult = {
     fingerprint: string;
     interpretation: string;
   };
+  walk_forward_evaluation: {
+    definition: { evaluator_id: string; version: string; lifecycle: string; interpretation: string };
+    status: "ready" | "insufficient_data";
+    manifest: { development_ratio: number; split_index: number; total_bars: number; parameter_source: string; split_policy: string; fingerprint?: string };
+    development: WalkForwardWindow;
+    validation: WalkForwardWindow;
+    fingerprint: string;
+    interpretation: string;
+  };
+};
+type WalkForwardWindow = {
+  window: string; start_bar_end_at: string | null; end_bar_end_at: string | null;
+  total_observations: number; matured: number; immature: number;
+  not_applicable: number; boundary_excluded: number;
+  up: number; down: number; flat: number; mean_return_percent: number | null;
 };
 type StrategyAnalysis = { symbol: string; timeframe: Timeframe; strategies: StrategyResult[]; interpretation: string; api_version: string };
 
@@ -40,14 +55,15 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
   const [rsiHigh, setRsiHigh] = useState(70);
   const [barLimit, setBarLimit] = useState(500);
   const [outcomeHorizon, setOutcomeHorizon] = useState(3);
-  const [query, setQuery] = useState({ timeframe: "M5" as Timeframe, emaPeriod: 20, rsiPeriod: 14, rsiLow: 30, rsiHigh: 70, barLimit: 500, outcomeHorizon: 3 });
+  const [developmentRatio, setDevelopmentRatio] = useState(0.7);
+  const [query, setQuery] = useState({ timeframe: "M5" as Timeframe, emaPeriod: 20, rsiPeriod: 14, rsiLow: 30, rsiHigh: 70, barLimit: 500, outcomeHorizon: 3, developmentRatio: 0.7 });
   const [result, setResult] = useState<StrategyAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    const params = new URLSearchParams({ timeframe: query.timeframe, ema_period: String(query.emaPeriod), rsi_period: String(query.rsiPeriod), rsi_low: String(query.rsiLow), rsi_high: String(query.rsiHigh), bar_limit: String(query.barLimit), outcome_horizon: String(query.outcomeHorizon) });
+    const params = new URLSearchParams({ timeframe: query.timeframe, ema_period: String(query.emaPeriod), rsi_period: String(query.rsiPeriod), rsi_low: String(query.rsiLow), rsi_high: String(query.rsiHigh), bar_limit: String(query.barLimit), outcome_horizon: String(query.outcomeHorizon), development_ratio: String(query.developmentRatio) });
     try {
       const response = await fetch(`${API_BASE}/api/v2/replay-sessions/${sessionId}/strategy-analysis?${params}`, { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
       if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
@@ -64,7 +80,7 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
     <div className="strategy-heading"><div><p className="eyebrow">Phase 4 · ayrıca versiyalanan modullar</p><h3 id="strategy-lab-title">{symbol} strategiya müqayisə laboratoriyası</h3><p>Hər metod ayrıca kartda hesablanır ki, sonrakı düzəlişlər bir-birindən asılı olmasın.</p></div><span className="research-pill">Araşdırma müşahidəsidir · siqnal deyil</span></div>
     <form className="strategy-controls" onSubmit={(event) => {
       event.preventDefault();
-      const next = { timeframe, emaPeriod, rsiPeriod, rsiLow, rsiHigh, barLimit, outcomeHorizon };
+      const next = { timeframe, emaPeriod, rsiPeriod, rsiLow, rsiHigh, barLimit, outcomeHorizon, developmentRatio };
       if (JSON.stringify(next) === JSON.stringify(query)) void load();
       else setQuery(next);
     }}>
@@ -75,6 +91,7 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
       <label>RSI yuxarı hədd<input type="number" min="1" max="100" value={rsiHigh} onChange={(event) => setRsiHigh(Number(event.target.value))} /></label>
       <label>Görünən bar<select value={barLimit} onChange={(event) => setBarLimit(Number(event.target.value))}><option value="100">100</option><option value="250">250</option><option value="500">500</option><option value="1000">1 000</option></select></label>
       <label>Nəticə üfüqü (bar)<input type="number" min="1" max="100" value={outcomeHorizon} onChange={(event) => setOutcomeHorizon(Number(event.target.value))} /></label>
+      <label>İnkişaf / yoxlama<select value={developmentRatio} onChange={(event) => setDevelopmentRatio(Number(event.target.value))}><option value="0.6">60% / 40%</option><option value="0.7">70% / 30%</option><option value="0.8">80% / 20%</option></select></label>
       <button disabled={loading}>{loading ? "Hesablanır…" : "Müşahidələri hesabla"}</button>
     </form>
     {error && <div className="analysis-error" role="alert"><strong>Strategiya bölməsi göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void load()}>Yenidən yoxla</button></div>}
@@ -91,6 +108,18 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
           <div className="strategy-summary"><div><span>Ölçülmüş</span><strong>{strategy.outcome_evaluation.summary.matured}</strong></div><div><span>Yetkinləşməyən</span><strong>{strategy.outcome_evaluation.summary.immature}</strong></div><div><span>Orta dəyişiklik</span><strong>{strategy.outcome_evaluation.summary.mean_return_percent === null ? "—" : `${strategy.outcome_evaluation.summary.mean_return_percent.toFixed(3)}%`}</strong></div></div>
           <div className="strategy-counts"><CountBar label="Yuxarı bağlanıb" value={strategy.outcome_evaluation.summary.up} total={strategy.outcome_evaluation.summary.matured} tone="above" /><CountBar label="Aşağı bağlanıb" value={strategy.outcome_evaluation.summary.down} total={strategy.outcome_evaluation.summary.matured} tone="below" /><CountBar label="Dəyişməyib" value={strategy.outcome_evaluation.summary.flat} total={strategy.outcome_evaluation.summary.matured} tone="equal" /></div>
           <details><summary>Rejimlər üzrə tarixi müqayisə</summary><dl>{strategy.outcome_evaluation.summary.by_relation.map((item) => <div key={item.relation}><dt>{item.relation}</dt><dd>{item.count} nəticə · orta {item.mean_return_percent.toFixed(3)}%</dd></div>)}</dl></details>
+        </div>
+        <div className="walk-forward-block">
+          <div className="walk-forward-heading"><div><p className="eyebrow">Xronoloji walk-forward · qarışdırma yoxdur</p><h5>İnkişaf və toxunulmamış yoxlama</h5></div><span className={strategy.walk_forward_evaluation.status === "ready" ? "analysis-badge ready" : "analysis-badge warmup"}>{strategy.walk_forward_evaluation.status === "ready" ? "Müqayisəyə hazır" : "Məlumat azdır"}</span></div>
+          <p className="strategy-explanation">Parametrlər inkişaf konfiqurasiyasından gəlir. Yoxlama hissəsi onları seçmək üçün istifadə edilmir; sərhədi keçən gələcək nəticələr inkişaf hesabından çıxarılır.</p>
+          <div className="walk-forward-grid">
+            {([strategy.walk_forward_evaluation.development, strategy.walk_forward_evaluation.validation] as WalkForwardWindow[]).map((window) => <section key={window.window} className="walk-forward-window">
+              <div className="walk-forward-window-title"><strong>{window.window === "development" ? `İnkişaf · ${(strategy.walk_forward_evaluation.manifest.development_ratio * 100).toFixed(0)}%` : `Yoxlama · ${((1 - strategy.walk_forward_evaluation.manifest.development_ratio) * 100).toFixed(0)}%`}</strong><span>{window.total_observations} müşahidə</span></div>
+              <div className="strategy-summary"><div><span>Ölçülmüş</span><strong>{window.matured}</strong></div><div><span>Orta dəyişiklik</span><strong>{window.mean_return_percent === null ? "—" : `${window.mean_return_percent.toFixed(3)}%`}</strong></div><div><span>Yuxarı / aşağı</span><strong>{window.up} / {window.down}</strong></div></div>
+              <p className="walk-forward-note">Yetkinləşməyən: {window.immature} · tətbiq olunmayan: {window.not_applicable}{window.boundary_excluded ? ` · sərhəddən çıxarılan: ${window.boundary_excluded}` : ""}</p>
+            </section>)}
+          </div>
+          <p className="walk-forward-warning">Bu müqayisə komissiya, spread, slippage və risk daxil olmayan tarixi qiymət dəyişməsidir; mənfəət vəd etmir.</p>
         </div>
         <details><summary>Versiya və hesablama izi</summary><dl><div><dt>Modul</dt><dd>{strategy.definition.strategy_id}</dd></div><div><dt>Tələb olunan xüsusiyyət</dt><dd>{strategy.definition.required_features.join(", ")}</dd></div><div><dt>Nəticə izi</dt><dd title={strategy.fingerprint}>{strategy.fingerprint.slice(0, 22)}…</dd></div><div><dt>Bar izi</dt><dd title={strategy.bar_fingerprint}>{strategy.bar_fingerprint.slice(0, 22)}…</dd></div></dl></details>
       </article>;

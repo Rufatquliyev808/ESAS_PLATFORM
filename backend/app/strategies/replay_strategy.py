@@ -5,6 +5,7 @@ from backend.app.database.replay_session_repository import ReplaySession
 from backend.app.strategies.ema_close_relation import evaluate_ema_close_relation
 from backend.app.strategies.rsi_regime_observation import evaluate_rsi_regime_observation
 from backend.app.strategies.outcome_evaluation import evaluate_strategy_outcomes
+from backend.app.strategies.walk_forward_evaluation import evaluate_walk_forward
 
 
 STRATEGY_ANALYSIS_API_VERSION = "1.0.0"
@@ -24,7 +25,8 @@ class ReplayStrategyAnalysis:
 
 def create_replay_strategy_analysis(
     *, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int,
-    rsi_low: float, rsi_high: float, bar_limit: int, outcome_horizon: int
+    rsi_low: float, rsi_high: float, bar_limit: int, outcome_horizon: int,
+    development_ratio: float,
 ) -> ReplayStrategyAnalysis:
     """Evaluate independently versioned research strategies on completed replay bars."""
     context = create_replay_analysis_context(
@@ -50,10 +52,15 @@ def create_replay_strategy_analysis(
     strategy_payloads: list[dict[str, object]] = []
     for strategy in (ema_result, rsi_result):
         payload = asdict(strategy)
-        payload["outcome_evaluation"] = asdict(evaluate_strategy_outcomes(
+        outcome = evaluate_strategy_outcomes(
             strategy=strategy,
             bars=context.bars.bars,
             horizon_bars=outcome_horizon,
+        )
+        payload["outcome_evaluation"] = asdict(outcome)
+        payload["walk_forward_evaluation"] = asdict(evaluate_walk_forward(
+            strategy=strategy, outcome=outcome, bars=context.bars.bars,
+            development_ratio=development_ratio,
         ))
         strategy_payloads.append(payload)
 
@@ -63,7 +70,8 @@ def create_replay_strategy_analysis(
         timeframe=timeframe,
         parameters={"ema_period": ema_period, "rsi_period": rsi_period,
                     "rsi_low": rsi_low, "rsi_high": rsi_high, "bar_limit": bar_limit,
-                    "outcome_horizon": outcome_horizon},
+                    "outcome_horizon": outcome_horizon,
+                    "development_ratio": development_ratio},
         lineage=context.analysis.lineage,
         strategies=tuple(strategy_payloads),
     )

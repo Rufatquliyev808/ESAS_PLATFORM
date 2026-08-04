@@ -1,5 +1,17 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 xronoloji walk-forward müqayisə təməli
+
+2026-08-04 tarixində `chronological_holdout_comparison 1.0.0` əlavə edildi. EMA və
+RSI nəticələri təsadüfi qarışdırılmadan xronoloji inkişaf və toxunulmamış yoxlama
+intervallarına ayrılır. İnkişaf sərhədindən sonrakı qiymətə ehtiyac duyan nəticələr
+inkişaf hesabından ayrıca çıxarılır; yoxlama qiymətlərinin dəyişməsi inkişaf yekununu
+dəyişmir. Manifest strategiya parametrlərini, bölgünü, nəticə üfüqünü və bütün upstream
+fingerprint-ləri saxlayır. Frontend 60/40, 70/30 və 80/20 bölgülərini, hər intervalın
+əhatəsini, istiqamətini, orta xərcsiz dəyişməsini və sərhəddən çıxarılan nümunələri
+Azərbaycan dilində ayrı göstərir. Qat yalnız tarixi tədqiqatdır, canlı siqnal və order
+yaratmır. Tam backend `189 passed`, frontend lint/build və `3` test keçdi.
+
 ## Phase 4 tarixi nəticə ölçmə infrastrukturu
 
 2026-08-04 tarixində `forward_closed_bar_outcome 1.0.0` əlavə edildi. EMA və RSI

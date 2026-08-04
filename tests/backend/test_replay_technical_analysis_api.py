@@ -185,7 +185,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     url = (
         f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
         "?timeframe=M1&ema_period=2&rsi_period=2&rsi_low=30&rsi_high=70"
-        "&bar_limit=10&outcome_horizon=1"
+        "&bar_limit=10&outcome_horizon=1&development_ratio=0.7"
     )
     with TestClient(app) as client:
         assert client.get(url).status_code == 401
@@ -216,6 +216,13 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert outcome["summary"]["matured"] == 1
     assert outcome["summary"]["immature"] == 1
     assert outcome["interpretation"] == "historical_outcome_measurement_not_trading_signal"
+    walk_forward = strategy["walk_forward_evaluation"]
+    assert walk_forward["definition"]["version"] == "1.0.0"
+    assert walk_forward["status"] == "ready"
+    assert walk_forward["manifest"]["split_policy"] == "chronological_no_shuffle_validation_untouched"
+    assert walk_forward["manifest"]["development_ratio"] == 0.7
+    assert walk_forward["development"]["boundary_excluded"] == 1
+    assert walk_forward["validation"]["total_observations"] == 1
     rsi = data["strategies"][1]
     assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
     assert rsi["definition"]["version"] == "1.0.0"
@@ -242,6 +249,17 @@ def test_strategy_analysis_rejects_unsafe_outcome_horizon(isolated_database: Pat
         response = client.get(
             f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
             "?outcome_horizon=0",
+            headers=_headers(client),
+        )
+    assert response.status_code == 422
+
+
+def test_strategy_analysis_rejects_unsafe_development_ratio(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
+            "?development_ratio=0.95",
             headers=_headers(client),
         )
     assert response.status_code == 422
