@@ -10,6 +10,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Tamamlanmış replay sessiyasının EMA, RSI və ATR nəticələrini göstərən qorunan texniki
+  analiz frontend paneli əlavə edildi. İstifadəçi timeframe, indikator periodları və
+  görünən bar sayını seçə bilir; EMA qiymətlə birlikdə, RSI və ATR ayrıca kartlarda
+  göstərilir. Warm-up, boş/yüklənmə/xəta vəziyyətləri, mobil görünüş və fingerprint
+  lineage bölməsi əlavə edildi. Panel araşdırma məqsədlidir, siqnal və order yaratmır;
+  frontend lint/build və `2` frontend testi, tam backend `156 passed` nəticəsi verdi.
+
 - Tamamlanmış replay sessiyası üçün qorunan, yalnız-oxuma texniki analiz API-si əlavə
   edildi. Endpoint `M1`, `M5`, `M15`, `H1`, EMA/RSI/ATR periodları və təhlükəsiz şam
   limitini qəbul edir; yalnız sessiya sahibinə xidmət göstərir, açıq sessiyanı və dataset

@@ -1,34 +1,36 @@
 # ESAS Platform — Növbəti tapşırıq
 
-Status: READY
+Status: READY — ayrıca təsdiq gözləyir
 Prioritet: HIGH
-Mərhələ: Phase 4 təqdimat qatı
+Mərhələ: Phase 4 strategiya layihələndirməsi
 
 ## Tapşırıq
 
-Qorunan texniki analiz API-sinin EMA, RSI və ATR nəticələrini müasir, sadə və rahat
-anlaşılan frontend ekranında göstərmək.
+Texniki analiz indikatorlarının üzərində versiyalanmış, bir-birindən müstəqil və
+yalnız araşdırma məqsədli strategiya modullarının müqaviləsini layihələndirmək.
 
 ## Sərhədlər
 
-- Hər indikator ayrıca modul/kart kimi qurulmalıdır ki, sonrakı düzəlişlər bir-birindən
-  asılı olmasın.
-- Qrafik yalnız qapalı replay şamlarını göstərməlidir.
-- İstifadəçi timeframe, EMA, RSI, ATR periodlarını və görünən şam sayını seçə bilməlidir.
-- Warm-up (`insufficient_data`) vəziyyəti gizlədilməməlidir.
-- Dataset, bar və indikator lineage məlumatı sadə “Məlumat mənbəyi” bölməsində görünməlidir.
-- Ekran mobil və masaüstü ölçülərdə rahat işləməlidir.
-- Strategiya, al/sat siqnalı, avtomatik qərar və order icrası bu mərhələyə daxil deyil.
+- İlk mərhələdə yalnız strategiya müqaviləsi, versiya, parametr, giriş indikatorları və
+  deterministik replay nəticə modeli hazırlanmalıdır.
+- Hər strategiya ayrıca modul olmalı, digər strategiyadan müstəqil test və düzəliş
+  edilə bilməlidir.
+- Gələcək məlumatın keçmiş nəticəyə sızması qadağandır; yalnız bağlanmış bar istifadə
+  edilməlidir.
+- Strategiya nəticəsi mənbə dataset/bar/indikator fingerprint-lərinə bağlanmalıdır.
+- Nəticələr ilk mərhələdə yalnız araşdırma və müqayisə üçündür.
+- Canlı order, broker əmri, avtomatik kapital riski və ticarət icrası daxil deyil.
 
 ## Tamamlanma meyarları
 
-- İcazəsiz istifadəçi analiz ekranını görə bilmir.
-- Sessiya və timeframe dəyişəndə nəticə aydın yüklənmə/xəta vəziyyəti ilə yenilənir.
-- EMA qiymət qrafikində, RSI və ATR ayrıca oxunaqlı panellərdə göstərilir.
-- Boş dataset və warm-up halları istifadəçiyə aydın Azərbaycan dilində izah edilir.
-- Frontend lint/build və tam backend regressiyası yaşıl qalır.
+- Strategiya kontraktı və modul sərhədləri konstitusiyaya uyğun sənədləşdirilir.
+- Ən azı bir sadə istinad strategiyası ayrıca versiyalanmış modul kimi qurulur.
+- Determinizm, warm-up, no-lookahead və boş məlumat sınaqları avtomatlaşdırılır.
+- Eyni replay və parametrlər eyni nəticə fingerprint-i yaradır.
+- Tam backend regressiyası və frontend yoxlamaları yaşıl qalır.
 
 ## Sonrakı addım
 
-Frontend analiz ekranından sonra indikatorların üzərində ayrıca, versiyalanmış strategiya
-modulları layihələndiriləcək. Strategiya mərhələsi ayrıca təsdiqdən sonra başlayacaq.
+Bu mərhələ istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Strategiya araşdırması
+tamamlandıqdan sonra nəticələrin frontend müqayisə görünüşü ayrıca planlaşdırılacaq;
+canlı əməliyyat yenə ayrıca təhlükəsizlik qapısından keçəcək.
