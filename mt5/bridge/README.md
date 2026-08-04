@@ -1,6 +1,6 @@
 # ESAS MT5 Bridge
 
-Version: 1.6.0
+Version: 1.6.1
 
 Status: EXPERIMENTAL
 
@@ -60,7 +60,12 @@ MT5 must allow WebRequest access to:
 
 ## Current Transport Limitation
 
-Version 1.6.0 uses synchronous HTTP requests.
+Version 1.6.1 uses synchronous HTTP requests.
+
+Version 1.6.1 converts the broker trade-server timestamp to canonical UTC before
+serializing both `timestamp` and `source_time_msc`. The detected server/UTC offset is
+rounded to the nearest 15 minutes so ordinary request latency does not create a false
+timezone offset. Historical stored events are not rewritten.
 
 Tick və status sorğuları `X-ESAS-Bridge-Key` başlığı ilə qorunur. Açar boş,
 32 simvoldan qısa və ya sətirsonu simvolu ehtiva etdikdə Bridge backend

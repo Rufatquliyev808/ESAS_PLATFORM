@@ -11,9 +11,12 @@ sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı
   müqayisəsi keçdi.
 - Xam tick sayı sınaqdan əvvəl və sonra `1,258,269` qaldı.
 - Qəbul nəticəsi `PASSED`, kritik keyfiyyət tapıntısı `0` oldu.
-- `DQ-009` bütün `542` tick üçün `received_at` vaxtının `event_timestamp`-dan əvvəl
-  görünməsini xəbərdarlıq kimi qeyd etdi. Texniki analizdən əvvəl MT5/backend vaxt
-  normallaşdırılması araşdırılmalıdır.
+- `DQ-009` bütün `542` tarixi tick üçün `received_at` vaxtının `event_timestamp`-dan
+  əvvəl görünməsini xəbərdarlıq kimi qeyd etdi. Kök səbəb broker server vaxtının UTC
+  işarəsi ilə göndərilməsi idi.
+- MT5 Bridge `1.6.1` yeni event-lərdə broker server vaxtını UTC-yə normallaşdırır;
+  mövcud xam tick-lər dəyişdirilmədi. Canlı qəbulda yeni tick-lərin gecikməsi təxminən
+  `0.74 saniyə`, event/source vaxt fərqi `0 ms`, növbə isə `0 / 1000` oldu.
 - Backend `133 passed`; frontend lint, build və render testi keçdi.
 - Sübut faylı `.runtime/phase2-acceptance/phase2-replay-latest.json` yolunda saxlanır
   və xam tick payload-u ehtiva etmir.
@@ -390,7 +393,7 @@ MT5 Tick
 ### MT5 Bridge
 
 - Status: `EXPERIMENTAL`
-- Sənədləşdirilmiş versiya: `1.6.0`
+- Sənədləşdirilmiş versiya: `1.6.1`
 - Canlı tick oxunması işləyir.
 - Event yaradılması işləyir.
 - HTTP göndərişi işləyir.
@@ -497,9 +500,9 @@ Bütün qəbul qapıları keçib və Phase 1 `2026-08-04` tarixində rəsmi bağ
 
 ## Növbəti əsas texniki prioritet
 
-Replay sessiyasının lifecycle əmrləri üçün
-`POST /api/v2/replay-sessions/{session_id}/commands` endpoint-ini ownership,
-idempotency və optimistic state nəzarəti ilə mövcud transaction sərhədinə bağlamaq.
+Versiyalanmış, deterministik və yalnız-oxuma ilk texniki analiz indikator paketini
+replay dataset-i üzərində qurmaq; nəticəni ticarət qərarından və order icrasından
+ayrı saxlamaq.
 
 ## Phase 2 replay yaratma API-si
 

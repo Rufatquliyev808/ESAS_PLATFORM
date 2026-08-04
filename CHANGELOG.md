@@ -8,6 +8,14 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed
+
+- MT5 broker server vaxtının səhvən UTC kimi işarələnməsi düzəldildi. Bridge `1.6.1`
+  yeni tick-lərdə server/UTC fərqini 15 dəqiqəlik təhlükəsiz addımla normallaşdırır,
+  `event_timestamp` və `source_time_msc` eyni kanonik UTC vaxtını daşıyır. Mövcud xam
+  tick-lər dəyişdirilmədi; canlı qəbulda əvvəlki təxminən `-10799 saniyə` əvəzinə
+  müsbət təxminən `0.74 saniyə` qəbul gecikməsi və `0 ms` event/source fərqi ölçüldü.
+
 ### Added
 
 - Production bazası yoxlanmış SQLite backup-dan sonra Phase 2 sxeminə keçirildi;
