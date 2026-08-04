@@ -8,6 +8,15 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added
+
+- Replay tick-lərindən yalnız tam bağlanmış `M1`, `M5`, `M15` və `H1` mid-price
+  şamları yaradan deterministik, yalnız-oxuma bar generatoru əlavə edildi. Generator
+  UTC epoch sərhədlərindən, sabit `event_timestamp + event_id` sırasından, mənbə
+  fingerprint-indən və versiyalanmış nəticə fingerprint-indən istifadə edir; boş və
+  açıq şamları süni doldurmur. Yeni 9 modul testi və tam `142 passed` backend
+  regressiyası keçdi.
+
 ### Fixed
 
 - MT5 broker server vaxtının səhvən UTC kimi işarələnməsi düzəldildi. Bridge `1.6.1`
