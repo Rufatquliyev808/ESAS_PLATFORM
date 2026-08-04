@@ -2,37 +2,45 @@
 
 Status: READY — ayrıca təsdiq gözləyir
 Prioritet: HIGH
-Mərhələ: Phase 4 statistik etibarlılıq və sadə baseline müqayisəsi
+Mərhələ: Pattern hipotez reyestri və bazar strukturu tədqiqat təməli
 
 ## Tapşırıq
 
-EMA və RSI üzrə tamamlanmış, xərclərdən sonrakı walk-forward nəticələrinə statistik
-etibarlılıq qatı əlavə etmək. Məqsəd müşahidə olunan fərqin təsadüfi dalğalanmadan
-ayrılıb-ayrılmadığını və ən sadə müqayisə bazasını keçib-keçmədiyini göstərməkdir.
+Bazar strukturu və likvidlik haqqında hipotezləri kod yazılmamışdan əvvəl ayrıca,
+versiyalanmış və test edilə bilən qaydalar kimi qeyd etmək. Məqsəd sosial-media
+nümunələrini həqiqət kimi qəbul etmək deyil; onların ölçülə bilən hissələrini qərəzsiz
+tarixi sınaq üçün əvvəlcədən müəyyənləşdirməkdir.
+
+## İlk hipotez ailələri
+
+- Böyük timeframe istiqaməti və kiçik timeframe təsdiqi.
+- HH/HL və LH/LL bazar strukturu müşahidələri.
+- Dəstək və müqavimət zonaları.
+- Bərabər zirvə/diblər və likvidlik süpürməsi.
+- BOS və CHoCH müşahidələri.
+- Səviyyənin geri alınması və retest.
+- Sonrakı ayrıca modullar üçün FVG və order-block namizədləri.
+- LONG və SHORT hipotezləri bir-birindən ayrı saxlanılacaq.
 
 ## Sərhədlər
 
-- Mövcud xam və xərcdən sonrakı nəticələr dəyişdirilməyəcək.
-- Əsas metric, baseline və qəbul həddi hesablamadan əvvəl açıq qeyd ediləcək.
-- Confidence interval, effect size, nümunə sayı və uncertainty ayrı göstəriləcək.
-- EMA və RSI nəticələri eyni qayda ilə qiymətləndiriləcək, yalnız uğurlu variantlar
-  seçilib gizli saxlanmayacaq.
-- Nəticə `accepted_for_shadow` statusu verməyəcək; yalnız növbəti araşdırma qərarı üçün
-  sübut yaradacaq.
-- Canlı siqnal, mövqe ölçüsü, risk icazəsi və order yaradılmayacaq.
+- Hər hipotezin giriş məlumatı, timeframe-i, dəqiq qaydası, invalidasiya şərti və versiyası
+  sınaqdan əvvəl yazılacaq.
+- Gələcək məlumatın keçmiş nəticəyə sızması qadağandır.
+- Eyni dataset üzərində uğurlu görünən qaydanın sonradan seçilməsi qəbul edilməyəcək.
+- İstifadəçinin göndərdiyi şəkillər yalnız anlayış və hipotez mənbəyidir; sübut və ya
+  hazır strategiya deyil.
+- Bu mərhələdə canlı siqnal, mövqe ölçüsü, risk icazəsi və order yaradılmayacaq.
 
 ## Tamamlanma meyarları
 
-- Versiyalanmış və fingerprint-li statistik qiymətləndirici mövcuddur.
-- Sadə baseline, əsas metric və qeyri-müəyyənlik vahidləri açıq göstərilir.
-- Kiçik nümunə, sıfır variasiya, mənfi nəticə və natamam məlumat testləri mövcuddur.
-- Xərcli normal, pis və stress nəticələri qarışdırılmadan müqayisə edilir.
-- Frontend nəticəni sadə Azərbaycan dilində, “sübut yetərlidir/yetərli deyil” sərhədi
-  ilə göstərir və mənfəət vədi vermir.
+- Versiyalanmış pattern hipotez reyestri və status həyat dövrü mövcuddur.
+- LONG və SHORT qaydaları ayrıca, maşın tərəfindən oxuna bilən müqavilə ilə saxlanılır.
+- Ən azı bazar strukturu, likvidlik süpürməsi və BOS/CHoCH üçün causal məlumat sərhədi yazılır.
+- Hipotezlər frontend-də ayrı kartlar kimi, sadə Azərbaycan dilində görünür.
+- Yetərsiz məlumat və ziddiyyətli təsdiqlər gizlədilmir.
 - Tam backend və frontend yoxlamaları yaşıl qalır.
 
 ## Başlama şərti
 
-Bu mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Xərc və stress
-ssenarilərinin tamamlanması statistik nəticəni avtomatik etibarlı etmir və ticarətə
-başlamaq hüququ vermir.
+Bu yeni mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlayacaq.

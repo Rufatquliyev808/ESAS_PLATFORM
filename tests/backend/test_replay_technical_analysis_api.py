@@ -196,6 +196,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert first.status_code == second.status_code == 200
     assert first.json() == second.json()
     data = first.json()["data"]
+    assert data["api_version"] == "1.2.0"
     assert data["interpretation"] == "research_observation_not_trading_signal"
     assert len(data["strategies"]) == 2
     strategy = data["strategies"][0]
@@ -242,6 +243,14 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert cost["manifest"]["source"] == "generic_research_assumption_not_broker_fact"
     assert cost["scenarios"][0]["assumption"]["total_cost_bps"] == 4.5
     assert cost["scenarios"][0]["summary"]["raw_weighted_mean_return_percent"] == multi_window["summary"]["weighted_mean_return_percent"]
+    reliability = strategy["statistical_reliability_evaluation"]
+    assert reliability["definition"]["version"] == "1.0.0"
+    assert reliability["manifest"]["baseline"] == "zero_percent_change"
+    assert reliability["manifest"]["upstream_cost_scenario_fingerprint"] == cost["fingerprint"]
+    assert reliability["definition"]["interpretation"] == "historical_uncertainty_evidence_not_trading_signal"
+    assert [item["scenario"] for item in reliability["scenarios"]] == [
+        "normal", "adverse", "stress",
+    ]
     rsi = data["strategies"][1]
     assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
     assert rsi["definition"]["version"] == "1.0.0"
@@ -251,6 +260,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
         rsi["cost_scenario_evaluation"]["scenarios"][0]["assumption"]
         == cost["scenarios"][0]["assumption"]
     )
+    assert rsi["statistical_reliability_evaluation"]["fingerprint"].startswith("sha256:")
     serialized = str(first.json()).lower()
     assert "order" not in serialized
     assert "position_size" not in serialized

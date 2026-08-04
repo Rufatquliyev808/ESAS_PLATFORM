@@ -10,6 +10,14 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Versiyalanmış `purged_validation_mean_vs_zero_baseline 1.0.0` statistik etibarlılıq
+  qiymətləndiricisi əlavə edildi. EMA və RSI üçün normal, pis və stress xərcli validation
+  nəticələri sıfır faiz dəyişiklik bazası ilə ayrıca müqayisə olunur; effektiv nümunə sayı,
+  95% etibar intervalı, effekt ölçüsü, açıq yetərsizlik səbəbi və SHA-256 lineage saxlanılır.
+  Frontend nəticəni “Sübut yetərlidir / Sübut yetərli deyil” kimi izah edir və bunun siqnal
+  və ya mənfəət zəmanəti olmadığını göstərir. Tam backend `222 passed`, frontend test/lint/build
+  yoxlamaları uğurla keçdi.
+
 - Versiyalanmış `historical_cost_stress_adjustment 1.0.0` xərc və stress qatı əlavə
   edildi. EMA və RSI-nin dəyişməz xam walk-forward nəticələri yanında spread,
   komissiya, slippage və gecikmənin normal, pis və stress fərziyyələri eyni

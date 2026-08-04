@@ -794,3 +794,23 @@ qatı tamamlandı.
 - Hədəf backend yoxlamaları `27 passed`, tam backend regressiyası `216 passed`,
   frontend lint, production build və `3` frontend testi uğurla keçdi.
 - Qat ticarət mənfəəti hesablamır; siqnal, mövqe ölçüsü, risk icazəsi və order yaratmır.
+
+## Statistik etibarlılıq və sıfır baza müqayisəsi
+
+2026-08-05 tarixində EMA və RSI üzrə xərclərdən sonrakı walk-forward nəticələrinə
+versiyalanmış qeyri-müəyyənlik qatı əlavə edildi.
+
+- `purged_validation_mean_vs_zero_baseline 1.0.0` yalnız xronoloji validation
+  müşahidələrindən və hər nəticə üfüqünə bir müşahidədən istifadə edir.
+- Normal, pis və stress ssenariləri qarışdırılmadan ayrıca qiymətləndirilir.
+- Effektiv nümunə sayı, orta xalis dəyişiklik, nümunə standart sapması, standartlaşdırılmış
+  effekt ölçüsü və 95% etibar intervalı saxlanılır.
+- Sadə baseline sıfır faiz dəyişiklikdir. Nəticə yalnız effektiv nümunə ən azı 30 olduqda,
+  variasiya sıfır olmadıqda və intervalın aşağı sərhədi sıfırdan yuxarı olduqda
+  `supportive_evidence` sayılır; digər hallar açıq səbəblə `insufficient_evidence` qalır.
+- API müqaviləsi `1.2.0` versiyasına qaldırıldı və bütün nəticələr upstream fingerprint-lərlə
+  təkrar istehsal edilə bilir.
+- Frontend “Sübut yetərlidir / Sübut yetərli deyil” sərhədini, nümunə sayını, ortanı,
+  95% intervalı və effekt ölçüsünü sadə Azərbaycan dilində göstərir.
+- Tam backend regressiyası `222 passed`; frontend `3` test, lint və production build keçdi.
+- Bu nəticə ticarət siqnalı, mənfəət zəmanəti, risk icazəsi və order deyil.

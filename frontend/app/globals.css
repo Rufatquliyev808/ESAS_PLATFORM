@@ -434,5 +434,16 @@ footer p { margin: 0; }
 .cost-scenario-card details { margin-top: 10px; }
 .cost-scenario-card ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: .72rem; line-height: 1.6; }
 .cost-warning { margin: 0; padding: 12px 14px; border-left: 3px solid #d88900; background: #fff8e8; color: #6b4a00; font-size: .76rem; line-height: 1.5; }
+.reliability-block { margin-top: 18px; padding: 18px; border: 1px solid #d7e1dc; border-radius: 14px; background: #f8fbf9; }
+.reliability-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.reliability-card { padding: 14px; border-radius: 12px; border: 1px solid #d9e0dc; background: #fff; }
+.reliability-card.supportive { border-top: 4px solid #087f5b; }
+.reliability-card.insufficient { border-top: 4px solid #b26a00; }
+.reliability-title, .reliability-numbers { display: flex; justify-content: space-between; gap: 12px; }
+.reliability-title span { font-size: .78rem; font-weight: 700; }
+.reliability-numbers { margin: 16px 0 12px; }
+.reliability-numbers div { display: grid; gap: 4px; }
+.reliability-numbers span, .reliability-card p { color: #586961; font-size: .78rem; }
+@media (max-width: 820px) { .reliability-grid { grid-template-columns: 1fr; } }
 @media (max-width: 800px) { .strategy-heading { display: grid; }.research-pill { white-space: normal; }.strategy-controls { grid-template-columns: 1fr 1fr; }.strategy-summary { grid-template-columns: 1fr; }.strategy-summary div + div { border-left: 0; border-top: 1px solid var(--border); } }
 @media (max-width: 800px) { .walk-forward-grid, .stability-overview, .cost-scenario-grid { grid-template-columns: 1fr; }.stability-overview div + div { border-left: 0; border-top: 1px solid var(--border); }.cost-control-heading { display: grid; } }

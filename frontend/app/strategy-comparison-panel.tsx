@@ -67,6 +67,19 @@ type StrategyResult = {
     fingerprint: string;
     interpretation: string;
   };
+  statistical_reliability_evaluation: {
+    definition: { evaluator_id: string; version: string; lifecycle: string; interpretation: string };
+    overall_status: "supportive_evidence" | "insufficient_evidence";
+    scenarios: Array<{
+      scenario: "normal" | "adverse" | "stress"; status: "supportive_evidence" | "insufficient_evidence";
+      effective_sample_size: number; observed_mean_percent: number | null; baseline_mean_percent: number;
+      raw_effect_percentage_points: number | null; standardized_effect_size: number | null;
+      sample_standard_deviation: number | null; confidence_level_percent: number;
+      confidence_interval_low_percent: number | null; confidence_interval_high_percent: number | null; reason: string;
+    }>;
+    manifest: { primary_metric: string; baseline: string; acceptance_rule: string; sampling_policy: string; minimum_effective_sample_size: number };
+    fingerprint: string; interpretation: string;
+  };
 };
 type WalkForwardWindow = {
   window: string; start_bar_end_at: string | null; end_bar_end_at: string | null;
@@ -211,6 +224,21 @@ export function StrategyComparisonPanel({ sessionId, symbol, token, onUnauthoriz
             </section>;
           })}</div>
           <p className="cost-warning"><strong>Vacib:</strong> “Xərcdən sonra” göstəricisi ticarət mənfəəti deyil; yalnız tarixi qiymət dəyişikliklərinə tətbiq olunan model fərziyyəsidir. Siqnal, risk icazəsi və order yaratmır.</p>
+        </div>
+        <div className="reliability-block">
+          <div className="walk-forward-heading"><div><p className="eyebrow">Statistik etibarlılıq · sıfır baza ilə müqayisə</p><h5>Sübutun yetərlilik yoxlaması</h5></div><span className={`analysis-badge ${strategy.statistical_reliability_evaluation.overall_status === "supportive_evidence" ? "ready" : "warmup"}`}>{strategy.statistical_reliability_evaluation.overall_status === "supportive_evidence" ? "Sübut yetərlidir" : "Sübut yetərli deyil"}</span></div>
+          <p className="strategy-explanation">Yalnız gələcək yoxlama hissəsi istifadə edilir. Üst-üstə düşən nəticələr ayrıca sübut sayılmır. Ən azı {strategy.statistical_reliability_evaluation.manifest.minimum_effective_sample_size} müşahidə və 95% etibar aralığının sıfırdan yuxarı olması tələb olunur.</p>
+          <div className="reliability-grid">{strategy.statistical_reliability_evaluation.scenarios.map((scenario) => {
+            const labels = { normal: "Normal", adverse: "Pis", stress: "Stress" };
+            const enough = scenario.status === "supportive_evidence";
+            return <section className={`reliability-card ${enough ? "supportive" : "insufficient"}`} key={scenario.scenario}>
+              <div className="reliability-title"><strong>{labels[scenario.scenario]}</strong><span>{enough ? "Sübut yetərlidir" : "Sübut yetərli deyil"}</span></div>
+              <div className="reliability-numbers"><div><span>Effektiv nümunə</span><strong>{scenario.effective_sample_size}</strong></div><div><span>Orta nəticə</span><strong>{scenario.observed_mean_percent === null ? "—" : `${scenario.observed_mean_percent >= 0 ? "+" : ""}${scenario.observed_mean_percent.toFixed(3)}%`}</strong></div></div>
+              <p>95% etibar aralığı: <strong>{scenario.confidence_interval_low_percent === null || scenario.confidence_interval_high_percent === null ? "hesablamaq üçün məlumat azdır" : `${scenario.confidence_interval_low_percent.toFixed(3)}% — ${scenario.confidence_interval_high_percent.toFixed(3)}%`}</strong></p>
+              <p>Təsir ölçüsü: <strong>{scenario.standardized_effect_size === null ? "—" : scenario.standardized_effect_size.toFixed(3)}</strong></p>
+            </section>;
+          })}</div>
+          <p className="cost-warning"><strong>Şərh:</strong> “Sübut yetərlidir” yalnız seçilmiş tarixi məlumat və əvvəlcədən müəyyən edilmiş statistik qayda üçündür. Bu, gələcək gəlir zəmanəti, alqı-satqı siqnalı və ya əməliyyat icazəsi deyil.</p>
         </div>
       </article>;
     })}</div>}

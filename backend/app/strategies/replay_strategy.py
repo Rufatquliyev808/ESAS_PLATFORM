@@ -10,9 +10,10 @@ from backend.app.strategies.multi_window_walk_forward import (
     evaluate_multi_window_walk_forward,
 )
 from backend.app.strategies.cost_scenario_evaluation import evaluate_cost_scenarios
+from backend.app.strategies.statistical_reliability import evaluate_statistical_reliability
 
 
-STRATEGY_ANALYSIS_API_VERSION = "1.1.0"
+STRATEGY_ANALYSIS_API_VERSION = "1.2.0"
 
 
 @dataclass(frozen=True)
@@ -75,13 +76,20 @@ def create_replay_strategy_analysis(
             window_count=walk_forward_windows,
         )
         payload["multi_window_evaluation"] = asdict(multi_window)
-        payload["cost_scenario_evaluation"] = asdict(evaluate_cost_scenarios(
+        cost_scenarios = evaluate_cost_scenarios(
             multi_window=multi_window, spread_bps=cost_spread_bps,
             commission_bps=cost_commission_bps, slippage_bps=cost_slippage_bps,
             latency_bps=cost_latency_bps,
             adverse_multiplier=adverse_cost_multiplier,
             stress_multiplier=stress_cost_multiplier,
-        ))
+        )
+        payload["cost_scenario_evaluation"] = asdict(cost_scenarios)
+        payload["statistical_reliability_evaluation"] = asdict(
+            evaluate_statistical_reliability(
+                outcome=outcome, multi_window=multi_window,
+                cost_scenarios=cost_scenarios,
+            )
+        )
         strategy_payloads.append(payload)
 
     return ReplayStrategyAnalysis(

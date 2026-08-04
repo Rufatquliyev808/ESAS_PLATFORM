@@ -134,7 +134,7 @@ hazırlığı müqaviləsi:
 - [ ] Pattern namizədlərinin yaradılması
 - [x] Texniki analiz modulları
 - [ ] Backtesting
-- [ ] Nəticələrin statistik müqayisəsi
+- [x] Nəticələrin statistik müqayisəsi
 - [ ] Uğursuz eksperimentlərin arxivləşdirilməsi
 - [ ] SHADOW mərhələsi üçün hazırlıq
 

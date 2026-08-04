@@ -22,6 +22,10 @@ test("strategy comparison stays modular, traceable and research-only", async () 
   assert.match(source, /stability-overview/);
   assert.match(source, /stability-windows/);
   assert.match(source, /cost_scenario_evaluation/);
+  assert.match(source, /statistical_reliability_evaluation/);
+  assert.match(source, /Sübut yetərlidir/);
+  assert.match(source, /Sübut yetərli deyil/);
+  assert.match(source, /95% etibar aralığı/);
   assert.match(source, /cost_spread_bps/);
   assert.match(source, /cost-scenario-grid/);
   assert.match(source, /Xam və xərc çıxılmış tarixi dəyişiklik/);
