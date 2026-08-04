@@ -1,5 +1,23 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 2 real replay qəbul sübutu
+
+2026-08-04 tarixində production bazası yoxlanmış SQLite backup-dan sonra Phase 2
+sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı.
+
+- Eyni 60 saniyəlik, `542` tick-lik dataset iki `step` və iki `max_speed`
+  sessiyasında müstəqil icra edildi.
+- Dörd sessiyanın dataset və nəticə fingerprint-ləri eyni oldu; cross-mode
+  müqayisəsi keçdi.
+- Xam tick sayı sınaqdan əvvəl və sonra `1,258,269` qaldı.
+- Qəbul nəticəsi `PASSED`, kritik keyfiyyət tapıntısı `0` oldu.
+- `DQ-009` bütün `542` tick üçün `received_at` vaxtının `event_timestamp`-dan əvvəl
+  görünməsini xəbərdarlıq kimi qeyd etdi. Texniki analizdən əvvəl MT5/backend vaxt
+  normallaşdırılması araşdırılmalıdır.
+- Backend `133 passed`; frontend lint, build və render testi keçdi.
+- Sübut faylı `.runtime/phase2-acceptance/phase2-replay-latest.json` yolunda saxlanır
+  və xam tick payload-u ehtiva etmir.
+
 ## Replay idarəetmə dashboard-u
 
 2026-08-04 tarixində qorunan monitorinq panelinə Phase 2 replay idarəetməsi əlavə edildi.
