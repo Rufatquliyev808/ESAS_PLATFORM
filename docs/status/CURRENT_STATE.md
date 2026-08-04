@@ -752,3 +752,24 @@ işlədilməsi üçün qorunan, yalnız-oxuma təqdimat qatı tamamlandı.
 - Nəticə yalnız araşdırma müşahidəsidir; al/sat qərarı, mövqe ölçüsü və order yaratmır.
 - Hədəf testləri `11 passed`, tam backend regressiyası `164 passed`, frontend lint,
   production build və `3` frontend testi uğurla keçdi.
+
+## Çoxpəncərəli walk-forward sabitlik ölçümü
+
+2026-08-04 tarixində EMA və RSI tədqiqat modullarının müxtəlif zaman hissələrində
+sabitliyini ayrıca göstərən çoxpəncərəli qiymətləndirmə qatı tamamlandı.
+
+- `expanding_chronological_validation_windows 1.0.0` ən azı iki, ən çox səkkiz
+  ardıcıl yoxlama pəncərəsini deterministik yaradır.
+- Hər növbəti pəncərənin inkişaf hissəsi yalnız əvvəlki məlumatla genişlənir;
+  yoxlama pəncərələri üst-üstə düşmür və təsadüfi qarışdırılmır.
+- İnkişaf sərhədini keçən gələcək nəticələr həmin inkişaf hesabından çıxarılır.
+- Hər pəncərə inkişaf/yoxlama indeksləri, ayrıca bar fingerprint-ləri və upstream
+  strategiya/nəticə fingerprint-ləri ilə izlənir.
+- Əhatə, yetişmiş/yetişməmiş/tətbiq olunmayan müşahidələr və xərcsiz tarixi
+  dəyişiklik ayrıca saxlanır.
+- Frontend iki-beş pəncərə seçimini, hər pəncərənin tarixini, müşahidə sayını,
+  yuxarı/aşağı bölgüsünü, çəkili orta dəyişiklik və pəncərələrarası aralığı göstərir.
+- Kiçik dataset nəticəni uydurmur və `insufficient_data` kimi açıq göstərilir.
+- Hədəf backend sınaqları `24 passed`, tam backend regressiyası `198 passed`,
+  frontend lint, production build və `3` frontend testi uğurla keçdi.
+- Bu qat yalnız tarixi tədqiqat üçündür; canlı siqnal, risk ölçüsü və order yaratmır.

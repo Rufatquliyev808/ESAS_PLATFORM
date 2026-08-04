@@ -16,7 +16,11 @@ test("strategy comparison stays modular, traceable and research-only", async () 
   assert.match(source, /outcome_evaluation\.summary\.immature/);
   assert.match(source, /strategy-outcomes/);
   assert.match(source, /development_ratio/);
+  assert.match(source, /walk_forward_windows/);
   assert.match(source, /walk_forward_evaluation/);
+  assert.match(source, /multi_window_evaluation/);
+  assert.match(source, /stability-overview/);
+  assert.match(source, /stability-windows/);
   assert.match(source, /İnkişaf və toxunulmamış yoxlama/);
   assert.match(source, /sərhədi keçən gələcək nəticələr inkişaf hesabından çıxarılır/);
   assert.match(source, /mənfəət vəd etmir/);

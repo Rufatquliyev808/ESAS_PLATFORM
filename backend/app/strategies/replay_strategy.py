@@ -6,6 +6,9 @@ from backend.app.strategies.ema_close_relation import evaluate_ema_close_relatio
 from backend.app.strategies.rsi_regime_observation import evaluate_rsi_regime_observation
 from backend.app.strategies.outcome_evaluation import evaluate_strategy_outcomes
 from backend.app.strategies.walk_forward_evaluation import evaluate_walk_forward
+from backend.app.strategies.multi_window_walk_forward import (
+    evaluate_multi_window_walk_forward,
+)
 
 
 STRATEGY_ANALYSIS_API_VERSION = "1.0.0"
@@ -26,7 +29,7 @@ class ReplayStrategyAnalysis:
 def create_replay_strategy_analysis(
     *, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int,
     rsi_low: float, rsi_high: float, bar_limit: int, outcome_horizon: int,
-    development_ratio: float,
+    development_ratio: float, walk_forward_windows: int,
 ) -> ReplayStrategyAnalysis:
     """Evaluate independently versioned research strategies on completed replay bars."""
     context = create_replay_analysis_context(
@@ -62,6 +65,11 @@ def create_replay_strategy_analysis(
             strategy=strategy, outcome=outcome, bars=context.bars.bars,
             development_ratio=development_ratio,
         ))
+        payload["multi_window_evaluation"] = asdict(evaluate_multi_window_walk_forward(
+            strategy=strategy, outcome=outcome, bars=context.bars.bars,
+            development_ratio=development_ratio,
+            window_count=walk_forward_windows,
+        ))
         strategy_payloads.append(payload)
 
     return ReplayStrategyAnalysis(
@@ -71,7 +79,8 @@ def create_replay_strategy_analysis(
         parameters={"ema_period": ema_period, "rsi_period": rsi_period,
                     "rsi_low": rsi_low, "rsi_high": rsi_high, "bar_limit": bar_limit,
                     "outcome_horizon": outcome_horizon,
-                    "development_ratio": development_ratio},
+                    "development_ratio": development_ratio,
+                    "walk_forward_windows": walk_forward_windows},
         lineage=context.analysis.lineage,
         strategies=tuple(strategy_payloads),
     )

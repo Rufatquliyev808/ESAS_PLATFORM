@@ -319,6 +319,7 @@ def replay_strategy_analysis(
     bar_limit: int = Query(default=500, ge=1, le=5_000),
     outcome_horizon: int = Query(default=3, ge=1, le=100),
     development_ratio: float = Query(default=0.7, ge=0.5, le=0.9),
+    walk_forward_windows: int = Query(default=3, ge=2, le=8),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -333,6 +334,7 @@ def replay_strategy_analysis(
             rsi_period=rsi_period, rsi_low=rsi_low, rsi_high=rsi_high,
             bar_limit=bar_limit, outcome_horizon=outcome_horizon,
             development_ratio=development_ratio,
+            walk_forward_windows=walk_forward_windows,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(status_code=409, detail="Replay session is not completed") from error

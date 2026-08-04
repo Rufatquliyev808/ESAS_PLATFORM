@@ -10,6 +10,15 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Versiyalanmış `expanding_chronological_validation_windows 1.0.0` sabitlik ölçümü
+  əlavə edildi. EMA və RSI nəticələri yalnız keçmişi genişlənən inkişaf məlumatı və
+  üst-üstə düşməyən ardıcıl yoxlama pəncərələri ilə ölçülür. Hər pəncərə ayrıca manifest,
+  bar fingerprint-i və upstream strategiya/nəticə izini saxlayır; əhatə, yetişməmiş
+  müşahidələr və xərcsiz tarixi dəyişiklik qarışdırılmır. Frontend pəncərə sayı seçimini,
+  müsbət/mənfi/düz pəncərələri, çəkili ortanı və pəncərələrarası aralığı Azərbaycan
+  dilində ayrıca göstərir. Tam backend `198 passed`, frontend lint/build və `3` test
+  uğurla keçdi; qat canlı siqnal, mövqe ölçüsü və order yaratmır.
+
 - Versiyalanmış `chronological_holdout_comparison 1.0.0` walk-forward təməli əlavə
   edildi. EMA və RSI nəticələri xronoloji inkişaf və toxunulmamış yoxlama intervallarına
   ayrılır; gələcək yoxlama qiymətinə keçən nəticə inkişaf hesabından çıxarılır. Manifest

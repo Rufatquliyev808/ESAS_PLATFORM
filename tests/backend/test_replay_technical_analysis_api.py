@@ -185,7 +185,7 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     url = (
         f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
         "?timeframe=M1&ema_period=2&rsi_period=2&rsi_low=30&rsi_high=70"
-        "&bar_limit=10&outcome_horizon=1&development_ratio=0.7"
+        "&bar_limit=10&outcome_horizon=1&development_ratio=0.7&walk_forward_windows=3"
     )
     with TestClient(app) as client:
         assert client.get(url).status_code == 401
@@ -223,6 +223,16 @@ def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
     assert walk_forward["manifest"]["development_ratio"] == 0.7
     assert walk_forward["development"]["boundary_excluded"] == 1
     assert walk_forward["validation"]["total_observations"] == 1
+    multi_window = strategy["multi_window_evaluation"]
+    assert multi_window["definition"]["version"] == "1.0.0"
+    assert multi_window["status"] == "insufficient_data"
+    assert multi_window["manifest"]["requested_windows"] == 3
+    assert multi_window["manifest"]["split_policy"] == (
+        "expanding_development_non_overlapping_chronological_validation_no_shuffle"
+    )
+    assert multi_window["summary"]["completed_windows"] == 1
+    assert len(multi_window["windows"]) == 1
+    assert multi_window["windows"][0]["manifest"]["upstream_strategy_fingerprint"] == strategy["fingerprint"]
     rsi = data["strategies"][1]
     assert rsi["definition"]["strategy_id"] == "rsi_regime_observation"
     assert rsi["definition"]["version"] == "1.0.0"
@@ -260,6 +270,19 @@ def test_strategy_analysis_rejects_unsafe_development_ratio(isolated_database: P
         response = client.get(
             f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
             "?development_ratio=0.95",
+            headers=_headers(client),
+        )
+    assert response.status_code == 422
+
+
+def test_strategy_analysis_rejects_unsafe_walk_forward_window_count(
+    isolated_database: Path,
+) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
+            "?walk_forward_windows=1",
             headers=_headers(client),
         )
     assert response.status_code == 422
