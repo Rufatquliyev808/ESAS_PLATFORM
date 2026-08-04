@@ -18,6 +18,11 @@ sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı
   mövcud xam tick-lər dəyişdirilmədi. Canlı qəbulda yeni tick-lərin gecikməsi təxminən
   `0.74 saniyə`, event/source vaxt fərqi `0 ms`, növbə isə `0 / 1000` oldu.
 - Backend `133 passed`; frontend lint, build və render testi keçdi.
+- İlk yalnız-oxuma texniki analiz əsası quruldu: `bar-builder 1.0.0` replay
+  tick-lərindən `M1`, `M5`, `M15` və `H1` üzrə yalnız tam bağlanmış UTC mid-price
+  şamları yaradır. Nəticə mənbə lineage-i və deterministik fingerprint daşıyır,
+  boş/açıq şamlar doldurulmur və xam tick bazasına yazılmır. Modul testləri `9 passed`,
+  tam backend regressiyası `142 passed` nəticəsi verdi.
 - Sübut faylı `.runtime/phase2-acceptance/phase2-replay-latest.json` yolunda saxlanır
   və xam tick payload-u ehtiva etmir.
 
@@ -500,9 +505,9 @@ Bütün qəbul qapıları keçib və Phase 1 `2026-08-04` tarixində rəsmi bağ
 
 ## Növbəti əsas texniki prioritet
 
-Versiyalanmış, deterministik və yalnız-oxuma ilk texniki analiz indikator paketini
-replay dataset-i üzərində qurmaq; nəticəni ticarət qərarından və order icrasından
-ayrı saxlamaq.
+Bağlanmış replay şamları üzərində versiyalanmış və deterministik ilk indikator
+paketini (`EMA`, `RSI`, `ATR`) qurmaq; warm-up tamamlanmadıqda nəticəni açıq şəkildə
+`insufficient_data` saxlamaq və ticarət qərarı/order icrasından ayrı tutmaq.
 
 ## Phase 2 replay yaratma API-si
 
