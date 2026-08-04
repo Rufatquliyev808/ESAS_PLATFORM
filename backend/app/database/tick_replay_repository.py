@@ -193,3 +193,43 @@ def iter_tick_identity_batches(
                 )
                 for row in rows
             )
+
+
+def iter_tick_batches(
+    *,
+    symbol: str,
+    start_at: datetime,
+    end_at: datetime,
+    batch_size: int = 1000,
+) -> Iterator[tuple[ReplayTick, ...]]:
+    normalized_symbol = symbol.strip()
+    if not normalized_symbol:
+        raise ValueError("symbol must not be empty")
+    if not MIN_PAGE_SIZE <= batch_size <= MAX_PAGE_SIZE:
+        raise ValueError(
+            f"batch_size must be between {MIN_PAGE_SIZE} and {MAX_PAGE_SIZE}"
+        )
+
+    start_text = _utc_text(start_at, "start_at")
+    end_text = _utc_text(end_at, "end_at")
+    if end_text <= start_text:
+        raise ValueError("end_at must be later than start_at")
+
+    with _read_only_connection() as connection:
+        connection.execute("BEGIN;")
+        cursor = connection.execute(
+            """
+            SELECT
+                event_id, event_timestamp, received_at, symbol, bid, ask,
+                last, volume, flags, source_time_msc, source,
+                event_version, module_version
+            FROM tick_events
+            WHERE symbol = ?
+              AND event_timestamp >= ?
+              AND event_timestamp < ?
+            ORDER BY event_timestamp ASC, event_id ASC;
+            """,
+            (normalized_symbol, start_text, end_text),
+        )
+        while rows := cursor.fetchmany(batch_size):
+            yield tuple(ReplayTick(**dict(row)) for row in rows)

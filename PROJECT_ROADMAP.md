@@ -98,7 +98,7 @@ Status: IN PROGRESS
 
 - [x] Tarixi tick məlumatının oxunması
 - [x] Müəyyən zaman aralığının replay edilməsi
-- [ ] Məlumat boşluqlarının aşkarlanması
+- [x] Məlumat boşluqlarının aşkarlanması
 - [x] Tick ardıcıllığının yoxlanması
 - [ ] Spread və tick sürəti statistikası
 - [ ] Simvollar üzrə məlumat keyfiyyəti hesabatı

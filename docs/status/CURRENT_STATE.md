@@ -91,6 +91,12 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   natamam sessiyanın və dəyişmiş/uyğun olmayan dataset və müqavilələrin fail-closed
   rəddi yoxlanıldı. `8` yeni test və tam backend üzrə `92 passed` nəticəsi əldə edildi;
   canlı baza, API, frontend və ticarət sərhədləri dəyişdirilmədi.
+- İlk streaming məlumat keyfiyyəti analizatoru əlavə edildi: `DQ-002` geriyə gedən
+  mənbə vaxtını source/module seqmentində, `DQ-004` konfiqurasiya olunan zaman
+  boşluğunu, `DQ-011` isə ardıcıl eyni payload namizədini ayrıca aşkarlayır.
+- Eyni timestamp-li qanuni tick, hədd sərhədləri, module keçidi, fərqli batch
+  ölçülərində deterministik nəticə, stabil finding ID və xam tick dəyişməzliyi
+  yoxlanıldı; `5` yeni test və tam backend üzrə `97 passed` nəticəsi əldə edildi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

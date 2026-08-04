@@ -1,6 +1,6 @@
 # Phase 2 — Tick məlumat keyfiyyəti müqaviləsi
 
-Status: DESIGN READY — NOT IMPLEMENTED  
+Status: IMPLEMENTATION IN PROGRESS — CORE SEQUENCE RULES READY  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 ## Məqsəd və sərhəd
@@ -141,6 +141,13 @@ Hesabat hökm vermədən aşağıdakı təsviri göstəriciləri qaytarır:
 
 Statistikaların hesab üsulu və yuvarlaqlaşdırma qaydası müqavilə versiyasına
 bağlanır.
+
+### DQ-011 — Ardıcıl payload dublikat namizədi
+
+Eyni `source`, `module_version`, `source_time_msc`, qiymət, həcm və flag sahələrinə
+malik iki ardıcıl tick `info` səviyyəli dublikat namizədi kimi qeyd edilir. Bu qayda
+`event_id` dublikatından ayrıdır və avtomatik məlumat itkisi və ya storage xətası
+hökmü vermir.
 
 ## Hesabat müqaviləsi
 

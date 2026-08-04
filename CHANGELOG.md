@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 streaming tick keyfiyyəti analizatorunun ilk qaydaları əlavə edildi:
+  geriyə gedən source timestamp, parametrli ardıcıl zaman boşluğu və `event_id`
+  dublikatından ayrılmış ardıcıl payload namizədi; stabil finding ID, limitli nümunə,
+  batch-dən asılı olmayan nəticə və xam məlumat dəyişməzliyi, tam backend `97 passed`.
 - Phase 2 deterministik replay nəticə manifesti əlavə edildi: tamamlanmış `step` və
   `max_speed` sessiyaları üçün immutable giriş, dataset və müqavilə metadatası,
   streaming kanonik nəticə fingerprint-i və iki müstəqil icra üçün fail-closed

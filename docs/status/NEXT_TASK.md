@@ -6,29 +6,29 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Phase 2 məlumat keyfiyyəti qatının ilk deterministik qaydalarını hazırlamaq:
-zaman boşluğu, geriyə gedən timestamp və dublikat aşkarlanması.
+İlk streaming məlumat keyfiyyəti tapıntılarını replay sessiyası ilə bağlı yekun
+hesabata çevirmək və `pass`, `review`, `fail` keyfiyyət statusunu hesablamaq.
 
 ## Sərhədlər
 
-- Qaydalar versiyalanmış olmalı və eyni dataset üçün eyni nəticəni verməlidir.
-- Zaman boşluğu həddi simvol və müşahidə kontekstinə açıq parametr kimi bağlanmalıdır.
-- Geriyə gedən timestamp mənbə vaxtı ilə qəbul vaxtını qarışdırmadan aşkarlanmalıdır.
-- Dublikat anlayışı `event_id` dublikatından və eyni payload namizədindən ayrılmalıdır.
-- Hər tapıntı səbəb, mövqe və qayda versiyası ilə izah edilə bilməlidir.
-- Hesablama bütün dataset-i yaddaşa yükləməməlidir.
+- Hesabat yalnız tamamlanmış və dataset-i yenidən təsdiqlənmiş replay sessiyasından
+  yaradılmalıdır.
+- `critical` tapıntı `fail`, yalnız `warning` tapıntı `review`, qalan hal `pass`
+  statusu verməlidir.
+- Hesabat replay manifesti, qayda versiyası, ümumi tick və səviyyə saylarını daşımalıdır.
+- Eyni sessiya və qaydalar üçün deterministik məzmun fingerprint-i yaranmalıdır.
+- Tapıntı nümunələri məhdud qalmalı və bütün dataset yaddaşa yüklənməməlidir.
 - Xam tick-lər dəyişdirilməməli; API, frontend və canlı migration hələ əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Boşluq, geriyə timestamp və dublikat üçün sərhəd testləri keçir.
-- Eyni timestamp-li qanuni tick-lər səhvən problem sayılmır.
-- Fərqli batch ölçüləri eyni keyfiyyət tapıntılarını verir.
-- Tapıntılar deterministik sıra və stabil identifikatorla qaytarılır.
-- Analiz bütün dataset-i yaddaşa yükləmir.
+- `pass`, `review` və `fail` statusları ayrıca test edilir.
+- Natamam və sonradan dəyişmiş datasetli sessiya fail-closed rədd edilir.
+- Fərqli batch ölçüləri eyni hesabat fingerprint-i verir.
+- Replay manifesti və keyfiyyət xülasəsi bir nəticədə bağlanır.
 - Mövcud backend testləri keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-İlk keyfiyyət qaydaları qəbul edildikdən sonra nəticə hesabatı replay sessiyası ilə
-əlaqələndiriləcək və keyfiyyət qapısının ilkin status modeli hazırlanacaq.
+Hesabat qatı qəbul edildikdən sonra qalan `DQ-003`, `DQ-005..010` qaydaları mərhələli
+şəkildə analizatora əlavə ediləcək.
