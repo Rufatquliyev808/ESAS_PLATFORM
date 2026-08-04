@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from collections.abc import Iterator
 from datetime import UTC, datetime
 import sqlite3
 
@@ -147,3 +148,48 @@ def read_tick_page(
         has_more=has_more,
         next_position=next_position,
     )
+
+
+def iter_tick_identity_batches(
+    *,
+    symbol: str,
+    start_at: datetime,
+    end_at: datetime,
+    batch_size: int = 1000,
+) -> Iterator[tuple[TickPosition, ...]]:
+    normalized_symbol = symbol.strip()
+    if not normalized_symbol:
+        raise ValueError("symbol must not be empty")
+    if not MIN_PAGE_SIZE <= batch_size <= MAX_PAGE_SIZE:
+        raise ValueError(
+            f"batch_size must be between {MIN_PAGE_SIZE} and {MAX_PAGE_SIZE}"
+        )
+
+    start_text = _utc_text(start_at, "start_at")
+    end_text = _utc_text(end_at, "end_at")
+    if end_text <= start_text:
+        raise ValueError("end_at must be later than start_at")
+
+    with _read_only_connection() as connection:
+        connection.execute("BEGIN;")
+        cursor = connection.execute(
+            """
+            SELECT event_timestamp, event_id
+            FROM tick_events
+            WHERE symbol = ?
+              AND event_timestamp >= ?
+              AND event_timestamp < ?
+            ORDER BY event_timestamp ASC, event_id ASC;
+            """,
+            (normalized_symbol, start_text, end_text),
+        )
+        while rows := cursor.fetchmany(batch_size):
+            yield tuple(
+                TickPosition(
+                    event_timestamp=datetime.fromisoformat(
+                        row["event_timestamp"]
+                    ),
+                    event_id=row["event_id"],
+                )
+                for row in rows
+            )

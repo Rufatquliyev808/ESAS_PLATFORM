@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 replay dataset snapshot-u əlavə edildi: sabit read transaction-ında batch
+  oxuması, tick sayı, ilk/son kanonik mövqe və versiyalanmış SHA-256 fingerprint;
+  snapshot testləri `7 passed`, tam backend `35 passed` nəticəsi verdi.
 - Phase 2 üçün versiyalanmış, SHA-256 checksum nəzarətli və transaction əsaslı
   migration runner-i əlavə edildi; təkrar icra no-op, dəyişmiş migration və dağıdıcı
   SQL fail-closed olur, production yolu açıq icazə tələb edir.

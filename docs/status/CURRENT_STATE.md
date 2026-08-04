@@ -36,6 +36,13 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   müvəqqəti bazada tətbiq və query planında təsdiq edildi; canlı database faylına
   toxunulmadı və production yolu default olaraq açıq icazəsiz rədd edilir.
 - Migration üzrə yeni `6` test və tam backend üzrə `28` test keçdi.
+- Replay dataset snapshot modulu əlavə edildi: seçilmiş interval sabit read
+  transaction-ında maksimum `1000`-lik batch-lərlə oxunur, bütün dataset yaddaşa
+  yüklənmir.
+- Snapshot tick sayını, ilk/son `(event_timestamp, event_id)` mövqeyini və kanonik
+  `event_id` axınından versiyalanmış SHA-256 fingerprint-i hesablayır.
+- Snapshot üzrə `7` yeni test və tam backend üzrə `35` test keçdi; canlı baza,
+  mövcud API və ticarət sərhədləri dəyişdirilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

@@ -1,6 +1,6 @@
 # Phase 2 — Tick replay oxuma müqaviləsi
 
-Status: DESIGN READY — NOT IMPLEMENTED  
+Status: IMPLEMENTATION STARTED — READ-ONLY REPOSITORY READY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 HTTP API, cursor, limit və xəta cavabı qaydaları:
@@ -143,4 +143,6 @@ məzmununu dəyişməməlidir.
 5. Böyük interval üçün yaddaş və performans testləri.
 6. Replay sessiyası və məlumat keyfiyyəti modullarına keçid.
 
-Bu sənədin hazırlanması Phase 2 istehsal kodunun başladılması demək deyil.
+Yalnız-oxuma repository, deterministik keyset səhifələmə, sabit SQLite read
+transaction-ında batch identifikasiya axını və replay indeksi tətbiq edilib. Qorunan
+API, cursor nişanı və frontend replay görünüşü hələ tətbiq edilməyib.

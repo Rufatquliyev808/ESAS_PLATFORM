@@ -6,29 +6,30 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Deterministik replay sessiyasının ilkin skeletini yaratmaq: sabit giriş intervalından
-dataset snapshot metadatasını hesablamaq və eyni giriş üçün eyni fingerprint vermək.
+Replay sessiyası və append-only audit sxemini `0002` migration-u ilə yaratmaq və
+yalnız müvəqqəti test bazasında constraint/trigger davranışını təsdiqləmək.
 
 ## Sərhədlər
 
-- Snapshot yalnız repository-nin `[start_at, end_at)` sərhədindən oxunmalıdır.
-- Dataset tick sayı, ilk və son kanonik mövqe hesablanmalıdır.
-- Fingerprint kanonik `event_timestamp + event_id` ardıcıllığından alınmalıdır.
-- Eyni dəyişməz dataset iki icrada eyni fingerprint qaytarmalıdır.
-- Boş dataset təhlükəsiz və deterministik nəticə verməlidir.
-- Xam tick sətrləri dəyişdirilə və silinə bilməz.
-- Hələ worker, API, frontend və canlı bazada migration əlavə edilməməlidir.
+- `replay_sessions` müqavilədəki vəziyyət, interval, progress və checkpoint
+  constraint-lərini tətbiq etməlidir.
+- `replay_session_audit` sessiyaya foreign key ilə bağlanmalıdır.
+- Audit `UPDATE` və `DELETE` əməliyyatları trigger ilə bloklanmalıdır.
+- Migration transaction, checksum və təkrar icra qaydalarını qorumalıdır.
+- Testlər yalnız müvəqqəti SQLite bazası istifadə etməlidir.
+- Xam tick və loss acknowledgement məlumatına toxunulmamalıdır.
+- Hələ repository yazıları, worker, API, frontend və canlı migration olmamalıdır.
 
 ## Tamamlanma meyarları
 
-- Eyni interval iki icrada eyni tick sayı, sərhədlər və fingerprint verməlidir.
-- Eyni timestamp-li event-lərin `event_id` sırası fingerprint-də qorunmalıdır.
-- Boş dataset üçün say `0`, ilk/son mövqe `NULL` olmalıdır.
-- Səhifələnmiş oxuma böyük intervalı yaddaşa tam yükləməməlidir.
-- Snapshot hesablanması xam tick məlumatını dəyişməməlidir.
+- Təzə test bazasında `0001` və `0002` ardıcıllıqla tətbiq olunmalıdır.
+- Sessiya vəziyyəti, rejim, vaxt və progress constraint-ləri yanlış sətri rədd etməlidir.
+- Audit sətri əlavə edilə, lakin yenilənə və silinə bilməməlidir.
+- Foreign key mövcud olmayan sessiya auditini rədd etməlidir.
+- Təkrar migration icrası no-op olmalı və checksum qorunmalıdır.
 - Mövcud backend testləri keçməlidir.
 
 ## Sonrakı addım
 
-Snapshot skeleti qəbul edildikdən sonra replay sessiyası cədvəlləri və append-only
-audit mexanizmi növbəti migration-da, yenə yalnız müvəqqəti bazada yaradılacaq.
+Sxem qəbul edildikdən sonra replay sessiyası yaratma repository-si və atomik ilkin
+audit yazısı hazırlanacaq.
