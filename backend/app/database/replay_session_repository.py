@@ -13,6 +13,29 @@ from backend.app.replay.dataset_snapshot import (
 REPLAY_CONTRACT_VERSION = "1.0"
 QUALITY_RULE_VERSION = "1.0"
 REPLAY_MODES = frozenset({"step", "max_speed"})
+TERMINAL_STATES = frozenset({"completed", "cancelled", "failed"})
+ALLOWED_TRANSITIONS = {
+    "start": {"created": "running"},
+    "pause": {"running": "paused"},
+    "resume": {"paused": "running", "interrupted": "running"},
+    "complete": {"running": "completed"},
+    "cancel": {
+        "created": "cancelled",
+        "running": "cancelled",
+        "paused": "cancelled",
+        "interrupted": "cancelled",
+    },
+    "interrupt": {"running": "interrupted"},
+    "fail": {"running": "failed"},
+}
+
+
+class ReplaySessionNotFoundError(LookupError):
+    pass
+
+
+class ReplayTransitionConflictError(RuntimeError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -31,6 +54,9 @@ class ReplaySession:
     first_position: TickPosition | None
     last_position: TickPosition | None
     processed_ticks: int
+    checkpoint_position: TickPosition | None
+    last_batch_at: str | None
+    error_category: str | None
     created_at: str
     updated_at: str
     completed_at: str | None
@@ -192,7 +218,239 @@ def _store_session_and_initial_audit(
         first_position=snapshot.first_position,
         last_position=snapshot.last_position,
         processed_ticks=0,
+        checkpoint_position=None,
+        last_batch_at=None,
+        error_category=None,
         created_at=now,
         updated_at=now,
         completed_at=completed_at,
     )
+
+
+def _position_key(position: TickPosition) -> tuple[datetime, str]:
+    return position.event_timestamp.astimezone(UTC), position.event_id
+
+
+def _row_position(
+    row: object,
+    timestamp_field: str,
+    event_field: str,
+) -> TickPosition | None:
+    timestamp = row[timestamp_field]
+    event_id = row[event_field]
+    if timestamp is None and event_id is None:
+        return None
+    if timestamp is None or event_id is None:
+        raise RuntimeError("stored replay position is incomplete")
+    return TickPosition(datetime.fromisoformat(timestamp), event_id)
+
+
+def _session_from_row(row: object) -> ReplaySession:
+    return ReplaySession(
+        session_id=row["session_id"],
+        created_by=row["created_by"],
+        symbol=row["symbol"],
+        start_at=row["start_at"],
+        end_at=row["end_at"],
+        mode=row["mode"],
+        state=row["state"],
+        replay_contract_version=row["replay_contract_version"],
+        quality_rule_version=row["quality_rule_version"],
+        dataset_tick_count=row["dataset_tick_count"],
+        dataset_fingerprint=row["dataset_fingerprint"],
+        first_position=_row_position(
+            row,
+            "first_event_timestamp",
+            "first_event_id",
+        ),
+        last_position=_row_position(
+            row,
+            "last_event_timestamp",
+            "last_event_id",
+        ),
+        processed_ticks=row["processed_ticks"],
+        checkpoint_position=_row_position(
+            row,
+            "checkpoint_event_timestamp",
+            "checkpoint_event_id",
+        ),
+        last_batch_at=row["last_batch_at"],
+        error_category=row["error_category"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        completed_at=row["completed_at"],
+    )
+
+
+def transition_replay_session(
+    *,
+    session_id: str,
+    actor: str,
+    actor_role: str,
+    action: str,
+    expected_state: str,
+    processed_ticks: int | None = None,
+    checkpoint_position: TickPosition | None = None,
+    error_category: str | None = None,
+) -> ReplaySession:
+    normalized_session_id = _required_text(session_id, "session_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+    normalized_action = _required_text(action, "action")
+    normalized_expected = _required_text(expected_state, "expected_state")
+    transition = ALLOWED_TRANSITIONS.get(normalized_action)
+    if transition is None:
+        raise ValueError("unknown replay transition action")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+        if row is None:
+            raise ReplaySessionNotFoundError("replay session was not found")
+        if row["state"] != normalized_expected:
+            raise ReplayTransitionConflictError(
+                "replay session state does not match expected_state"
+            )
+
+        next_state = transition.get(row["state"])
+        if next_state is None:
+            raise ReplayTransitionConflictError(
+                f"action {normalized_action} is invalid from state {row['state']}"
+            )
+
+        current_processed = row["processed_ticks"]
+        next_processed = (
+            current_processed
+            if processed_ticks is None
+            else processed_ticks
+        )
+        if next_processed < current_processed:
+            raise ValueError("processed_ticks must not move backwards")
+        if next_processed > row["dataset_tick_count"]:
+            raise ValueError("processed_ticks exceeds dataset_tick_count")
+
+        current_checkpoint = _row_position(
+            row,
+            "checkpoint_event_timestamp",
+            "checkpoint_event_id",
+        )
+        next_checkpoint = (
+            current_checkpoint
+            if checkpoint_position is None
+            else checkpoint_position
+        )
+        if next_processed > 0 and next_checkpoint is None:
+            raise ValueError("positive progress requires a checkpoint")
+        if next_processed > current_processed and checkpoint_position is None:
+            raise ValueError("progress increase requires a new checkpoint")
+        if current_checkpoint is not None and checkpoint_position is not None:
+            if _position_key(checkpoint_position) < _position_key(current_checkpoint):
+                raise ValueError("checkpoint must not move backwards")
+        if processed_ticks is not None and processed_ticks == current_processed:
+            if checkpoint_position is not None and checkpoint_position != current_checkpoint:
+                raise ValueError("checkpoint cannot change without progress")
+
+        checkpoint_timestamp, checkpoint_event_id = _position_values(
+            next_checkpoint
+        )
+        if next_checkpoint is not None:
+            exists = connection.execute(
+                """
+                SELECT 1
+                FROM tick_events
+                WHERE symbol = ?
+                  AND event_timestamp >= ?
+                  AND event_timestamp < ?
+                  AND event_timestamp = ?
+                  AND event_id = ?;
+                """,
+                (
+                    row["symbol"],
+                    row["start_at"],
+                    row["end_at"],
+                    checkpoint_timestamp,
+                    checkpoint_event_id,
+                ),
+            ).fetchone()
+            if exists is None:
+                raise ValueError("checkpoint is not part of the replay dataset")
+
+        if next_state == "completed" and next_processed != row["dataset_tick_count"]:
+            raise ValueError("completed session must process the full dataset")
+        normalized_error = None
+        if error_category is not None:
+            normalized_error = _required_text(error_category, "error_category")
+        if next_state == "failed" and normalized_error is None:
+            raise ValueError("failed transition requires error_category")
+        if next_state != "failed" and normalized_error is not None:
+            raise ValueError("error_category is only valid for failed transition")
+
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        last_batch_at = row["last_batch_at"]
+        if next_processed > current_processed:
+            last_batch_at = now
+        completed_at = now if next_state in TERMINAL_STATES else None
+        updated = connection.execute(
+            """
+            UPDATE replay_sessions
+            SET state = ?,
+                processed_ticks = ?,
+                checkpoint_event_timestamp = ?,
+                checkpoint_event_id = ?,
+                last_batch_at = ?,
+                error_category = ?,
+                updated_at = ?,
+                completed_at = ?
+            WHERE session_id = ? AND state = ?;
+            """,
+            (
+                next_state,
+                next_processed,
+                checkpoint_timestamp,
+                checkpoint_event_id,
+                last_batch_at,
+                normalized_error,
+                now,
+                completed_at,
+                normalized_session_id,
+                normalized_expected,
+            ),
+        )
+        if updated.rowcount != 1:
+            raise ReplayTransitionConflictError(
+                "replay session changed during transition"
+            )
+
+        connection.execute(
+            """
+            INSERT INTO replay_session_audit
+            (
+                session_id, actor, actor_role, action, previous_state,
+                next_state, processed_ticks, checkpoint_time,
+                checkpoint_event, error_category, occurred_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            (
+                normalized_session_id,
+                normalized_actor,
+                normalized_role,
+                normalized_action,
+                normalized_expected,
+                next_state,
+                next_processed,
+                checkpoint_timestamp,
+                checkpoint_event_id,
+                normalized_error,
+                now,
+            ),
+        )
+        result_row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+
+    return _session_from_row(result_row)

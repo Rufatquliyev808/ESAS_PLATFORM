@@ -92,13 +92,19 @@ Tamamlanma meyarı: KEÇİB — migration testləri `6 passed`, tam backend pake
   müəyyən etmək.
 - [x] Snapshot, sessiya və ilkin audit yaradılmasını atomik repository sərhədinə
   bağlamaq.
+- [x] Qanuni vəziyyət keçidlərini və terminal vəziyyətlərin bağlanmasını tətbiq etmək.
+- [x] Monoton progress, datasetə bağlı checkpoint və optimistic state conflict
+  nəzarətini tətbiq etmək.
+- [x] Sessiya keçidi, checkpoint və append-only audit sətrini eyni transaction-da
+  atomik yazmaq.
 - Saxlanmış tick-ləri zaman ardıcıllığı ilə oxumaq.
 - Replay sürətini real vaxtdan ayırmaq: addım-addım və maksimum sürət rejimi.
 - Eyni giriş üçün təkrar istehsal edilə bilən nəticə yaratmaq.
 
-Aralıq nəticə: snapshot testləri `7 passed`; sessiya repository testləri `11 passed`,
-tam backend `56 passed`. Eyni məlumat aralığı iki icrada eyni say, sərhədlər və
-fingerprint verir; sessiya və ilkin audit ya birlikdə yazılır, ya da tam rollback olur.
+Aralıq nəticə: snapshot testləri `7 passed`; sessiya yaradılması və həyat dövrü üzrə
+hədəf testlər `22 passed`, tam backend `67 passed`. Eyni məlumat aralığı iki icrada
+eyni say, sərhədlər və fingerprint verir; sessiya yaradılması, vəziyyət keçidi,
+checkpoint və uyğun audit ya birlikdə yazılır, ya da tam rollback olur.
 
 Tamamlanma meyarı: sessiya həyat dövrü də əlavə edildikdən sonra eyni məlumat aralığı
 iki icrada eyni event ardıcıllığını verir.
@@ -147,5 +153,5 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
-Növbəti texniki tapşırıq: replay vəziyyət keçidi modelini və checkpoint ilə uyğun
-audit sətrini eyni transaction-da yazan repository əməliyyatlarını hazırlamaq.
+Növbəti texniki tapşırıq: `step` rejimi üçün `1..1000` həddində deterministik tick
+batch emalını, checkpoint irəliləməsini və idempotency sərhədini hazırlamaq.

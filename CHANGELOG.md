@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Replay sessiyası üçün qanuni vəziyyət keçidləri, terminal vəziyyət qoruması,
+  optimistic conflict, monoton progress və datasetə bağlı checkpoint əlavə edildi;
+  sessiya yenilənməsi ilə append-only audit eyni transaction-da yazılır, hədəf
+  testlər `22 passed`, tam backend `67 passed`.
 - Replay sessiyasını snapshot metadatası və ilkin append-only audit sətri ilə eyni
   transaction-da yaradan repository əlavə edildi; boş dataset birbaşa `completed`
   olur, audit xətası tam rollback verir; `11` yeni test, tam backend `56 passed`.

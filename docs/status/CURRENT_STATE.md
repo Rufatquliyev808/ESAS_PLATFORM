@@ -57,6 +57,14 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   audit insert xətası sessiya insert-ini də tam rollback edir.
 - Sessiya repository-si üzrə `11` yeni test və tam backend üzrə `56` test keçdi;
   xam tick məlumatı, canlı baza, API və ticarət sərhədləri dəyişdirilmədi.
+- Replay sessiyasının qanuni `start`, `pause`, `resume`, `complete`, `cancel`,
+  `interrupt` və `fail` keçidləri repository sərhədində tətbiq edildi.
+- Terminal vəziyyətdən keçid, gözlənilməyən cari vəziyyət, geriyə gedən və dataset
+  ölçüsünü aşan progress, yaxud datasetə aid olmayan checkpoint fail-closed rədd edilir.
+- Vəziyyət, progress, checkpoint və append-only audit eyni transaction-da saxlanılır;
+  audit xətasında bütün keçid rollback edilir və immutable sessiya girişləri qorunur.
+- Sessiya yaradılması və həyat dövrü üzrə hədəf testlər `22 passed`, tam backend
+  `67 passed` oldu; canlı baza, API, frontend və worker dəyişdirilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

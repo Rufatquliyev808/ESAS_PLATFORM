@@ -1,6 +1,6 @@
 # Phase 2 — Replay sessiyası və həyat dövrü müqaviləsi
 
-Status: IMPLEMENTATION STARTED — SESSION CREATION READY
+Status: IMPLEMENTATION IN PROGRESS — SESSION LIFECYCLE READY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 Worker claim, lease, fencing və scheduler qaydaları:
