@@ -84,13 +84,18 @@ Tamamlanma meyarı: KEÇİB — migration testləri `6 passed`, tam backend pake
 - [x] Sabit read transaction daxilində batch-lərlə dataset identifikasiya axını yaratmaq.
 - [x] Tick sayı, ilk/son kanonik mövqe və deterministik fingerprint hesablamaq.
 - [x] Boş dataset üçün sabit fingerprint və `NULL` sərhədlər qaytarmaq.
+- [x] Replay sessiyası cədvəlini interval, rejim, vəziyyət və progress constraint-ləri
+  ilə migration vasitəsilə yaratmaq.
+- [x] Sessiya auditini foreign key, `ON DELETE RESTRICT` və append-only trigger-lərlə
+  qorumaq.
 - Replay sessiyasının identifikatorunu və giriş parametrlərini müəyyən etmək.
 - Saxlanmış tick-ləri zaman ardıcıllığı ilə oxumaq.
 - Replay sürətini real vaxtdan ayırmaq: addım-addım və maksimum sürət rejimi.
 - Eyni giriş üçün təkrar istehsal edilə bilən nəticə yaratmaq.
 
-Aralıq nəticə: snapshot testləri `7 passed`, tam backend `35 passed`; eyni məlumat
-aralığı iki icrada eyni say, sərhədlər və fingerprint verir.
+Aralıq nəticə: snapshot testləri `7 passed`; schema/migration hədəf testləri
+`16 passed`, tam backend `45 passed`. Eyni məlumat aralığı iki icrada eyni say,
+sərhədlər və fingerprint verir, audit sətri isə yenilənə və silinə bilmir.
 
 Tamamlanma meyarı: sessiya həyat dövrü də əlavə edildikdən sonra eyni məlumat aralığı
 iki icrada eyni event ardıcıllığını verir.
@@ -139,5 +144,5 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
-Növbəti texniki tapşırıq: replay sessiyası və append-only audit cədvəllərini ikinci
-migration ilə, yalnız müvəqqəti test bazasında yaratmaq.
+Növbəti texniki tapşırıq: snapshot nəticəsindən replay sessiyasını və ilkin audit
+sətrini eyni transaction-da yaradan repository əməliyyatını hazırlamaq.

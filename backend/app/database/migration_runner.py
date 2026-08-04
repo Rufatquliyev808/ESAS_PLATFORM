@@ -73,17 +73,34 @@ def _statements(sql: str) -> tuple[str, ...]:
             pending = ""
 
     if pending.strip():
-        raise ValueError("migration contains an incomplete SQL statement")
+        without_comments = re.sub(
+            r"--.*?$|/\*.*?\*/",
+            " ",
+            pending,
+            flags=re.M | re.S,
+        )
+        if without_comments.strip():
+            raise ValueError("migration contains an incomplete SQL statement")
 
     return tuple(statements)
 
 
 def _refuse_unsafe_sql(migration: Migration) -> None:
-    normalized = re.sub(r"--.*?$|/\*.*?\*/", " ", migration.sql, flags=re.M | re.S)
-    if re.search(r"\b(DROP|DELETE|UPDATE|REPLACE|TRUNCATE|VACUUM)\b", normalized, re.I):
-        raise ValueError(
-            f"migration {migration.version} contains a destructive statement"
-        )
+    for statement in _statements(migration.sql):
+        normalized = re.sub(
+            r"--.*?$|/\*.*?\*/",
+            " ",
+            statement,
+            flags=re.M | re.S,
+        ).strip()
+        if re.match(
+            r"^(DROP|DELETE|UPDATE|REPLACE|TRUNCATE|VACUUM)\b",
+            normalized,
+            re.I,
+        ):
+            raise ValueError(
+                f"migration {migration.version} contains a destructive statement"
+            )
 
 
 def apply_migrations(

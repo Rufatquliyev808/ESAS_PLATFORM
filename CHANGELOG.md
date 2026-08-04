@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- `0002` migration-u ilə replay sessiyası sxemi, siyahı/state/owner indeksləri və
+  foreign key/trigger ilə qorunan append-only sessiya auditi əlavə edildi; sxem və
+  migration hədəf testləri `16 passed`, tam backend `45 passed` nəticəsi verdi.
 - Phase 2 replay dataset snapshot-u əlavə edildi: sabit read transaction-ında batch
   oxuması, tick sayı, ilk/son kanonik mövqe və versiyalanmış SHA-256 fingerprint;
   snapshot testləri `7 passed`, tam backend `35 passed` nəticəsi verdi.

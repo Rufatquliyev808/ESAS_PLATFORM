@@ -1,6 +1,6 @@
 # Phase 2 — Replay sessiyası və həyat dövrü müqaviləsi
 
-Status: IMPLEMENTATION STARTED — DATASET SNAPSHOT READY
+Status: IMPLEMENTATION STARTED — SNAPSHOT AND SESSION SCHEMA READY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 Worker claim, lease, fencing və scheduler qaydaları:
@@ -283,4 +283,5 @@ Avtomatik silmə ilkin versiyaya daxil deyil. Gələcək retention siyasəti:
 
 Dataset snapshot skeleti tətbiq edilib: tick sayı, ilk/son kanonik mövqe və
 uzunluq-prefiksli UTF-8 `event_id` axınından `sha256-event-id-v1` fingerprint
-hesablanır. Sessiya cədvəlləri, vəziyyət keçidləri, worker və API hələ tətbiq edilməyib.
+hesablanır. Sessiya və append-only audit sxemi müvəqqəti bazada tətbiq və test edilib.
+Repository yazıları, vəziyyət keçidləri, worker və API hələ tətbiq edilməyib.

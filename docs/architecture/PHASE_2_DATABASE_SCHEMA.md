@@ -413,6 +413,7 @@ Rollback xam məlumatı riskə atan avtomatik `DROP TABLE` ardıcıllığı deyi
 6. Backup, qəbul və bərpa alətlərinin dry-run sınağı.
 7. İstifadəçi təsdiqli nəzarətli production migration.
 
-İlkin migration runner və `idx_tick_events_replay` indeksi müvəqqəti test bazasında
-tətbiq edilib. Canlı bazada migration hələ aparılmayıb və yalnız istifadəçi təsdiqli
-nəzarətli pəncərədə ayrıca qəbul sübutları ilə icra oluna bilər.
+İlkin migration runner, `idx_tick_events_replay` indeksi, `replay_sessions` və
+append-only `replay_session_audit` sxemi müvəqqəti test bazasında tətbiq edilib.
+Canlı bazada migration hələ aparılmayıb və yalnız istifadəçi təsdiqli nəzarətli
+pəncərədə ayrıca qəbul sübutları ilə icra oluna bilər.

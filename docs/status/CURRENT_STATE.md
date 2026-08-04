@@ -43,6 +43,13 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   `event_id` axınından versiyalanmış SHA-256 fingerprint-i hesablayır.
 - Snapshot üzrə `7` yeni test və tam backend üzrə `35` test keçdi; canlı baza,
   mövcud API və ticarət sərhədləri dəyişdirilmədi.
+- `0002` migration-u ilə `replay_sessions`, sessiya siyahı/state/owner indeksləri,
+  `replay_session_audit` və append-only qoruyucu trigger-lər əlavə edildi.
+- Müvəqqəti bazada rejim, vəziyyət, interval, tick/progress constraint-ləri,
+  foreign key, `ON DELETE RESTRICT`, audit `UPDATE/DELETE` bloklanması və Phase 1
+  sətirlərinin qorunması yoxlanıldı.
+- Schema/migration hədəf testləri `16 passed`, tam backend `45 passed` oldu; canlı
+  database faylına migration tətbiq edilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,
