@@ -1,8 +1,8 @@
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 
-from backend.app.analysis.bars import TIMEFRAME_SECONDS, build_closed_mid_bars
-from backend.app.analysis.indicators import build_indicator_set
+from backend.app.analysis.bars import BarBuildResult, TIMEFRAME_SECONDS, build_closed_mid_bars
+from backend.app.analysis.indicators import IndicatorSetResult, build_indicator_set
 from backend.app.database.replay_session_repository import (
     ReplaySession,
     ReplayTransitionConflictError,
@@ -34,6 +34,13 @@ class ReplayTechnicalAnalysis:
     api_version: str = ANALYSIS_API_VERSION
 
 
+@dataclass(frozen=True)
+class ReplayAnalysisContext:
+    analysis: ReplayTechnicalAnalysis
+    bars: BarBuildResult
+    indicators: IndicatorSetResult
+
+
 def _timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
@@ -47,6 +54,25 @@ def create_replay_technical_analysis(
     atr_period: int,
     bar_limit: int,
 ) -> ReplayTechnicalAnalysis:
+    return create_replay_analysis_context(
+        session=session,
+        timeframe=timeframe,
+        ema_period=ema_period,
+        rsi_period=rsi_period,
+        atr_period=atr_period,
+        bar_limit=bar_limit,
+    ).analysis
+
+
+def create_replay_analysis_context(
+    *,
+    session: ReplaySession,
+    timeframe: str,
+    ema_period: int,
+    rsi_period: int,
+    atr_period: int,
+    bar_limit: int,
+) -> ReplayAnalysisContext:
     """Build deterministic, read-only indicators from a completed replay snapshot."""
     if session.state != "completed":
         raise ReplayTransitionConflictError("Replay session is not completed")
@@ -99,7 +125,7 @@ def create_replay_technical_analysis(
         atr_period=atr_period,
     )
 
-    return ReplayTechnicalAnalysis(
+    analysis = ReplayTechnicalAnalysis(
         session_id=session.session_id,
         symbol=session.symbol,
         timeframe=timeframe,
@@ -129,3 +155,4 @@ def create_replay_technical_analysis(
             "atr": asdict(indicator_result.atr),
         },
     )
+    return ReplayAnalysisContext(analysis=analysis, bars=bar_result, indicators=indicator_result)

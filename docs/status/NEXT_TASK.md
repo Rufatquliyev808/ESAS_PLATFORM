@@ -2,30 +2,30 @@
 
 Status: READY — ayrıca təsdiq gözləyir
 Prioritet: HIGH
-Mərhələ: Phase 4 strategiya nəticəsi API-si və müqayisə görünüşü
+Mərhələ: Phase 4 ikinci müstəqil strategiya müşahidə modulu
 
 ## Tapşırıq
 
-Tamamlanmış replay sessiyası üzərində seçilmiş, versiyalanmış strategiya modulunu
-işlədən qorunan read-only API və nəticələri müqayisə edən frontend görünüşü hazırlamaq.
+RSI əsasında bazar momentum rejimini təsnif edən ikinci, müstəqil və versiyalanmış
+araşdırma modulunu hazırlamaq və mövcud müqayisə laboratoriyasında ayrıca kart kimi
+göstərmək.
 
 ## Sərhədlər
 
-- Yalnız sessiya sahibinin tamamlanmış replay məlumatı istifadə ediləcək.
-- Strategiya ayrıca seçiləcək; parametrlər və lineage fingerprint-ləri görünəcək.
-- Nəticələr tədqiqat müşahidəsi kimi təqdim ediləcək, BUY/SELL siqnalı kimi yox.
-- Warm-up, boş məlumat, dataset drift və köhnə versiya halları açıq göstəriləcək.
-- Canlı order, broker əmri, avtomatik risk və ticarət icrası daxil deyil.
+- Modul `rsi_regime_observation` kimi ayrıca paket və versiya daşıyacaq.
+- RSI aşağı/neytral/yüksək rejimləri konfiqurasiya olunan hədlərlə təsnif ediləcək.
+- Warm-up, sərhəd qiymətləri, determinizm və no-lookahead ayrıca test olunacaq.
+- EMA və RSI modulları bir-birindən asılı olmadan müqayisə kartlarında görünəcək.
+- Nəticələr tədqiqat müşahidəsi olacaq; canlı order və ticarət icrası daxil deyil.
 
 ## Tamamlanma meyarları
 
-- Qorunan API strategiya nəticəsini deterministik qaytarır.
-- Frontend strategiyaları ayrı kartlarda seçməyə və müqayisə etməyə imkan verir.
-- Strategiya versiyası, parametrlər, sayımlar və lineage aydın görünür.
-- İcazə, drift, determinizm və frontend vəziyyət testləri keçir.
+- İkinci modul ümumi strategiya müqaviləsinə dəyişiklik etmədən qoşulur.
+- Eyni girişlər eyni fingerprint və sayımları qaytarır.
+- Frontend hər iki modulu ayrıca, aydın kartlarda göstərir.
 - Tam backend və frontend yoxlamaları yaşıl qalır.
 
 ## Sonrakı addım
 
-Bu mərhələ istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Canlı ticarət ayrıca
+Bu yeni mərhələ istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Canlı ticarət ayrıca
 təhlükəsizlik və sübut qapısından keçmədən aktiv edilməyəcək.

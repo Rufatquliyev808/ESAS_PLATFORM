@@ -176,3 +176,65 @@ def test_analysis_api_detects_dataset_drift(isolated_database: Path) -> None:
     assert response.json() == {
         "detail": "Replay dataset no longer matches the session snapshot"
     }
+
+
+def test_strategy_analysis_api_is_protected_deterministic_and_research_only(
+    isolated_database: Path,
+) -> None:
+    session = _prepare(isolated_database)
+    url = (
+        f"/api/v2/replay-sessions/{session.session_id}/strategy-analysis"
+        "?timeframe=M1&ema_period=2&bar_limit=10"
+    )
+    with TestClient(app) as client:
+        assert client.get(url).status_code == 401
+        headers = _headers(client)
+        first = client.get(url, headers=headers)
+        second = client.get(url, headers=headers)
+
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    data = first.json()["data"]
+    assert data["interpretation"] == "research_observation_not_trading_signal"
+    assert len(data["strategies"]) == 1
+    strategy = data["strategies"][0]
+    assert strategy["definition"]["strategy_id"] == "ema_close_relation"
+    assert strategy["definition"]["version"] == "1.0.0"
+    assert strategy["definition"]["lifecycle"] == "experimental"
+    assert strategy["summary"] == {
+        "ready": 2,
+        "insufficient_data": 1,
+        "above": 2,
+        "below": 0,
+        "equal": 0,
+    }
+    assert strategy["fingerprint"].startswith("sha256:")
+    serialized = str(first.json()).lower()
+    assert "order" not in serialized
+    assert "position_size" not in serialized
+
+
+def test_strategy_analysis_api_enforces_owner_and_completed_state(
+    isolated_database: Path,
+) -> None:
+    incomplete = _prepare(isolated_database, completed=False)
+    foreign = create_replay_session(
+        created_by="OTHER",
+        actor_role="operator",
+        symbol="GOLD",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(minutes=3),
+        mode="max_speed",
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        unfinished = client.get(
+            f"/api/v2/replay-sessions/{incomplete.session_id}/strategy-analysis",
+            headers=headers,
+        )
+        forbidden = client.get(
+            f"/api/v2/replay-sessions/{foreign.session_id}/strategy-analysis",
+            headers=headers,
+        )
+    assert unfinished.status_code == 409
+    assert forbidden.status_code == 403

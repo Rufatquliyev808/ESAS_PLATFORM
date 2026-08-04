@@ -10,6 +10,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Tamamlanmış replay sessiyalarında versiyalanmış strategiyaları işlədən qorunan
+  `strategy-analysis` API-si və müasir müqayisə laboratoriyası əlavə edildi. İlk
+  `ema_close_relation` kartı EMA-dan yuxarı/aşağı/bərabər müşahidələri, warm-up,
+  versiya, lifecycle və fingerprint izini göstərir. Qat yalnız araşdırma üçündür;
+  al/sat qərarı, mövqe ölçüsü və order yaratmır. Tam backend `164 passed`, frontend
+  lint/build və `3` test nəticəsi uğurludur.
+
 - Versiyalanmış, müstəqil və yalnız tədqiqat məqsədli strategiya modul müqaviləsi əlavə
   edildi. `ema_close_relation` `1.0.0` istinad modulu bağlanmış barları causal EMA ilə
   müqayisə edir, warm-up vəziyyətini saxlayır və nəticəni dataset/bar/indicator

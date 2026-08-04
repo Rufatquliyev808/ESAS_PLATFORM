@@ -701,3 +701,22 @@ modul sərhədi quruldu.
   fingerprint-ini yaradır.
 - Warm-up `insufficient_data` kimi saxlanır; nəticə al/sat siqnalı və order yaratmır.
 - Determinizm, warm-up, boş məlumat, zaman uyğunluğu və no-lookahead testləri keçirildi.
+
+## Strategiya nəticəsi API-si və müqayisə görünüşü
+
+2026-08-04 tarixində versiyalanmış strategiyaların tamamlanmış replay üzərində
+işlədilməsi üçün qorunan, yalnız-oxuma təqdimat qatı tamamlandı.
+
+- `/api/v2/replay-sessions/{session_id}/strategy-analysis` yalnız sessiya sahibinə və
+  yalnız tamamlanmış replay məlumatına xidmət edir.
+- Texniki analiz və strategiya eyni yoxlanmış dataset, bağlanmış bar və indikator
+  kontekstini paylaşır; dataset drift nəticəni dayandırır.
+- İlk modul `ema_close_relation` ayrıca versiya, lifecycle, parametr, sayım və
+  fingerprint izi ilə qaytarılır.
+- Frontenddə strategiya nəticəsi ayrıca kartda EMA-dan yuxarı/aşağı/bərabər payları,
+  warm-up sayını və hesablama izini sadə Azərbaycan dilində göstərir.
+- Görünüş mobil ölçüyə uyğunlaşır və gələcək modulların ayrıca kart kimi əlavə
+  olunmasına hazırdır.
+- Nəticə yalnız araşdırma müşahidəsidir; al/sat qərarı, mövqe ölçüsü və order yaratmır.
+- Hədəf testləri `11 passed`, tam backend regressiyası `164 passed`, frontend lint,
+  production build və `3` frontend testi uğurla keçdi.
