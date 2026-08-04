@@ -7,6 +7,10 @@ from backend.app.analysis.indicators import (
     calculate_ema,
     calculate_rsi,
 )
+from backend.app.analysis.replay_analysis import (
+    ReplayTechnicalAnalysis,
+    create_replay_technical_analysis,
+)
 
 __all__ = [
     "IndicatorSeries",
@@ -15,4 +19,6 @@ __all__ = [
     "calculate_atr",
     "calculate_ema",
     "calculate_rsi",
+    "ReplayTechnicalAnalysis",
+    "create_replay_technical_analysis",
 ]

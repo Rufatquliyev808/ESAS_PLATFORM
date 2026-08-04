@@ -47,6 +47,10 @@ from backend.app.database.replay_command_repository import (
     execute_replay_command,
 )
 from backend.app.quality.report import create_replay_quality_report
+from backend.app.analysis.replay_analysis import (
+    ReplayDatasetChangedError,
+    create_replay_technical_analysis,
+)
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
@@ -257,6 +261,50 @@ def public_replay_quality_report(
         "data": asdict(report),
         "meta": {"api_version": "2"},
     }
+
+
+@app.get("/api/v2/replay-sessions/{session_id}/technical-analysis")
+def replay_technical_analysis(
+    session_id: str,
+    timeframe: str = Query(default="M1", pattern="^(M1|M5|M15|H1)$"),
+    ema_period: int = Query(default=20, ge=2, le=500),
+    rsi_period: int = Query(default=14, ge=2, le=500),
+    atr_period: int = Query(default=14, ge=2, le=500),
+    bar_limit: int = Query(default=500, ge=1, le=5_000),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    if session.created_by != user_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Replay session belongs to another user",
+        )
+    try:
+        analysis = create_replay_technical_analysis(
+            session=session,
+            timeframe=timeframe,
+            ema_period=ema_period,
+            rsi_period=rsi_period,
+            atr_period=atr_period,
+            bar_limit=bar_limit,
+        )
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay session is not completed",
+        ) from error
+    except ReplayDatasetChangedError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay dataset no longer matches the session snapshot",
+        ) from error
+    return {"data": asdict(analysis), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

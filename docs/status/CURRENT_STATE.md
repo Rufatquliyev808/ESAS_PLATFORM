@@ -655,3 +655,18 @@ başladıldı.
 Sınaqda növbənin `1000` limitinə çatdığı da müşahidə edildi. Mövcud növbə
 qorundu, lakin limitdən sonra gələn event-lər saxlanıla bilmədiyi üçün növbəti
 prioritet itki sayğacı və queue health monitorinqidir.
+## Qorunan texniki analiz API-si
+
+2026-08-04 tarixində tamamlanmış replay sessiyaları üçün yalnız-oxuma texniki analiz
+endpoint-i hazırlandı.
+
+- Yalnız sessiya sahibi və yalnız `completed` sessiya nəticəni görə bilər.
+- `M1`, `M5`, `M15`, `H1` qapalı şamları və EMA, RSI, ATR seriyaları təqdim edilir.
+- Periodlar və qaytarılan şam sayı təhlükəsiz limitlərlə yoxlanılır.
+- Dataset sessiyanın ilkin fingerprint-i ilə yenidən yoxlanılır; drift aşkar edilərsə
+  nəticə verilmir.
+- Dataset, bar və indikator versiyaları/fingerprint-ləri cavabda saxlanılır.
+- Warm-up nöqtələri `insufficient_data` kimi açıq görünür.
+- Endpoint strategiya, al/sat siqnalı və order yaratmır.
+- Yeni API testləri və tam backend regressiyası `156 passed` nəticəsi verdi; frontend
+  lint və production build yoxlamaları keçdi.
