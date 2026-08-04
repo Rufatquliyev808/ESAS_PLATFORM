@@ -10,6 +10,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Versiyalanmış, müstəqil və yalnız tədqiqat məqsədli strategiya modul müqaviləsi əlavə
+  edildi. `ema_close_relation` `1.0.0` istinad modulu bağlanmış barları causal EMA ilə
+  müqayisə edir, warm-up vəziyyətini saxlayır və nəticəni dataset/bar/indicator
+  fingerprint-lərinə bağlayır. Modul EXPERIMENTAL-dır, ticarət siqnalı və order yaratmır.
+
 - Tamamlanmış replay sessiyasının EMA, RSI və ATR nəticələrini göstərən qorunan texniki
   analiz frontend paneli əlavə edildi. İstifadəçi timeframe, indikator periodları və
   görünən bar sayını seçə bilir; EMA qiymətlə birlikdə, RSI və ATR ayrıca kartlarda

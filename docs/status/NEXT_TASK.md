@@ -2,35 +2,30 @@
 
 Status: READY — ayrıca təsdiq gözləyir
 Prioritet: HIGH
-Mərhələ: Phase 4 strategiya layihələndirməsi
+Mərhələ: Phase 4 strategiya nəticəsi API-si və müqayisə görünüşü
 
 ## Tapşırıq
 
-Texniki analiz indikatorlarının üzərində versiyalanmış, bir-birindən müstəqil və
-yalnız araşdırma məqsədli strategiya modullarının müqaviləsini layihələndirmək.
+Tamamlanmış replay sessiyası üzərində seçilmiş, versiyalanmış strategiya modulunu
+işlədən qorunan read-only API və nəticələri müqayisə edən frontend görünüşü hazırlamaq.
 
 ## Sərhədlər
 
-- İlk mərhələdə yalnız strategiya müqaviləsi, versiya, parametr, giriş indikatorları və
-  deterministik replay nəticə modeli hazırlanmalıdır.
-- Hər strategiya ayrıca modul olmalı, digər strategiyadan müstəqil test və düzəliş
-  edilə bilməlidir.
-- Gələcək məlumatın keçmiş nəticəyə sızması qadağandır; yalnız bağlanmış bar istifadə
-  edilməlidir.
-- Strategiya nəticəsi mənbə dataset/bar/indikator fingerprint-lərinə bağlanmalıdır.
-- Nəticələr ilk mərhələdə yalnız araşdırma və müqayisə üçündür.
-- Canlı order, broker əmri, avtomatik kapital riski və ticarət icrası daxil deyil.
+- Yalnız sessiya sahibinin tamamlanmış replay məlumatı istifadə ediləcək.
+- Strategiya ayrıca seçiləcək; parametrlər və lineage fingerprint-ləri görünəcək.
+- Nəticələr tədqiqat müşahidəsi kimi təqdim ediləcək, BUY/SELL siqnalı kimi yox.
+- Warm-up, boş məlumat, dataset drift və köhnə versiya halları açıq göstəriləcək.
+- Canlı order, broker əmri, avtomatik risk və ticarət icrası daxil deyil.
 
 ## Tamamlanma meyarları
 
-- Strategiya kontraktı və modul sərhədləri konstitusiyaya uyğun sənədləşdirilir.
-- Ən azı bir sadə istinad strategiyası ayrıca versiyalanmış modul kimi qurulur.
-- Determinizm, warm-up, no-lookahead və boş məlumat sınaqları avtomatlaşdırılır.
-- Eyni replay və parametrlər eyni nəticə fingerprint-i yaradır.
-- Tam backend regressiyası və frontend yoxlamaları yaşıl qalır.
+- Qorunan API strategiya nəticəsini deterministik qaytarır.
+- Frontend strategiyaları ayrı kartlarda seçməyə və müqayisə etməyə imkan verir.
+- Strategiya versiyası, parametrlər, sayımlar və lineage aydın görünür.
+- İcazə, drift, determinizm və frontend vəziyyət testləri keçir.
+- Tam backend və frontend yoxlamaları yaşıl qalır.
 
 ## Sonrakı addım
 
-Bu mərhələ istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Strategiya araşdırması
-tamamlandıqdan sonra nəticələrin frontend müqayisə görünüşü ayrıca planlaşdırılacaq;
-canlı əməliyyat yenə ayrıca təhlükəsizlik qapısından keçəcək.
+Bu mərhələ istifadəçinin ayrıca təsdiqindən sonra başlayacaq. Canlı ticarət ayrıca
+təhlükəsizlik və sübut qapısından keçmədən aktiv edilməyəcək.

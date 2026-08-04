@@ -688,3 +688,16 @@ qorunan frontend panelinə çıxarıldı.
   siqnalı vermir və order yaratmır.
 - Frontend lint, production build və `2` frontend testi keçdi; tam backend regressiyası
   ayrıca runtime test qovluğu ilə `156 passed` nəticəsi verdi.
+
+## Versiyalanmış strategiya modul müqaviləsi
+
+2026-08-04 tarixində texniki indikatorlar üzərində yalnız tədqiqat məqsədli strategiya
+modul sərhədi quruldu.
+
+- Ümumi strategiya kontraktı, nəticə modeli və EXPERIMENTAL həyat dövrü yaradıldı.
+- İlk istinad modulu `ema_close_relation` `1.0.0` olaraq ayrıca paketləndi.
+- Modul yalnız bağlanmış barın close qiymətini eyni barın causal EMA-sı ilə müqayisə edir.
+- Nəticə dataset, bar və indikator fingerprint-lərinə bağlanır və öz SHA-256
+  fingerprint-ini yaradır.
+- Warm-up `insufficient_data` kimi saxlanır; nəticə al/sat siqnalı və order yaratmır.
+- Determinizm, warm-up, boş məlumat, zaman uyğunluğu və no-lookahead testləri keçirildi.
