@@ -6,28 +6,34 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Replay sessiyası yaratmaq üçün qorunan `POST /api/v2/replay-sessions` endpoint-ini
-hazırlamaq.
+Replay sessiyasının lifecycle əmrləri üçün qorunan
+`POST /api/v2/replay-sessions/{session_id}/commands` endpoint-ini hazırlamaq.
 
 ## Sərhədlər
 
-- Sorğu `symbol`, `[start_at, end_at)` intervalı və `step|max_speed` rejimini qəbul
-  etməlidir.
-- Mövcud dashboard autentifikasiyası qorunmalı, yaradıcı istifadəçi auditə
-  yazılmalı və etibarsız giriş fail-closed rədd edilməlidir.
-- Snapshot, sessiya və ilkin append-only audit mövcud repository transaction-u ilə
-  atomik yaradılmalıdır.
+- Sorğu `start`, `step`, `pause`, `resume` və `cancel` əmrlərini yalnız sessiyanın
+  qanuni cari vəziyyətində qəbul etməlidir.
+- Mövcud dashboard autentifikasiyası qorunmalı və dəyişdirici əməliyyat yalnız
+  sessiyanı yaradan istifadəçiyə aid olmalıdır.
+- `Idempotency-Key` və `expected_state_version` tələb olunmalı; təkrar eyni əmr
+  əvvəlki nəticəni qaytarmalı, fərqli payload və köhnə state fail-closed `409`
+  almalıdır.
+- Sessiya vəziyyəti, progress/checkpoint, idempotency qeydi və append-only audit
+  mövcud repository transaction sərhədində atomik saxlanmalıdır.
 - Xam tick-lər dəyişdirilməməli və canlı bazada test məlumatı yaradılmamalıdır.
 
 ## Tamamlanma meyarları
 
-- Uğurlu sorğu yeni sessiya ID-si, state və snapshot metadatasını qaytarır.
-- Boş dataset təhlükəsiz `completed`, məlumatlı dataset `created` olur.
-- Yanlış interval, rejim və sahələr təhlükəsiz rədd edilir.
-- API testi sessiya/audit atomikliyini və xam məlumat dəyişməzliyini təsdiqləyir.
+- Uğurlu əmr yeni state, progress və checkpoint metadatasını qaytarır.
+- Ownership, authentication, idempotency və optimistic conflict sərhədləri API
+  testləri ilə təsdiqlənir.
+- Qanunsuz keçid, mövcud olmayan sessiya, naməlum əmr və sahələr təhlükəsiz rədd
+  edilir; qismən yazı yaranmır.
+- API testi session/audit/idempotency atomikliyini və xam məlumat dəyişməzliyini
+  təsdiqləyir.
 - Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-Yaratma endpoint-indən sonra replay lifecycle command API-si ownership,
-idempotency və optimistic state nəzarəti ilə əlavə ediləcək.
+Lifecycle command endpoint-indən sonra replay event axını imzalanmış cursor və
+snapshot sərhədi ilə yalnız oxuma üçün API-yə çıxarılacaq.

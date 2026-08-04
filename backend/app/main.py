@@ -24,6 +24,7 @@ from backend.app.models.bridge_status import (
     BridgeStatusReport,
     LossAcknowledgementRequest,
 )
+from backend.app.models.replay_session import ReplaySessionCreateRequest
 from backend.app.auth import (
     LoginRequest,
     create_session,
@@ -35,6 +36,7 @@ from backend.app.database.replay_session_repository import (
     ReplaySessionListPosition,
     ReplaySessionNotFoundError,
     ReplayTransitionConflictError,
+    create_replay_session,
     get_replay_session,
     list_replay_sessions,
 )
@@ -253,6 +255,40 @@ def replay_sessions(
             "next_cursor": next_cursor,
             "has_more": page.next_position is not None,
         },
+        "meta": {"api_version": "2"},
+    }
+
+
+@app.post(
+    "/api/v2/replay-sessions",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_replay_session_endpoint(
+    replay_request: ReplaySessionCreateRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = create_replay_session(
+            created_by=user_code,
+            actor_role="operator",
+            symbol=replay_request.symbol,
+            start_at=replay_request.start_at,
+            end_at=replay_request.end_at,
+            mode=replay_request.mode,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Replay session request is invalid",
+        ) from error
+    except sqlite3.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Replay session storage is unavailable",
+        ) from error
+
+    return {
+        "data": asdict(session),
         "meta": {"api_version": "2"},
     }
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from backend.app.database.connection import initialize_database
+from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
 from backend.app.database.replay_session_repository import create_replay_session
 from backend.app.main import app
@@ -40,6 +40,180 @@ def seed_sessions(count: int) -> list[object]:
             )
         )
     return sessions
+
+
+def insert_tick(event_id: str, timestamp: datetime) -> None:
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO tick_events
+            (
+                event_id, event_type, event_timestamp, source, event_version,
+                symbol, bid, ask, last, volume, flags, source_time_msc,
+                module_version, raw_event_json
+            )
+            VALUES (?, 'TICK_RECEIVED', ?, 'esas.mt5.bridge', '1.0', 'GOLD',
+                    4100.0, 4100.5, 4100.25, 1, 6, 1785744000000,
+                    '1.6.0', '{"source":"test"}');
+            """,
+            (event_id, timestamp.isoformat(timespec="microseconds")),
+        )
+
+
+def create_payload(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "symbol": "GOLD",
+        "start_at": BASE_TIME.isoformat(),
+        "end_at": (BASE_TIME + timedelta(seconds=1)).isoformat(),
+        "mode": "step",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_create_replay_session_requires_authentication(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v2/replay-sessions",
+            json=create_payload(),
+        )
+
+    assert response.status_code == 401
+
+
+def test_create_replay_session_is_atomic_and_preserves_raw_ticks(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+    insert_tick("GOLD:1", BASE_TIME)
+    with get_connection() as connection:
+        before = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events;"
+        ).fetchall()
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v2/replay-sessions",
+            json=create_payload(),
+            headers=dashboard_headers(client),
+        )
+
+    assert response.status_code == 202
+    body = response.json()
+    data = body["data"]
+    assert data["session_id"].startswith("rps_")
+    assert data["created_by"] == "TEST-USER"
+    assert data["state"] == "created"
+    assert data["dataset_tick_count"] == 1
+    assert data["dataset_fingerprint"].startswith("sha256:")
+    assert body["meta"] == {"api_version": "2"}
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            """
+            SELECT actor, actor_role, action, next_state
+            FROM replay_session_audit WHERE session_id = ?;
+            """,
+            (data["session_id"],),
+        ).fetchall()
+        after = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events;"
+        ).fetchall()
+
+    assert [tuple(row) for row in after] == [tuple(row) for row in before]
+    assert [tuple(row) for row in audit] == [
+        ("TEST-USER", "operator", "create", "created")
+    ]
+
+
+def test_create_empty_replay_session_is_completed(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v2/replay-sessions",
+            json=create_payload(mode="max_speed"),
+            headers=dashboard_headers(client),
+        )
+
+    assert response.status_code == 202
+    assert response.json()["data"]["state"] == "completed"
+    assert response.json()["data"]["dataset_tick_count"] == 0
+
+
+def test_create_replay_session_audit_failure_rolls_back_api_write(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+    with get_connection() as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER reject_api_audit
+            BEFORE INSERT ON replay_session_audit
+            BEGIN
+                SELECT RAISE(ABORT, 'forced API audit failure');
+            END;
+            """
+        )
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.post(
+            "/api/v2/replay-sessions",
+            json=create_payload(),
+            headers=dashboard_headers(client),
+        )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Replay session storage is unavailable"
+    }
+    with get_connection() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM replay_sessions;"
+        ).fetchone()[0] == 0
+        assert connection.execute(
+            "SELECT COUNT(*) FROM replay_session_audit;"
+        ).fetchone()[0] == 0
+
+
+def test_create_replay_session_rejects_invalid_requests_without_writes(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+
+    invalid_payloads = [
+        create_payload(end_at=BASE_TIME.isoformat()),
+        create_payload(mode="turbo"),
+        create_payload(unexpected="value"),
+        create_payload(start_at="2026-08-04T08:00:00"),
+    ]
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        responses = [
+            client.post(
+                "/api/v2/replay-sessions",
+                json=payload,
+                headers=headers,
+            )
+            for payload in invalid_payloads
+        ]
+
+    assert [response.status_code for response in responses] == [422] * 4
+    with get_connection() as connection:
+        session_count = connection.execute(
+            "SELECT COUNT(*) FROM replay_sessions;"
+        ).fetchone()[0]
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM replay_session_audit;"
+        ).fetchone()[0]
+    assert session_count == 0
+    assert audit_count == 0
 
 
 def test_replay_session_endpoints_require_authentication(
