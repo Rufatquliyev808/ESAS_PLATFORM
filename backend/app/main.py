@@ -229,6 +229,36 @@ def replay_quality_report(
         ) from error
 
 
+@app.get("/api/v2/replay-sessions/{session_id}/quality-report")
+def public_replay_quality_report(
+    session_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    if session.created_by != user_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Replay session belongs to another user",
+        )
+    try:
+        report = create_replay_quality_report(session_id=session_id)
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay session is not completed",
+        ) from error
+    return {
+        "data": asdict(report),
+        "meta": {"api_version": "2"},
+    }
+
+
 @app.get("/api/v2/replay-sessions")
 def replay_sessions(
     cursor: str | None = None,
