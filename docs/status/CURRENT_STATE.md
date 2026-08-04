@@ -50,6 +50,13 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   sətirlərinin qorunması yoxlanıldı.
 - Schema/migration hədəf testləri `16 passed`, tam backend `45 passed` oldu; canlı
   database faylına migration tətbiq edilmədi.
+- Replay sessiyası yaratma repository-si əlavə edildi: qeyri-şəffaf kriptoqrafik
+  session ID, immutable girişlər, snapshot metadatası və ilkin `create` audit sətri
+  eyni transaction daxilində saxlanılır.
+- Dolu dataset ilkin `created`, boş dataset ilkin `completed` vəziyyətində yaradılır;
+  audit insert xətası sessiya insert-ini də tam rollback edir.
+- Sessiya repository-si üzrə `11` yeni test və tam backend üzrə `56` test keçdi;
+  xam tick məlumatı, canlı baza, API və ticarət sərhədləri dəyişdirilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

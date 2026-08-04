@@ -6,31 +6,30 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Snapshot nəticəsindən replay sessiyasını və ilkin `create` audit sətrini eyni
-transaction daxilində yaradan repository əməliyyatını hazırlamaq.
+Replay sessiyası üçün qanuni vəziyyət keçidlərini modelləşdirmək və hər keçidi
+uyğun checkpoint/progress məlumatı ilə append-only auditə atomik yazmaq.
 
 ## Sərhədlər
 
-- Giriş `symbol`, `[start_at,end_at)`, `step|max_speed`, yaradan istifadəçi və
-  müqavilə versiyalarını qəbul etməlidir.
-- `session_id` təxmin edilə bilməyən lokal identifikator olmalıdır.
-- Snapshot sessiya yazısından əvvəl read-only sərhəddə hesablanmalıdır.
-- Sessiya və ilkin audit sətri bir transaction-da yazılmalıdır; yarımçıq yazı olmaz.
-- Boş dataset sessiyası birbaşa `completed`, digəri `created` olmalıdır.
-- Xam tick və loss acknowledgement məlumatı dəyişməməlidir.
+- Yalnız müqavilədə icazə verilən state keçidləri qəbul edilməlidir.
+- Terminal `completed|cancelled|failed` vəziyyətindən keçid rədd edilməlidir.
+- Progress geriyə gedə və dataset tick sayını keçə bilməz.
+- Checkpoint və `processed_ticks` uyğun audit sətri ilə eyni transaction-da yazılmalıdır.
+- Gözlənilməyən cari vəziyyət optimistic conflict kimi rədd edilməlidir.
+- Audit və ya session update xətasında bütün keçid rollback edilməlidir.
 - Hələ worker, API, frontend və canlı migration əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Yaradılan sessiyanın immutable giriş və snapshot sahələri düzgün saxlanmalıdır.
-- Eyni transaction-da dəqiq bir `create` audit sətri yaranmalıdır.
-- Audit insert xətası sessiya insert-ini də rollback etməlidir.
-- Boş və dolu dataset üçün düzgün ilkin vəziyyət seçilməlidir.
-- İki yaradılış unikal, təxmin edilə bilməyən session ID-lər verməlidir.
-- Xam tick sətirləri əməliyyatdan əvvəl və sonra eyni qalmalıdır.
+- Bütün qanuni və qanunsuz vəziyyət keçidləri unit testlərlə örtülməlidir.
+- Hər uğurlu keçid dəqiq bir audit sətri yaratmalıdır.
+- Qanunsuz keçid sessiya və audit sayını dəyişməməlidir.
+- Checkpoint yalnız tam uğurlu transaction-dan sonra irəliləməlidir.
+- Eyni expected state ilə yarışan ikinci yazı conflict almalıdır.
+- Immutable sessiya giriş və snapshot sahələri dəyişməməlidir.
 - Mövcud backend testləri keçməlidir.
 
 ## Sonrakı addım
 
-Sessiya yaratma repository-si qəbul edildikdən sonra vəziyyət keçidi modeli və
-atomik checkpoint/audit əməliyyatları hazırlanacaq.
+Vəziyyət keçidləri qəbul edildikdən sonra `step` rejiminin limitli tick batch emalı
+və idempotency sərhədi hazırlanacaq.

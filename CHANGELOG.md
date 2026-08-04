@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Replay sessiyasını snapshot metadatası və ilkin append-only audit sətri ilə eyni
+  transaction-da yaradan repository əlavə edildi; boş dataset birbaşa `completed`
+  olur, audit xətası tam rollback verir; `11` yeni test, tam backend `56 passed`.
 - `0002` migration-u ilə replay sessiyası sxemi, siyahı/state/owner indeksləri və
   foreign key/trigger ilə qorunan append-only sessiya auditi əlavə edildi; sxem və
   migration hədəf testləri `16 passed`, tam backend `45 passed` nəticəsi verdi.
