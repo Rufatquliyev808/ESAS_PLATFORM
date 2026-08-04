@@ -1,37 +1,29 @@
 # ESAS Platform — Növbəti tapşırıq
 
-Status: READY  
-Prioritet: HIGH  
-Mərhələ: Phase 1
+Status: READY
+Prioritet: HIGH
+Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Phase 1 monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək və
-frontend-i GitHub Actions test axınına daxil etmək.
+Replay keyfiyyət hesabatını frontend-də yalnız müşahidə üçün təqdim edən təhlükəsiz
+detal görünüşünü hazırlamaq.
 
-## Hazır vəziyyət
+## Sərhədlər
 
-- Azərbaycan dilində monitorinq paneli yaradılıb.
-- Panel yalnız backend API-lərindən məlumat alır.
-- Tick, Bridge, disk növbəsi və rədd edilən event vəziyyətləri göstərilir.
-- Məlumat hər 5 saniyədə yenilənir.
-- Müvəqqəti API xətasında son uğurlu məlumat qorunur.
-- Backend üçün lokal frontend CORS icazələri əlavə edilib.
-- Frontend lint, build və render testi lokal olaraq keçir.
-
-## Növbəti addımlar
-
-1. Phase 1 qəbul nəticələrini yekunlaşdırmaq.
-2. PR #1-i review edib `main` budağına birləşdirmək.
+- Endpoint yalnız tamamlanmış replay sessiyasını qəbul etməlidir.
+- Cavab manifest, yekun status, tapıntılar və statistikaları dəyişmədən qaytarmalıdır.
+- Mövcud autentifikasiya sərhədi qorunmalı və xəta cavabları təhlükəsiz olmalıdır.
+- Xam tick-lər dəyişdirilməməli; API, frontend və canlı migration hələ əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Panel real API məlumatlarını düzgün göstərir.
-- Backend kəsilməsi zamanı son uğurlu göstəricilər itmir.
-- Desktop və mobil ölçüdə ekran istifadəyə yararlıdır.
-- Backend və frontend testləri GitHub-da keçir.
+- API repository testi tam hesabatı və deterministik fingerprint-i yoxlayır.
+- Mövcud olmayan və tamamlanmamış sessiyalar təhlükəsiz rədd edilir.
+- Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
+- Mövcud backend testləri keçir və canlı baza toxunulmaz qalır.
 
-## Təhlükəsizlik sərhədi
+## Sonrakı addım
 
-Panel yalnız oxuma və monitorinq üçündür. Ticarət əməliyyatı, siqnal, proqnoz və
-birbaşa verilənlər bazası bağlantısı daxil deyil.
+Statistika qatı qəbul edildikdən sonra qorunan Phase 2 replay/keyfiyyət API-sinin
+repository sərhədi hazırlanacaq.

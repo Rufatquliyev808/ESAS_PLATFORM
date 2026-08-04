@@ -1,6 +1,6 @@
 # ESAS MT5 Bridge
 
-Version: 1.5.0
+Version: 1.6.0
 
 Status: EXPERIMENTAL
 
@@ -42,6 +42,8 @@ This module does not:
 - `InpSendTicksToBackend` — sends tick events to the backend.
 - `InpBackendTickUrl` — backend tick endpoint.
 - `InpBackendStatusUrl` — backend Bridge status endpoint.
+- `InpBackendBridgeKey` — backend `.env` faylındakı `ESAS_BRIDGE_API_KEY` ilə
+  eyni olan, minimum 32 simvolluq məxfi Bridge açarı.
 - `InpHttpTimeoutMs` — HTTP request timeout.
 - `InpTickBufferCapacity` — maximum number of pending events stored on disk.
 - `InpRetryIntervalSeconds` — interval between queued delivery attempts.
@@ -58,7 +60,11 @@ MT5 must allow WebRequest access to:
 
 ## Current Transport Limitation
 
-Version 1.5.0 uses synchronous HTTP requests.
+Version 1.6.0 uses synchronous HTTP requests.
+
+Tick və status sorğuları `X-ESAS-Bridge-Key` başlığı ilə qorunur. Açar boş,
+32 simvoldan qısa və ya sətirsonu simvolu ehtiva etdikdə Bridge backend
+göndərişi aktiv vəziyyətdə başlamır. Açar loglara yazılmır.
 
 When delivery fails, events are appended to a persistent FIFO journal in the
 MQL5 common file sandbox. The bridge retries queued events in configurable
@@ -72,3 +78,22 @@ second database row.
 Queue capacity, pending count, persistent rejected-event count, and the latest
 queue error are reported to `POST /status/bridge`. They are exposed by
 `GET /status/operational` under `bridge_delivery`.
+
+## Queue Acceptance Test
+
+`tests/ESAS_PersistentQueue_Test.mq5` disk queue və retry semantikasını real
+MQL5 fayl API-si ilə avtomatik yoxlayır. Test real Bridge növbələrindən ayrı,
+unikal test açarları istifadə edir və yaratdığı queue, checkpoint və metrics
+fayllarını tamamlandıqda silir.
+
+Yoxlanılan davranışlar:
+
+- FIFO sırası;
+- restartdan sonra pending event və rejection metrics bərpası;
+- uğursuz delivery zamanı eventin acknowledge edilməməsi;
+- retry batch limitindən sonra qalan eventin qorunması;
+- queue-full və serialization rejection sayğacları;
+- korlanmış queue jurnalının aşkarlanması.
+
+2026-07-31 qəbul nəticəsi: `44 assertions`, `0 failures`,
+`0 errors, 0 warnings`.

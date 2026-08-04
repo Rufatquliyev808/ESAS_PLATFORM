@@ -16,7 +16,6 @@ dist/
 # Local configuration
 .env
 .runtime/
-.runtime/
 
 # Local test scratch space
 .test-tmp*/

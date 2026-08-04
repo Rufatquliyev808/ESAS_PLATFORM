@@ -1,8 +1,9 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 import sqlite3
+from dataclasses import asdict
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -23,10 +24,21 @@ from backend.app.models.bridge_status import (
     BridgeStatusReport,
     LossAcknowledgementRequest,
 )
-from backend.app.auth import LoginRequest, create_session, require_dashboard_session
+from backend.app.auth import (
+    LoginRequest,
+    create_session,
+    require_bridge_key,
+    require_dashboard_session,
+    revoke_dashboard_session,
+)
+from backend.app.database.replay_session_repository import (
+    ReplaySessionNotFoundError,
+    ReplayTransitionConflictError,
+)
+from backend.app.quality.report import create_replay_quality_report
 
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 
 
 @asynccontextmanager
@@ -55,6 +67,20 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=()"
+    )
+    return response
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     try:
@@ -73,7 +99,10 @@ def health() -> dict[str, str]:
 
 
 @app.post("/events/ticks", status_code=status.HTTP_202_ACCEPTED)
-def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
+def receive_tick(
+    event: TickReceivedEvent,
+    _: None = Depends(require_bridge_key),
+) -> dict[str, str]:
     try:
         was_inserted = save_tick_event(event)
     except sqlite3.Error as error:
@@ -90,12 +119,24 @@ def receive_tick(event: TickReceivedEvent) -> dict[str, str]:
 
 
 @app.post("/auth/login")
-def login(credentials: LoginRequest) -> dict[str, object]:
-    return create_session(credentials)
+def login(
+    credentials: LoginRequest,
+    request: Request,
+) -> dict[str, object]:
+    client_key = request.client.host if request.client else "unknown"
+    return create_session(credentials, client_key)
+
+
+@app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(_: None = Depends(revoke_dashboard_session)) -> None:
+    return None
 
 
 @app.post("/status/bridge", status_code=status.HTTP_202_ACCEPTED)
-def receive_bridge_status(report: BridgeStatusReport) -> dict[str, object]:
+def receive_bridge_status(
+    report: BridgeStatusReport,
+    _: None = Depends(require_bridge_key),
+) -> dict[str, object]:
     stored_report = save_bridge_status(report)
 
     return {
@@ -148,3 +189,22 @@ def operational_status(
     _: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     return get_operational_status()
+
+
+@app.get("/internal/replay/{session_id}/quality-report")
+def replay_quality_report(
+    session_id: str,
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        return asdict(create_replay_quality_report(session_id=session_id))
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay session is not completed",
+        ) from error

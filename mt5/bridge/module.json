@@ -2,7 +2,7 @@
   "module_id": "esas.mt5.bridge",
   "module_name": "ESAS MT5 Bridge",
   "module_type": "bridge",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "lifecycle_status": "EXPERIMENTAL",
   "event_contract_version": "1.0",
   "produces": [

@@ -69,6 +69,19 @@ if (-not (Test-Path -LiteralPath $envPath)) {
     throw "Lokal təhlükəsizlik konfiqurasiyası tapılmadı: $envPath"
 }
 
+$bridgeKeyLine = Get-Content -LiteralPath $envPath |
+    Where-Object { $_ -match "^\s*ESAS_BRIDGE_API_KEY\s*=" } |
+    Select-Object -Last 1
+
+if ($null -eq $bridgeKeyLine) {
+    throw ".env daxilində ESAS_BRIDGE_API_KEY tapılmadı."
+}
+
+$bridgeKey = ($bridgeKeyLine -split "=", 2)[1].Trim().Trim('"').Trim("'")
+if ($bridgeKey.Length -lt 32) {
+    throw "ESAS_BRIDGE_API_KEY minimum 32 simvol olmalıdır."
+}
+
 $backendStarted = $false
 $backendProcess = $null
 

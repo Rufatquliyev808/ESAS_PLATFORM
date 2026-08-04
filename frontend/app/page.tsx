@@ -44,6 +44,13 @@ type Tone = "good" | "warning" | "danger" | "info" | "neutral";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
+const REFRESH_INTERVAL_MS = 5000;
+const REQUEST_TIMEOUT_MS = 3000;
+const numberFormatter = new Intl.NumberFormat("az-AZ");
+const dateTimeFormatter = new Intl.DateTimeFormat("az-AZ", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+});
 
 const labels: Record<string, string> = {
   ok: "İşləyir",
@@ -79,7 +86,7 @@ function toneFor(status: string): Tone {
 }
 
 function formatNumber(value: number | null | undefined) {
-  return new Intl.NumberFormat("az-AZ").format(value ?? 0);
+  return numberFormatter.format(value ?? 0);
 }
 
 function formatTime(value: string | null | undefined) {
@@ -87,10 +94,7 @@ function formatTime(value: string | null | undefined) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Vaxt məlum deyil"
-    : new Intl.DateTimeFormat("az-AZ", {
-        dateStyle: "medium",
-        timeStyle: "medium",
-      }).format(date);
+    : dateTimeFormatter.format(date);
 }
 
 function relativeSeconds(seconds: number | null | undefined) {
@@ -108,9 +112,17 @@ function relativeDate(value: string | null | undefined) {
 
 function currentQueueStatusFor(bridge: Bridge | undefined) {
   if (!bridge) return "waiting";
-  if (bridge.queue_count === 0) return "healthy";
-  if (bridge.queue_count >= bridge.queue_capacity) return "full";
+  return queueStatusForValues(bridge.queue_count, bridge.queue_capacity);
+}
+
+function queueStatusForValues(count: number, capacity: number) {
+  if (count === 0) return "healthy";
+  if (capacity > 0 && count >= capacity) return "full";
   return "backlogged";
+}
+
+function bridgeKey(bridge: Bridge) {
+  return `${bridge.source}::${bridge.symbol}`;
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -173,16 +185,21 @@ export default function Home() {
   const [loginBusy, setLoginBusy] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
   const [acknowledgementError, setAcknowledgementError] = useState<string | null>(null);
+  const [selectedBridgeKey, setSelectedBridgeKey] = useState("all");
   const running = useRef(false);
+  const activeController = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
     if (running.current) return;
     running.current = true;
+    setRefreshing(true);
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 3000);
+    activeController.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const [operational, statistics] = await Promise.all([
         fetchJson<Operational>("/status/operational", controller.signal, token),
@@ -210,17 +227,33 @@ export default function Home() {
       );
     } finally {
       window.clearTimeout(timeout);
+      if (activeController.current === controller) {
+        activeController.current = null;
+      }
       running.current = false;
+      setRefreshing(false);
     }
   }, [token]);
 
   useEffect(() => {
     if (!token) return;
-    const initialRefresh = window.setTimeout(() => void refresh(), 0);
-    const interval = window.setInterval(() => void refresh(), 5000);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refresh();
+      }
+    };
+    const initialRefresh = window.setTimeout(refreshWhenVisible, 0);
+    const interval = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("online", refreshWhenVisible);
+
     return () => {
       window.clearTimeout(initialRefresh);
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("online", refreshWhenVisible);
+      activeController.current?.abort();
     };
   }, [refresh, token]);
 
@@ -235,20 +268,45 @@ export default function Home() {
         body: JSON.stringify({ user_code: userCode, password }),
       });
       if (!response.ok) {
-        throw new Error(response.status === 401 ? "invalid" : "unavailable");
+        throw new Error(
+          response.status === 401
+            ? "invalid"
+            : response.status === 429
+              ? "locked"
+              : "unavailable",
+        );
       }
       const result = (await response.json()) as { access_token: string };
       setToken(result.access_token);
       setPassword("");
     } catch (loginFailure) {
       setLoginError(
-        loginFailure instanceof Error && loginFailure.message === "invalid"
-          ? "İstifadəçi kodu və ya parol yanlışdır."
+        loginFailure instanceof Error
+          ? loginFailure.message === "invalid"
+            ? "İstifadəçi kodu və ya parol yanlışdır."
+            : loginFailure.message === "locked"
+              ? "Çox sayda uğursuz cəhd oldu. 15 dəqiqə sonra yenidən yoxlayın."
+              : "Giriş xidməti hazırda əlçatan deyil."
           : "Giriş xidməti hazırda əlçatan deyil.",
       );
     } finally {
       setLoginBusy(false);
     }
+  }
+
+  async function handleLogout() {
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Lokal sessiya istənilən halda dərhal bağlanır.
+      }
+    }
+    setToken(null);
+    setData(null);
   }
 
   async function handleLossAcknowledgement(bridge: Bridge) {
@@ -338,14 +396,41 @@ export default function Home() {
     );
   }
 
-  const primaryBridge = data?.operational.bridge_delivery.bridges[0];
-  const queuePercent = primaryBridge?.queue_capacity
-    ? (primaryBridge.queue_count / primaryBridge.queue_capacity) * 100
+  const bridges = data?.operational.bridge_delivery.bridges ?? [];
+  const selectedBridge =
+    selectedBridgeKey === "all"
+      ? undefined
+      : bridges.find((bridge) => bridgeKey(bridge) === selectedBridgeKey);
+  const visibleBridges = selectedBridge ? [selectedBridge] : bridges;
+  const queueCount = visibleBridges.reduce(
+    (total, bridge) => total + bridge.queue_count,
+    0,
+  );
+  const queueCapacity = visibleBridges.reduce(
+    (total, bridge) => total + bridge.queue_capacity,
+    0,
+  );
+  const rejectedEvents = visibleBridges.reduce(
+    (total, bridge) => total + bridge.rejected_events,
+    0,
+  );
+  const unacknowledgedBridges = visibleBridges.filter(
+    (bridge) => bridge.rejected_events > 0 && !bridge.loss_acknowledged,
+  );
+  const queuePercent = queueCapacity
+    ? (queueCount / queueCapacity) * 100
     : 0;
-  const currentQueueStatus = currentQueueStatusFor(primaryBridge);
-  const lossStatus = (primaryBridge?.rejected_events ?? 0) === 0
+  const currentQueueStatus = bridges.length
+    ? queueStatusForValues(queueCount, queueCapacity)
+    : "waiting";
+  const bridgeStatus = selectedBridge
+    ? unacknowledgedBridges.length > 0
+      ? "degraded"
+      : currentQueueStatusFor(selectedBridge)
+    : data?.operational.bridge_delivery.status ?? "waiting";
+  const lossStatus = rejectedEvents === 0
     ? "healthy"
-    : primaryBridge?.loss_acknowledged
+    : unacknowledgedBridges.length === 0
       ? "acknowledged"
       : "degraded";
   const overallStatus = error
@@ -369,12 +454,17 @@ export default function Home() {
             <strong>{lastRefresh ? formatTime(lastRefresh.toISOString()) : "gözlənilir"}</strong>
           </p>
           <button
+            className="refresh-button"
+            type="button"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
+            {refreshing ? "Yenilənir..." : "Yenilə"}
+          </button>
+          <button
             className="logout-button"
             type="button"
-            onClick={() => {
-              setToken(null);
-              setData(null);
-            }}
+            onClick={() => void handleLogout()}
           >
             Çıxış
           </button>
@@ -399,6 +489,28 @@ export default function Home() {
         </section>
       ) : (
         <>
+          <section className="bridge-filter" aria-labelledby="bridge-filter-title">
+            <div>
+              <p className="eyebrow">Görünüş filtri</p>
+              <h2 id="bridge-filter-title">Bridge və simvol seçimi</h2>
+            </div>
+            <label htmlFor="bridge-select">Göstərilən məlumat</label>
+            <select
+              id="bridge-select"
+              value={selectedBridge ? selectedBridgeKey : "all"}
+              onChange={(event) => setSelectedBridgeKey(event.target.value)}
+            >
+              <option value="all">
+                Bütün Bridge-lər ({formatNumber(bridges.length)})
+              </option>
+              {bridges.map((bridge) => (
+                <option key={bridgeKey(bridge)} value={bridgeKey(bridge)}>
+                  {bridge.symbol} · {bridge.source}
+                </option>
+              ))}
+            </select>
+          </section>
+
           <section className="status-grid" aria-label="Əsas vəziyyət göstəriciləri">
             <StatusCard
               eyebrow="Bazar məlumatı"
@@ -410,11 +522,19 @@ export default function Home() {
             <StatusCard
               eyebrow="Çatdırılma"
               title="MT5 Bridge"
-              status={data.operational.bridge_delivery.status}
-              value={primaryBridge ? primaryBridge.symbol : "Hesabat gözlənilir"}
+              status={bridgeStatus}
+              value={
+                selectedBridge
+                  ? selectedBridge.symbol
+                  : bridges.length
+                    ? `${formatNumber(bridges.length)} Bridge`
+                    : "Hesabat gözlənilir"
+              }
               detail={
-                primaryBridge
-                  ? `Versiya ${primaryBridge.module_version} · ${relativeDate(primaryBridge.reported_at)}`
+                selectedBridge
+                  ? `Versiya ${selectedBridge.module_version} · ${relativeDate(selectedBridge.reported_at)}`
+                  : bridges.length
+                    ? `${formatNumber(bridges.length)} aktiv hesabat birlikdə göstərilir`
                   : "MT5 Bridge hesabatı hələ alınmayıb"
               }
             />
@@ -423,16 +543,20 @@ export default function Home() {
               title="Disk növbəsi"
               status={currentQueueStatus}
               value={
-                primaryBridge
-                  ? `${formatNumber(primaryBridge.queue_count)} / ${formatNumber(primaryBridge.queue_capacity)} event`
+                bridges.length
+                  ? `${formatNumber(queueCount)} / ${formatNumber(queueCapacity)} event`
                   : "Hesabat gözlənilir"
               }
               detail={
-                primaryBridge
-                  ? primaryBridge.queue_count === 0
+                bridges.length
+                  ? queueCount === 0
                     ? errorLabels.none
-                    : errorLabels[primaryBridge.last_queue_error] ??
-                      primaryBridge.last_queue_error
+                    : selectedBridge
+                      ? errorLabels[selectedBridge.last_queue_error] ??
+                        selectedBridge.last_queue_error
+                      : `${formatNumber(
+                          visibleBridges.filter((bridge) => bridge.queue_count > 0).length,
+                        )} Bridge-də gözləyən event var`
                   : "Növbə məlumatı yoxdur"
               }
             >
@@ -452,27 +576,34 @@ export default function Home() {
               eyebrow="Təhlükəsizlik"
               title="Məlumat itkisi"
               status={lossStatus}
-              value={`${formatNumber(primaryBridge?.rejected_events)} rədd edilən event`}
+              value={`${formatNumber(rejectedEvents)} rədd edilən event`}
               detail={
-                (primaryBridge?.rejected_events ?? 0) === 0
+                rejectedEvents === 0
                   ? "Aşkarlanmış məlumat itkisi yoxdur"
-                  : primaryBridge?.loss_acknowledged
-                    ? `${formatTime(primaryBridge.loss_acknowledged_at)} tarixində ${primaryBridge.loss_acknowledged_by} tərəfindən təsdiqlənib`
-                    : "Diqqət: rədd edilən event aşkarlanıb"
+                  : unacknowledgedBridges.length === 0
+                    ? selectedBridge
+                      ? `${formatTime(selectedBridge.loss_acknowledged_at)} tarixində ${selectedBridge.loss_acknowledged_by} tərəfindən təsdiqlənib`
+                      : "Bütün qeydə alınmış məlumat itkisi hadisələri təsdiqlənib"
+                    : `${formatNumber(unacknowledgedBridges.length)} Bridge üzrə təsdiqlənməmiş hadisə var`
               }
             >
-              {primaryBridge &&
-                primaryBridge.rejected_events > 0 &&
-                !primaryBridge.loss_acknowledged && (
+              {selectedBridge &&
+                selectedBridge.rejected_events > 0 &&
+                !selectedBridge.loss_acknowledged && (
                   <button
                     className="acknowledge-button"
                     type="button"
                     disabled={acknowledgementBusy}
-                    onClick={() => void handleLossAcknowledgement(primaryBridge)}
+                    onClick={() => void handleLossAcknowledgement(selectedBridge)}
                   >
                     {acknowledgementBusy ? "Yadda saxlanılır..." : "Hadisəni təsdiqlə"}
                   </button>
                 )}
+              {!selectedBridge && unacknowledgedBridges.length > 0 && (
+                <p className="selection-hint">
+                  Təsdiq üçün yuxarıdan problemli Bridge-i seçin.
+                </p>
+              )}
               {acknowledgementError && (
                 <p className="acknowledgement-error" role="alert">
                   {acknowledgementError}
@@ -557,7 +688,7 @@ export default function Home() {
 
       <footer>
         <p>Yalnız monitorinq · Ticarət əməliyyatı aparılmır</p>
-        <p>Avtomatik yenilənmə: 5 saniyə</p>
+        <p>Avtomatik yenilənmə: səhifə aktiv olduqda 5 saniyə</p>
       </footer>
     </main>
   );

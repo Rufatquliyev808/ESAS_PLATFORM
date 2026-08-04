@@ -20,6 +20,10 @@ def dashboard_headers(client: TestClient) -> dict[str, str]:
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
+def bridge_headers() -> dict[str, str]:
+    return {"X-ESAS-Bridge-Key": "test-bridge-api-key-at-least-32-chars"}
+
+
 def test_health_endpoint() -> None:
     with TestClient(app) as client:
         response = client.get("/health")
@@ -28,17 +32,41 @@ def test_health_endpoint() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "esas-platform-backend",
-        "version": "0.2.0",
+        "version": "0.3.0",
     }
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["pragma"] == "no-cache"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["permissions-policy"] == (
+        "camera=(), microphone=(), geolocation=()"
+    )
 
 def test_tick_endpoint_rejects_invalid_event() -> None:
     with TestClient(app) as client:
         response = client.post(
             "/events/ticks",
+            headers=bridge_headers(),
             json={"event_id": "invalid-event"},
         )
 
     assert response.status_code == 422
+
+
+def test_bridge_ingestion_requires_valid_key() -> None:
+    with TestClient(app) as client:
+        missing_key = client.post("/events/ticks", json={})
+        wrong_key = client.post(
+            "/status/bridge",
+            headers={"X-ESAS-Bridge-Key": "wrong-key"},
+            json={},
+        )
+
+    assert missing_key.status_code == 401
+    assert missing_key.json()["detail"] == "Invalid bridge credentials"
+    assert wrong_key.status_code == 401
+    assert wrong_key.json()["detail"] == "Invalid bridge credentials"
 
 def test_tick_endpoint_stores_event_only_once() -> None:
     event = {
@@ -62,8 +90,16 @@ def test_tick_endpoint_stores_event_only_once() -> None:
     }
 
     with TestClient(app) as client:
-        first_response = client.post("/events/ticks", json=event)
-        second_response = client.post("/events/ticks", json=event)
+        first_response = client.post(
+            "/events/ticks",
+            headers=bridge_headers(),
+            json=event,
+        )
+        second_response = client.post(
+            "/events/ticks",
+            headers=bridge_headers(),
+            json=event,
+        )
 
     assert first_response.status_code == 202
     assert second_response.status_code == 202
@@ -161,7 +197,11 @@ def test_bridge_status_is_exposed_by_operational_endpoint() -> None:
     }
 
     with TestClient(app) as client:
-        post_response = client.post("/status/bridge", json=report)
+        post_response = client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        )
         status_response = client.get(
             "/status/operational",
             headers=dashboard_headers(client),
@@ -203,7 +243,11 @@ def test_bridge_status_rejects_inconsistent_queue_count() -> None:
     }
 
     with TestClient(app) as client:
-        response = client.post("/status/bridge", json=report)
+        response = client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        )
 
     assert response.status_code == 422
 
@@ -222,7 +266,11 @@ def test_data_loss_acknowledgement_is_audited_and_versioned() -> None:
 
     with TestClient(app) as client:
         headers = dashboard_headers(client)
-        assert client.post("/status/bridge", json=report).status_code == 202
+        assert client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        ).status_code == 202
 
         before = client.get(
             "/status/operational",
@@ -262,7 +310,11 @@ def test_data_loss_acknowledgement_is_audited_and_versioned() -> None:
         assert after_bridge["loss_acknowledged_at"].endswith("Z")
 
         report["rejected_events"] = 8
-        assert client.post("/status/bridge", json=report).status_code == 202
+        assert client.post(
+            "/status/bridge",
+            headers=bridge_headers(),
+            json=report,
+        ).status_code == 202
         increased = client.get(
             "/status/operational",
             headers=headers,
@@ -312,3 +364,80 @@ def test_login_rejects_wrong_password() -> None:
         )
 
     assert response.status_code == 401
+
+
+def test_login_rate_limit_blocks_repeated_failures() -> None:
+    with TestClient(app) as client:
+        for _ in range(4):
+            response = client.post(
+                "/auth/login",
+                json={
+                    "user_code": "TEST-USER",
+                    "password": "wrong-password",
+                },
+            )
+            assert response.status_code == 401
+
+        blocked_response = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "wrong-password",
+            },
+        )
+        correct_password_while_blocked = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "test-password-123",
+            },
+        )
+
+    assert blocked_response.status_code == 429
+    assert int(blocked_response.headers["retry-after"]) > 0
+    assert correct_password_while_blocked.status_code == 429
+
+
+def test_successful_login_clears_previous_failures() -> None:
+    with TestClient(app) as client:
+        for _ in range(4):
+            assert client.post(
+                "/auth/login",
+                json={
+                    "user_code": "TEST-USER",
+                    "password": "wrong-password",
+                },
+            ).status_code == 401
+
+        successful_response = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "test-password-123",
+            },
+        )
+        next_failure = client.post(
+            "/auth/login",
+            json={
+                "user_code": "TEST-USER",
+                "password": "wrong-password",
+            },
+        )
+
+    assert successful_response.status_code == 200
+    assert next_failure.status_code == 401
+
+
+def test_logout_revokes_dashboard_session() -> None:
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        assert client.get("/status/operational", headers=headers).status_code == 200
+
+        logout_response = client.post("/auth/logout", headers=headers)
+        rejected_after_logout = client.get(
+            "/status/operational",
+            headers=headers,
+        )
+
+    assert logout_response.status_code == 204
+    assert rejected_after_logout.status_code == 401

@@ -1,7 +1,7 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-07-29  
-Cari mərhələ: Phase 1  
+Son yenilənmə: 2026-08-04
+Cari mərhələ: Phase 2
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -31,7 +31,7 @@ Market Data
 
 # Phase 1 — Etibarlı məlumat toplama təməli
 
-Status: IN PROGRESS
+Status: COMPLETED — STABLE
 
 ## Məqsəd
 
@@ -60,8 +60,8 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 ## Qalan işlər
 
-- [ ] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
-- [ ] Phase 1 status sənədini düzəltmək
+- [x] Azərbaycan dilindəki sənədlərin UTF-8 kodlaşdırmasını düzəltmək
+- [x] Phase 1 status sənədini düzəltmək
 - [x] MT5 Bridge versiyalarını uyğunlaşdırmaq
 - [x] README sənədini yeniləmək
 - [x] Buferdəki event-lərin avtomatik retry göndərişi
@@ -70,14 +70,15 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] Disk əsaslı davamlı event növbəsi
 - [x] Backend monitorinq göstəricilərini genişləndirmək
 - [x] Test verilənlər bazasını əsas bazadan ayırmaq
-- [ ] Bufer və retry testləri
+- [x] Bufer və retry testləri
 - [x] GitHub Actions test axını
 - [x] Phase 1 frontend monitorinq paneli
-- [ ] 1 saatlıq sabitlik testi
-- [ ] 8–12 saatlıq sabitlik testi
-- [ ] 24 saatlıq sabitlik testi
-- [ ] Məlumat itkisi hesabatı
-- [ ] Phase 1 release qeydləri
+- [x] 30 dəqiqəlik sabitlik sınağı
+- [x] 1 saatlıq sabitlik testi
+- [x] 8–12 saatlıq sabitlik testi
+- [x] 24 saatlıq sabitlik testi
+- [x] Məlumat itkisi hesabatı
+- [x] Phase 1 release qeydləri
 
 ## Phase 1 qəbul meyarları
 
@@ -93,19 +94,26 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 # Phase 2 — Replay və məlumat keyfiyyəti
 
-Status: PLANNED
+Status: IN PROGRESS
 
-- [ ] Tarixi tick məlumatının oxunması
-- [ ] Müəyyən zaman aralığının replay edilməsi
-- [ ] Məlumat boşluqlarının aşkarlanması
-- [ ] Tick ardıcıllığının yoxlanması
+- [x] Tarixi tick məlumatının oxunması
+- [x] Müəyyən zaman aralığının replay edilməsi
+- [x] Məlumat boşluqlarının aşkarlanması
+- [x] Tick ardıcıllığının yoxlanması
 - [ ] Spread və tick sürəti statistikası
-- [ ] Simvollar üzrə məlumat keyfiyyəti hesabatı
-- [ ] Replay nəticələrinin təkrar istehsal edilə bilməsi
+- [x] Simvollar üzrə məlumat keyfiyyəti hesabatı
+- [x] Replay nəticələrinin təkrar istehsal edilə bilməsi
 
 # Phase 3 — Statistik analiz
 
 Status: PLANNED
+
+Tədqiqat qeydiyyatı, məlumat sızması, zaman bölgüsü, holdout, walk-forward,
+multiple-testing, xərclər və qəbul qapıları:
+`docs/architecture/PHASE_3_RESEARCH_VALIDATION_CONTRACT.md`
+
+Volatilite, spread, tick sürəti, sessiya və bazar rejimi nəticə müqaviləsi:
+`docs/architecture/PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`
 
 - [ ] Volatilite analizi
 - [ ] Spread davranışı
@@ -119,6 +127,10 @@ Status: PLANNED
 
 Status: PLANNED
 
+Deterministik bar, causal indikator, pattern namizədi, realist backtest və SHADOW
+hazırlığı müqaviləsi:
+`docs/architecture/PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`
+
 - [ ] Pattern namizədlərinin yaradılması
 - [ ] Texniki analiz modulları
 - [ ] Backtesting
@@ -130,6 +142,10 @@ Status: PLANNED
 
 Status: PLANNED
 
+Deterministik qrafik renderi, visual dataset lineage-i, leakage qoruması, zaman əsaslı
+bölgü, model audit və statistik baseline müqayisəsi müqaviləsi:
+`docs/architecture/PHASE_5_VISUAL_AI_CONTRACT.md`
+
 - [ ] Qrafik görüntülərinin standartlaşdırılması
 - [ ] Visual pattern məlumat dəsti
 - [ ] Visual AI eksperimentləri
@@ -139,6 +155,10 @@ Status: PLANNED
 # Phase 6 — Xəbər və fundamental analiz
 
 Status: PLANNED
+
+Mənbə və lisenziya reyestri, point-in-time xəbər/revision, iqtisadi buraxılış,
+fundamental vintage, entity mapping və causal təsir ölçümü müqaviləsi:
+`docs/architecture/PHASE_6_NEWS_FUNDAMENTAL_ANALYSIS_CONTRACT.md`
 
 - [ ] Xəbər məlumatlarının toplanması
 - [ ] Hadisələrin zaman uyğunlaşdırılması
@@ -150,6 +170,10 @@ Status: PLANNED
 
 Status: PLANNED
 
+Versiyalanmış bilik claim-i, sübut qrafı, scope və rejim uyğunluğu, etibarlılıq
+müddəti, conflict, REVIEW və təhlükəsiz retrieval müqaviləsi:
+`docs/architecture/PHASE_7_KNOWLEDGE_BASE_CONTRACT.md`
+
 - [ ] Sübut edilmiş nəticələrin saxlanması
 - [ ] Model və pattern versiyalandırması
 - [ ] Etibarlılıq və istifadə müddəti göstəriciləri
@@ -159,6 +183,10 @@ Status: PLANNED
 # Phase 8 — Decision və Risk Layer
 
 Status: PLANNED
+
+Deterministik analiz birləşdirməsi, izahlı proposal, abstain, müstəqil risk qapısı,
+nəzəri mövqe ölçüsü, limit/halt və SHADOW eligibility müqaviləsi:
+`docs/architecture/PHASE_8_DECISION_RISK_CONTRACT.md`
 
 - [ ] Analiz nəticələrinin birləşdirilməsi
 - [ ] Qərarın izah edilə bilməsi
@@ -171,6 +199,11 @@ Status: PLANNED
 
 Status: PLANNED
 
+Real bazar axınında order-siz qərar izlənməsi, səbəbiyyətə uyğun nəzəri fill,
+champion/challenger müqayisəsi, restart təhlükəsizliyi, statistik qəbul qapısı və
+məhdud icra baxışına keçid müqaviləsi:
+`docs/architecture/PHASE_9_SHADOW_VALIDATION_CONTRACT.md`
+
 - [ ] Real bazarda qərarların hesablanması
 - [ ] Real əməliyyat açmadan nəticələrin saxlanması
 - [ ] Alternativ modulların müqayisəsi
@@ -180,6 +213,11 @@ Status: PLANNED
 # Phase 10 — Məhdud icra
 
 Status: PLANNED
+
+Default-bağlı execution lease, dəyişməz run manifesti, manual təsdiq, atomik pre-trade
+risk qapısı, idempotent order həyatı, broker reconciliation, kill switch, audit və
+rollback müqaviləsi:
+`docs/architecture/PHASE_10_LIMITED_EXECUTION_CONTRACT.md`
 
 - [ ] MT5 order interfeysi
 - [ ] Məhdud risklə ilkin əməliyyatlar
@@ -192,6 +230,11 @@ Status: PLANNED
 
 Status: PLANNED
 
+Tam qərar-nəticə lineage-i, selection-bias qoruması, yetişmiş label, performans/drift
+monitorinqi, təhlükəsiz REVIEW cavabı, dəyişməz model versiyası, yenidən SHADOW qapısı,
+Knowledge Base governance-i və deterministik rollback müqaviləsi:
+`docs/architecture/PHASE_11_FEEDBACK_CONTINUOUS_LEARNING_CONTRACT.md`
+
 - [ ] Əməliyyat nəticələrinin analizə qaytarılması
 - [ ] Model performansının davamlı ölçülməsi
 - [ ] Performansı zəifləyən modulların REVIEW statusuna keçirilməsi
@@ -201,7 +244,8 @@ Status: PLANNED
 
 ## Cari növbəti tapşırıq
 
-Phase 1 frontend monitorinq panelini real MT5 axını ilə qəbul sınağından keçirmək.
+Phase 2 məlumat keyfiyyəti analizinin ilk qaydalarını — zaman boşluğu, geriyə gedən
+timestamp və dublikat aşkarlanmasını — deterministik və versiyalanmış formada qurmaq.
 
 Ətraflı tapşırıq:
 

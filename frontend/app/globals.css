@@ -102,7 +102,7 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 .header-status { display: flex; align-items: center; gap: 14px; text-align: right; }
 .header-status p { margin: 0; color: var(--muted); font-size: 13px; }
 .header-status strong { display: block; margin-top: 4px; color: var(--ink); font-size: 14px; }
-.logout-button {
+.refresh-button, .logout-button {
   border: 1px solid #bcc7c2;
   border-radius: 8px;
   padding: 8px 11px;
@@ -111,6 +111,7 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
   cursor: pointer;
   font-weight: 700;
 }
+.refresh-button:disabled { cursor: wait; opacity: .65; }
 
 .status-pill {
   display: inline-flex;
@@ -146,6 +147,30 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 .error-banner p { flex: 1; margin: 0; font-weight: 700; }
 .error-banner button { border: 1px solid #d77b72; border-radius: 8px; padding: 8px 12px; background: white; color: #801810; cursor: pointer; font-weight: 700; }
 
+.bridge-filter {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.bridge-filter > div { margin-right: auto; }
+.bridge-filter h2 { margin: 5px 0 0; font-size: 18px; }
+.bridge-filter label { color: var(--muted); font-size: 13px; font-weight: 700; }
+.bridge-filter select {
+  min-width: 280px;
+  border: 1px solid #b8c3be;
+  border-radius: 9px;
+  padding: 10px 34px 10px 12px;
+  background: white;
+  color: var(--ink);
+}
+.bridge-filter select:focus { border-color: var(--green); outline: 3px solid #cce9dc; }
+
 .status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .status-card, .panel, .loading-panel {
   border: 1px solid var(--line);
@@ -180,6 +205,7 @@ h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.12; letter-spa
 }
 .acknowledge-button:disabled { cursor: wait; opacity: .65; }
 .acknowledgement-error { margin: 8px 0 0; color: var(--red); font-size: 12px; font-weight: 700; }
+.selection-hint { margin: 12px 0 0; color: var(--red); font-size: 12px; font-weight: 700; }
 
 .panel { margin-top: 18px; padding: 24px; }
 .section-heading { align-items: flex-end; margin-bottom: 20px; }
@@ -224,6 +250,9 @@ footer p { margin: 0; }
   main { padding: 20px 16px; }
   .app-header, .header-status { align-items: flex-start; flex-direction: column; }
   .header-status { gap: 9px; text-align: left; }
+  .bridge-filter { align-items: stretch; flex-direction: column; }
+  .bridge-filter > div { margin-right: 0; }
+  .bridge-filter select { width: 100%; min-width: 0; }
   .status-grid { grid-template-columns: 1fr; }
   .status-card { min-height: auto; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
