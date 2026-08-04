@@ -23,6 +23,11 @@ sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı
   şamları yaradır. Nəticə mənbə lineage-i və deterministik fingerprint daşıyır,
   boş/açıq şamlar doldurulmur və xam tick bazasına yazılmır. Modul testləri `9 passed`,
   tam backend regressiyası `142 passed` nəticəsi verdi.
+- Yalnız-oxuma `indicator-package 1.0.0` əlavə edildi. EMA ayrıca SMA seed və eksponensial
+  yenilənmə, RSI və ATR isə Wilder hesablaması ilə yalnız bağlanmış şamlardan qurulur.
+  Warm-up tamamlanmayan hər nöqtə `insufficient_data` kimi işarələnir; nəticə bar
+  fingerprint-inə bağlanır və gələcək şam əvvəlki nöqtələri dəyişmir. Yeni indikator
+  testləri `11 passed`, tam backend regressiyası `153 passed` nəticəsi verdi.
 - Sübut faylı `.runtime/phase2-acceptance/phase2-replay-latest.json` yolunda saxlanır
   və xam tick payload-u ehtiva etmir.
 

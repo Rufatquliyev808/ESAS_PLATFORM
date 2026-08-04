@@ -10,6 +10,12 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Bağlanmış replay şamları üçün deterministik, yalnız-oxuma `EMA`, `RSI` və `ATR`
+  indikator paketi əlavə edildi. Hər indikator ayrıca versiyalanmış series yaradır,
+  warm-up nöqtələrini `insufficient_data` kimi saxlayır, gələcək şamın keçmiş nəticəyə
+  sızmasını qadağan edir və nəticəni bar fingerprint-inə bağlayır. Yeni 11 indikator
+  testi və tam `153 passed` backend regressiyası keçdi.
+
 - Replay tick-lərindən yalnız tam bağlanmış `M1`, `M5`, `M15` və `H1` mid-price
   şamları yaradan deterministik, yalnız-oxuma bar generatoru əlavə edildi. Generator
   UTC epoch sərhədlərindən, sabit `event_timestamp + event_id` sırasından, mənbə
