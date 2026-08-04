@@ -1,7 +1,7 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-07-31
-Cari mərhələ: Phase 1  
+Son yenilənmə: 2026-08-04
+Cari mərhələ: Phase 2
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -31,7 +31,7 @@ Market Data
 
 # Phase 1 — Etibarlı məlumat toplama təməli
 
-Status: IN PROGRESS
+Status: COMPLETED — STABLE
 
 ## Məqsəd
 
@@ -76,7 +76,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 - [x] 30 dəqiqəlik sabitlik sınağı
 - [x] 1 saatlıq sabitlik testi
 - [x] 8–12 saatlıq sabitlik testi
-- [ ] 24 saatlıq sabitlik testi
+- [x] 24 saatlıq sabitlik testi
 - [x] Məlumat itkisi hesabatı
 - [x] Phase 1 release qeydləri
 
@@ -94,7 +94,7 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 # Phase 2 — Replay və məlumat keyfiyyəti
 
-Status: PLANNED
+Status: IN PROGRESS
 
 - [ ] Tarixi tick məlumatının oxunması
 - [ ] Müəyyən zaman aralığının replay edilməsi
@@ -244,7 +244,8 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Bazar açıldıqda 24 saatlıq fasiləsiz canlı sabitlik sınağını yenidən başlatmaq.
+Phase 2 üçün yalnız-oxuma tick repository interfeysini və deterministik sıralama
+testlərini yaratmaq.
 
 Ətraflı tapşırıq:
 

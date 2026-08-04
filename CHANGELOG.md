@@ -10,6 +10,11 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 1-in rəsmi 27.18 saatlıq canlı qəbul sınağı `PASSED` nəticəsi ilə
+  tamamlandı: `340866` yeni tick, `0` yeni rejection, növbə `0 / 1000`, SQLite
+  `quick_check=ok` və bütün avtomatik qəbul qapıları keçdi.
+- Phase 1 Stable qəbul qeydləri və Phase 2 yalnız-oxuma repository tapşırığı.
+
 - Phase 11 üçün tam feedback lineage-i, selection-bias və label maturity qoruması,
   performans/drift monitorinqi, təhlükəsiz REVIEW cavabı, immutable model versiyası,
   yenidən SHADOW promotion qapısı, Knowledge Base governance-i və rollback müqaviləsi.
@@ -194,8 +199,7 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Planned
 
-- Bazar açıq olduqda 24 saatlıq fasiləsiz canlı qəbul sınağı.
-- Uğurlu sınaqdan sonra Phase 1-in yekun review və Stable qərarı.
+- Phase 2 yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
 ## Backend 0.1.0 — 2026-07-27
 

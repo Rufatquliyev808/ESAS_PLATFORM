@@ -2,32 +2,32 @@
 
 Status: READY
 Prioritet: HIGH
-Mərhələ: Phase 1
+Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Bazar açıldıqda Phase 1 üçün 24 saatlıq fasiləsiz canlı sabitlik sınağını yenidən
-başlatmaq və yekun qəbul sübutunu toplamaq.
+Xam tick məlumatını dəyişdirmədən oxuyan repository interfeysini və deterministik
+`event_timestamp + event_id` sıralama testlərini yaratmaq.
 
-## Başlanğıc göstəriciləri
+## Sərhədlər
 
-- `tools/phase1-acceptance-snapshot.ps1` ilə başlanğıc JSON sübutu;
-- backend `/health` və operational status;
-- ümumi tick sayı və tick axınının vəziyyəti;
-- disk növbəsinin sayı və tutumu;
-- rejection sayı və məlumat itkisi təsdiqi;
-- SQLite `quick_check` və audit sətri;
-- bazarın açıq olduğunun təsdiqi.
+- Repository yalnız oxuma əməliyyatları təqdim etməlidir.
+- Xam `tick_events` sətirləri dəyişdirilə və silinə bilməz.
+- Zaman aralığı `[start_at, end_at)` formasında sabit olmalıdır.
+- Sıralama `event_timestamp`, sonra `event_id` ilə deterministik olmalıdır.
+- Böyük nəticələr cursor və limit ilə səhifələnməlidir.
+- Phase 1 canlı tick qəbulu və mövcud API davranışı dəyişməməlidir.
 
 ## Tamamlanma meyarları
 
-- Avtomatik müqayisə minimum `24` saat keçdiyini təsdiqləməlidir.
-- Tick sayı 24 saat ərzində artmalıdır və axın `active` qalmalıdır.
-- Disk növbəsi sonda `0 / 1000` olmalıdır.
-- Rejection sayı `7343`-dən yuxarı qalxmamalıdır.
-- SQLite `quick_check=ok` və audit təsdiqi qorunmalıdır.
-- Backend, frontend və MQL5 qəbul yoxlamaları yenidən keçməlidir.
+- Eyni giriş iki icrada eyni event ardıcıllığını qaytarmalıdır.
+- Eyni timestamp-li event-lər `event_id` ilə sabit sıralanmalıdır.
+- Boş aralıq təhlükəsiz boş nəticə qaytarmalıdır.
+- Yanlış zaman aralığı və limitlər aydın validation xətası verməlidir.
+- Test xam tick sətirlərinin və sayının dəyişmədiyini təsdiqləməlidir.
+- Mövcud backend testləri keçməlidir.
 
 ## Sonrakı addım
 
-24 saatlıq sınaq keçərsə Phase 1 statusu yekun review üçün hazırlanacaq.
+Repository sərhədi qəbul edildikdən sonra deterministik replay sessiyasının
+skeleti yaradılacaq.

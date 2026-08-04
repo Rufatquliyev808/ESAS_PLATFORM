@@ -1,8 +1,8 @@
 # ESAS Platform — Phase 1 qəbul vəziyyəti
 
-Versiya: 1.1
-Status: IN PROGRESS
-Son yenilənmə: 2026-07-31
+Versiya: 1.2
+Status: COMPLETED — STABLE
+Son yenilənmə: 2026-08-04
 
 ## Məqsəd
 
@@ -38,17 +38,24 @@ MT5 Tick
   yaranmayıb və disk növbəsi `0 / 1000` qalıb.
 - 12.62 saatlıq canlı sınaqda `210168` yeni tick qəbul edilib, yeni rədd edilmiş
   event yaranmayıb, disk növbəsi `0 / 1000` və SQLite `quick_check=ok` qalıb.
-- Lokal backend testləri: `12 passed`.
+- 27.18 saatlıq fasiləsiz canlı sınaqda `340866` yeni tick qəbul edilib, yeni
+  rədd edilmiş event yaranmayıb, disk növbəsi `0 / 1000`, SQLite
+  `quick_check=ok` və audit təsdiqi qorunub.
+- Avtomatik 24 saatlıq qəbul müqayisəsi bütün `10 / 10` qapını keçərək `PASSED`
+  nəticəsi verib.
+- Lokal backend testləri: `16 passed`.
+- Frontend lint, production build və server-render testi keçib.
+- MT5 Bridge və disk növbəsi test faylı `0 errors, 0 warnings` ilə kompilyasiya edilib.
 - GitHub Actions backend və frontend testləri `main` budağında keçib.
 - PR #1 `main` budağına uğurla birləşdirilib.
 
 ## Qəbul qapıları
 
-Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər:
+Phase 1-in bütün qəbul qapıları keçib:
 
 - [x] 1 saatlıq fasiləsiz canlı sabitlik sınağı
 - [x] 8–12 saatlıq fasiləsiz canlı sabitlik sınağı
-- [ ] 24 saatlıq fasiləsiz canlı sabitlik sınağı
+- [x] 24 saatlıq fasiləsiz canlı sabitlik sınağı
 - [x] MT5 disk növbəsi və retry davranışı üçün avtomatlaşdırılmış test
 - [x] Məlumat itkisi üzrə yekun hesabat
 - [x] Phase 1 release qeydləri
@@ -66,6 +73,13 @@ Phase 1 yalnız aşağıdakı qalan qapılar keçildikdən sonra bağlana bilər
 
 ## Qərar
 
-Phase 1 funksional olaraq işləyir və sənəd qapıları tamamlanıb. Yalnız 24 saatlıq
-fasiləsiz canlı qəbul sınağı qaldığı üçün mərhələ hələ rəsmi bağlanmır. Phase 2
-kodlaşdırılması bu son qapı keçilmədən başlanmamalıdır.
+Phase 1-in bütün funksional, bütövlük, sabitlik və sənəd qapıları keçib. 27.18
+saatlıq rəsmi canlı sınaq `PASSED` nəticəsi verdiyi üçün Phase 1 rəsmi bağlanır və
+`Stable` qəbul edilir. Phase 2 istehsal koduna yalnız xam tick məlumatını
+dəyişdirməyən, yalnız-oxuma repository sərhədindən başlamağa icazə verilir.
+
+Yekun lokal sübutlar:
+
+- `.runtime/phase1-acceptance/20260803-083313-phase1-24h-start.json`
+- `.runtime/phase1-acceptance/20260804-114406-phase1-24h-end.json`
+- `.runtime/phase1-acceptance/20260804-114406-phase1-24h-end-comparison.json`

@@ -105,3 +105,38 @@ Qeyd: Sınaq cümə günü başladığı və bazar axşam bağlandığı üçün
 tick qəbul meyarını ölçə bilməz. Bu, platforma nasazlığı deyil və uğursuz sınaq
 sayılmır. Rəsmi 24 saatlıq sınaq bazar yenidən açıldıqdan sonra təkrar
 başladılacaq.
+
+## Rəsmi 24 saatlıq sınaq — 2026-08-03/04
+
+Status: PASSED
+
+Başlanğıc: `2026-08-03 08:33:13 +04:00`
+
+Tamamlanma müqayisəsi: `2026-08-04 11:44:06 +04:00`
+
+Müddət: `27.18 saat`
+
+| Göstərici | Nəticə |
+|---|---:|
+| Yeni tick | `340866` |
+| Yeni rədd edilmiş event | `0` |
+| Tick axını | `active` |
+| Disk növbəsi | `0 / 1000` |
+| SQLite quick check | `ok` |
+| Məlumat itkisi təsdiqi | qorundu |
+| Audit sətri | qorundu |
+| Avtomatik qəbul nəticəsi | `PASSED` |
+
+Avtomatik müqayisənin bütün qapıları keçdi: minimum müddət, backend health,
+operational status, aktiv tick axını, tick artımı, boş növbə, dəyişməyən rejection,
+məlumat itkisi təsdiqi, SQLite bütövlüyü və audit izi.
+
+Yekun regressiya yoxlamaları:
+
+- Backend: `16 passed`;
+- Frontend lint: passed;
+- Frontend production build və server-render testi: `1 passed`;
+- MT5 Bridge kompilyasiyası: `0 errors, 0 warnings`;
+- MQL5 disk növbəsi test faylının kompilyasiyası: `0 errors, 0 warnings`.
+
+Nəticə: rəsmi 24 saatlıq qəbul qapısı keçildi.
