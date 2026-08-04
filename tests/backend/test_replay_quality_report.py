@@ -25,19 +25,20 @@ def prepare(database_path: Path, source_times: list[int], *, negative_spread: bo
             """
             INSERT INTO tick_events
             (
-                event_id, event_type, event_timestamp, source, event_version,
+                event_id, event_type, event_timestamp, received_at, source, event_version,
                 symbol, bid, ask, last, volume, flags, source_time_msc,
                 module_version, raw_event_json
-            ) VALUES (?, 'TICK_RECEIVED', ?, 'esas.mt5.bridge', '1.0',
+            ) VALUES (?, 'TICK_RECEIVED', ?, ?, 'esas.mt5.bridge', '1.0',
                       'GOLD', ?, ?, 4100.25, 1, 6, ?, '1.6.0', '{}');
             """,
             [
                 (
                     f"GOLD:{index:04d}",
                     (BASE_TIME + timedelta(seconds=index)).isoformat(timespec="microseconds"),
+                    (BASE_TIME + timedelta(seconds=index)).isoformat(timespec="microseconds"),
                     4101.0 if negative_spread and index == 2 else 4100.0,
                     4100.5,
-                    source_time,
+                    int(BASE_TIME.timestamp() * 1000) + source_time,
                 )
                 for index, source_time in enumerate(source_times, start=1)
             ],
@@ -61,7 +62,7 @@ def complete(session: object, batch_size: int = 2) -> None:
 
 
 def test_report_pass_status(isolated_database: Path) -> None:
-    session = prepare(isolated_database, [100, 101, 102])
+    session = prepare(isolated_database, [1000, 2000, 3000])
     complete(session)
     report = create_replay_quality_report(session_id=session.session_id)
     assert report.summary.status == "pass"
@@ -70,15 +71,16 @@ def test_report_pass_status(isolated_database: Path) -> None:
 
 
 def test_report_review_status(isolated_database: Path) -> None:
-    session = prepare(isolated_database, [100, 99, 101])
+    session = prepare(isolated_database, [3000, 2000, 4000])
     complete(session)
     report = create_replay_quality_report(session_id=session.session_id)
     assert report.summary.status == "review"
+    assert report.statistics.tick_count == report.summary.tick_count
     assert report.summary.warning_count == 1
 
 
 def test_report_fail_status(isolated_database: Path) -> None:
-    session = prepare(isolated_database, [100, 101, 102], negative_spread=True)
+    session = prepare(isolated_database, [1000, 2000, 3000], negative_spread=True)
     complete(session)
     report = create_replay_quality_report(session_id=session.session_id)
     assert report.summary.status == "fail"
@@ -86,7 +88,7 @@ def test_report_fail_status(isolated_database: Path) -> None:
 
 
 def test_report_fingerprint_is_batch_independent(isolated_database: Path) -> None:
-    session = prepare(isolated_database, [100, 99, 101])
+    session = prepare(isolated_database, [3000, 2000, 4000])
     complete(session)
     first = create_replay_quality_report(session_id=session.session_id, batch_size=1)
     second = create_replay_quality_report(session_id=session.session_id, batch_size=3)
@@ -94,6 +96,6 @@ def test_report_fingerprint_is_batch_independent(isolated_database: Path) -> Non
 
 
 def test_incomplete_replay_is_rejected(isolated_database: Path) -> None:
-    session = prepare(isolated_database, [100, 101, 102])
+    session = prepare(isolated_database, [1000, 2000, 3000])
     with pytest.raises(ReplayTransitionConflictError, match="completed"):
         create_replay_quality_report(session_id=session.session_id)

@@ -10,6 +10,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- `DQ-010` üçün sabit yaddaşlı, deterministik tick intervalı və spread statistikaları
+  əlavə edildi və replay keyfiyyət hesabatının fingerprint-inə bağlandı; tam backend
+  `108 passed`.
+- `DQ-003`, `DQ-006`, `DQ-007`, `DQ-008` və `DQ-009` keyfiyyət qaydaları əlavə
+  edildi: source/event vaxt fərqi, qiymət cütü, ədədi etibarlılıq, event müqaviləsi
+  və qəbul gecikməsi dəqiq sərhədlərlə yekun hesabat statusuna bağlandı; tam backend
+  `105 passed`.
 - Replay manifesti ilə bağlı deterministik məlumat keyfiyyəti hesabatı əlavə edildi:
   `pass/review/fail` status qapısı, səviyyə sayları, stabil report ID və məzmun
   fingerprint-i; `DQ-005` mənfi spread critical qaydası və tam backend `102 passed`.

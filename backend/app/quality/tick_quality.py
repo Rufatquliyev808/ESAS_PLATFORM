@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
+from math import isfinite
 
 from backend.app.database.tick_replay_repository import ReplayTick, iter_tick_batches
 
@@ -66,6 +67,7 @@ class _FindingAccumulator:
                 QUALITY_RULE_VERSION,
                 self.rule_id,
                 self.severity,
+                self.reason,
                 self.first_event_id,
                 self.last_event_id,
                 str(self.count),
@@ -127,6 +129,33 @@ def analyze_tick_quality(
         "DQ-005": _FindingAccumulator(
             "DQ-005", "critical", "ask was lower than bid"
         ),
+        "DQ-003-warning": _FindingAccumulator(
+            "DQ-003", "warning", "event and source time differed by over 2 seconds"
+        ),
+        "DQ-003-critical": _FindingAccumulator(
+            "DQ-003", "critical", "event and source time differed by over 30 seconds"
+        ),
+        "DQ-006-partial": _FindingAccumulator(
+            "DQ-006", "info", "only one side of the price pair was zero"
+        ),
+        "DQ-006-zero": _FindingAccumulator(
+            "DQ-006", "info", "both sides of the price pair were zero"
+        ),
+        "DQ-007": _FindingAccumulator(
+            "DQ-007", "critical", "numeric field was non-finite or negative"
+        ),
+        "DQ-008": _FindingAccumulator(
+            "DQ-008", "critical", "tick event contract was invalid"
+        ),
+        "DQ-009-negative": _FindingAccumulator(
+            "DQ-009", "warning", "received_at preceded event_timestamp"
+        ),
+        "DQ-009-info": _FindingAccumulator(
+            "DQ-009", "info", "acceptance latency exceeded 5 seconds"
+        ),
+        "DQ-009-warning": _FindingAccumulator(
+            "DQ-009", "warning", "acceptance latency exceeded 60 seconds"
+        ),
         "DQ-011": _FindingAccumulator(
             "DQ-011", "info", "consecutive market payload duplicate candidate"
         ),
@@ -143,8 +172,47 @@ def analyze_tick_quality(
     ):
         for tick in batch:
             tick_count += 1
+            event_time = datetime.fromisoformat(tick.event_timestamp)
+            event_time_ms = round(event_time.timestamp() * 1000)
+            source_difference_ms = abs(event_time_ms - tick.source_time_msc)
+            if source_difference_ms > 30_000:
+                accumulators["DQ-003-critical"].add(tick)
+            elif source_difference_ms > 2_000:
+                accumulators["DQ-003-warning"].add(tick)
+
             if tick.bid > 0 and tick.ask > 0 and tick.ask < tick.bid:
                 accumulators["DQ-005"].add(tick)
+            if (tick.bid == 0) != (tick.ask == 0):
+                accumulators["DQ-006-partial"].add(tick)
+            elif tick.bid == 0 and tick.ask == 0:
+                accumulators["DQ-006-zero"].add(tick)
+            if (
+                not all(isfinite(value) for value in (tick.bid, tick.ask, tick.last))
+                or min(tick.bid, tick.ask, tick.last) < 0
+                or tick.volume < 0
+                or tick.flags < 0
+            ):
+                accumulators["DQ-007"].add(tick)
+            if (
+                tick.event_type != "TICK_RECEIVED"
+                or tick.source != "esas.mt5.bridge"
+                or tick.event_version != "1.0"
+                or not tick.symbol.strip()
+                or not tick.module_version.strip()
+                or not tick.event_id.strip()
+                or tick.symbol != symbol.strip()
+            ):
+                accumulators["DQ-008"].add(tick)
+
+            acceptance_latency = (
+                datetime.fromisoformat(tick.received_at) - event_time
+            ).total_seconds()
+            if acceptance_latency < 0:
+                accumulators["DQ-009-negative"].add(tick)
+            elif acceptance_latency > 60:
+                accumulators["DQ-009-warning"].add(tick)
+            elif acceptance_latency > 5:
+                accumulators["DQ-009-info"].add(tick)
             segment = (tick.source, tick.module_version)
             previous_source_time = source_times.get(segment)
             if previous_source_time is not None and tick.source_time_msc < previous_source_time:
@@ -153,7 +221,7 @@ def analyze_tick_quality(
 
             if previous_tick is not None:
                 gap = (
-                    datetime.fromisoformat(tick.event_timestamp)
+                    event_time
                     - datetime.fromisoformat(previous_tick.event_timestamp)
                 ).total_seconds()
                 if gap > long_gap_seconds:

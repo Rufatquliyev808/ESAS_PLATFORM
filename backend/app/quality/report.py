@@ -11,6 +11,10 @@ from backend.app.quality.tick_quality import (
     QualityFinding,
     analyze_tick_quality,
 )
+from backend.app.quality.statistics import (
+    TickQualityStatistics,
+    calculate_tick_quality_statistics,
+)
 
 
 QUALITY_REPORT_VERSION = "1.0"
@@ -33,6 +37,7 @@ class ReplayQualityReport:
     replay_manifest: ReplayResultManifest
     summary: QualitySummary
     findings: tuple[QualityFinding, ...]
+    statistics: TickQualityStatistics
     content_fingerprint: str
 
 
@@ -69,6 +74,14 @@ def create_replay_quality_report(
     if quality.tick_count != manifest.result_tick_count:
         raise RuntimeError("quality report tick count does not match replay manifest")
     summary = _summary(quality.tick_count, quality.findings)
+    statistics = calculate_tick_quality_statistics(
+        symbol=manifest.symbol,
+        start_at=datetime.fromisoformat(manifest.start_at),
+        end_at=datetime.fromisoformat(manifest.end_at),
+        batch_size=batch_size,
+    )
+    if statistics.tick_count != quality.tick_count:
+        raise RuntimeError("quality statistics tick count does not match findings")
     content = {
         "report_version": QUALITY_REPORT_VERSION,
         "replay_contract_version": manifest.replay_contract_version,
@@ -80,6 +93,7 @@ def create_replay_quality_report(
         "result_fingerprint": manifest.result_fingerprint,
         "summary": asdict(summary),
         "findings": [asdict(item) for item in quality.findings],
+        "statistics": asdict(statistics),
     }
     encoded = json.dumps(
         content,
@@ -95,5 +109,6 @@ def create_replay_quality_report(
         replay_manifest=manifest,
         summary=summary,
         findings=quality.findings,
+        statistics=statistics,
         content_fingerprint=fingerprint,
     )

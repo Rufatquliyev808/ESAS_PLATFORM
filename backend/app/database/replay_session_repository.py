@@ -504,7 +504,7 @@ def _read_step_ticks(
     rows = connection.execute(
         f"""
         SELECT
-            event_id, event_timestamp, received_at, symbol, bid, ask, last,
+            event_id, event_type, event_timestamp, received_at, symbol, bid, ask, last,
             volume, flags, source_time_msc, source, event_version,
             module_version
         FROM tick_events

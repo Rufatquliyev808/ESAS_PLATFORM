@@ -19,6 +19,7 @@ class TickPosition:
 @dataclass(frozen=True)
 class ReplayTick:
     event_id: str
+    event_type: str
     event_timestamp: str
     received_at: str
     symbol: str
@@ -109,6 +110,7 @@ def read_tick_page(
             f"""
             SELECT
                 event_id,
+                event_type,
                 event_timestamp,
                 received_at,
                 symbol,
@@ -220,7 +222,7 @@ def iter_tick_batches(
         cursor = connection.execute(
             """
             SELECT
-                event_id, event_timestamp, received_at, symbol, bid, ask,
+                event_id, event_type, event_timestamp, received_at, symbol, bid, ask,
                 last, volume, flags, source_time_msc, source,
                 event_version, module_version
             FROM tick_events

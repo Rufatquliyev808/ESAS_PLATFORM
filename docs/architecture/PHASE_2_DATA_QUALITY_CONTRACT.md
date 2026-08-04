@@ -1,6 +1,6 @@
 # Phase 2 — Tick məlumat keyfiyyəti müqaviləsi
 
-Status: IMPLEMENTATION IN PROGRESS — CORE SEQUENCE RULES READY  
+Status: IMPLEMENTATION IN PROGRESS — CORE RULE CATALOG READY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 ## Məqsəd və sərhəd

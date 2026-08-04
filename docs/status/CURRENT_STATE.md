@@ -102,6 +102,14 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   `fail` statusu, səviyyə sayları, stabil report ID və məzmun fingerprint-i yaradır.
 - `DQ-005` mənfi spread qaydası critical səviyyədə əlavə edildi; sıfır qiymət bu
   qaydaya düşmür. Hesabat üzrə `5` yeni test, bütün backend üzrə `102 passed` oldu.
+- `DQ-003` event/source vaxt fərqi, `DQ-006` sıfır və natamam qiymət cütü, `DQ-007`
+  qeyri-sonlu/mənfi ədəd, `DQ-008` event müqaviləsi və `DQ-009` qəbul gecikməsi
+  qaydaları dəqiq warning/critical sərhədləri ilə streaming analizatora əlavə edildi.
+- Dəqiq hədlər, mənfi qəbul gecikməsi, sıfır qiymətin spread-dən ayrılması və
+  hesabat regressiyası yoxlanıldı; tam backend üzrə `105 passed` nəticəsi əldə edildi.
+- `DQ-010` tick sürəti, interval və spread paylanmalarını sabit yaddaşla hesablayır;
+  sıfır/natamam qiymət cütləri ayrıca sayılır və nəticə replay hesabatının məzmun
+  fingerprint-inə daxildir. Tam backend üzrə `108 passed` nəticəsi əldə edildi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

@@ -17,11 +17,11 @@ def seed(database_path: Path, rows: list[tuple[object, ...]]) -> None:
             """
             INSERT INTO tick_events
             (
-                event_id, event_type, event_timestamp, source,
+                event_id, event_type, event_timestamp, received_at, source,
                 event_version, symbol, bid, ask, last, volume, flags,
                 source_time_msc, module_version, raw_event_json
             )
-            VALUES (?, 'TICK_RECEIVED', ?, 'esas.mt5.bridge', '1.0',
+            VALUES (?, 'TICK_RECEIVED', ?, ?, 'esas.mt5.bridge', '1.0',
                     'GOLD', ?, ?, ?, ?, ?, ?, ?, '{}');
             """,
             rows,
@@ -29,10 +29,12 @@ def seed(database_path: Path, rows: list[tuple[object, ...]]) -> None:
 
 
 def row(number: int, seconds: float, source_time: int, *, module: str = "1.6.0", bid: float = 4100.0) -> tuple[object, ...]:
+    timestamp = (BASE_TIME + timedelta(seconds=seconds)).isoformat(timespec="microseconds")
     return (
         f"GOLD:{number:04d}",
-        (BASE_TIME + timedelta(seconds=seconds)).isoformat(timespec="microseconds"),
-        bid, bid + 0.5, bid + 0.25, 1, 6, source_time, module,
+        timestamp, timestamp,
+        bid, bid + 0.5, bid + 0.25, 1, 6,
+        int(BASE_TIME.timestamp() * 1000) + source_time, module,
     )
 
 
@@ -86,3 +88,69 @@ def test_analysis_does_not_change_raw_ticks(isolated_database: Path) -> None:
     with get_connection() as connection:
         after = connection.execute("SELECT COUNT(*), SUM(source_time_msc) FROM tick_events;").fetchone()
     assert tuple(before) == tuple(after)
+
+
+def test_remaining_contract_rules_and_boundaries(isolated_database: Path) -> None:
+    rows = [
+        row(1, 0, 2_000),
+        row(2, 1, 3_001),
+        row(3, 2, 32_001, bid=-1.0),
+    ]
+    seed(isolated_database, rows)
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE tick_events
+            SET bid = 4101.0, ask = 4100.0,
+                received_at = ?
+            WHERE event_id = 'GOLD:0002';
+            """,
+            ((BASE_TIME + timedelta(seconds=8)).isoformat(timespec="microseconds"),),
+        )
+        connection.execute(
+            """
+            UPDATE tick_events
+            SET event_type = 'PRICE_UPDATED', received_at = ?
+            WHERE event_id = 'GOLD:0003';
+            """,
+            ((BASE_TIME + timedelta(seconds=63)).isoformat(timespec="microseconds"),),
+        )
+    findings = finding_map(analyze())
+    assert findings[("DQ-003", "critical")].count == 1
+    assert findings[("DQ-005", "critical")].count == 1
+    assert findings[("DQ-007", "critical")].count == 1
+    assert findings[("DQ-008", "critical")].count == 1
+    assert findings[("DQ-009", "info")].count == 1
+    assert findings[("DQ-009", "warning")].count == 1
+
+
+def test_zero_price_pairs_are_not_negative_spread(isolated_database: Path) -> None:
+    seed(isolated_database, [row(1, 0, 0), row(2, 1, 1)])
+    with get_connection() as connection:
+        connection.execute("UPDATE tick_events SET bid = 0, ask = 1 WHERE event_id = 'GOLD:0001';")
+        connection.execute("UPDATE tick_events SET bid = 0, ask = 0 WHERE event_id = 'GOLD:0002';")
+    result = analyze()
+    findings = finding_map(result)
+    assert ("DQ-005", "critical") not in findings
+    assert sum(item.count for item in result.findings if item.rule_id == "DQ-006") == 2
+
+
+def test_time_difference_and_latency_exact_boundaries(isolated_database: Path) -> None:
+    seed(isolated_database, [row(1, 0, 2_000), row(2, 1, 31_000)])
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE tick_events SET received_at = ? WHERE event_id = 'GOLD:0001';",
+            ((BASE_TIME + timedelta(seconds=5)).isoformat(timespec="microseconds"),),
+        )
+        connection.execute(
+            "UPDATE tick_events SET received_at = ? WHERE event_id = 'GOLD:0002';",
+            ((BASE_TIME - timedelta(seconds=1)).isoformat(timespec="microseconds"),),
+        )
+    result = analyze()
+    clock_findings = [item for item in result.findings if item.rule_id == "DQ-003"]
+    assert len(clock_findings) == 1
+    assert clock_findings[0].severity == "warning"
+    assert clock_findings[0].sample_event_ids == ("GOLD:0002",)
+    latency = [item for item in result.findings if item.rule_id == "DQ-009"]
+    assert len(latency) == 1
+    assert latency[0].reason == "received_at preceded event_timestamp"
