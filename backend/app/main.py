@@ -279,7 +279,7 @@ def replay_sessions(
                 detail="Replay cursor is invalid or expired",
             ) from error
 
-    page = list_replay_sessions(page_size=page_size, after=position)
+    page = list_replay_sessions(page_size=page_size, after=position, owner=user_code)
     next_cursor = None
     if page.next_position is not None:
         next_cursor = encode_replay_session_cursor(
@@ -384,7 +384,7 @@ def replay_session_command(
 @app.get("/api/v2/replay-sessions/{session_id}")
 def replay_session_detail(
     session_id: str,
-    _: str = Depends(require_dashboard_session),
+    user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
         session = get_replay_session(session_id)
@@ -393,6 +393,11 @@ def replay_session_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Replay session was not found",
         ) from error
+    if session.created_by != user_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Replay session belongs to another user",
+        )
     return {
         "data": asdict(session),
         "meta": {"api_version": "2"},

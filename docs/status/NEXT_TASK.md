@@ -6,25 +6,23 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Dashboard-da Phase 2 replay idarəetmə görünüşünü hazırlamaq.
+Phase 2 qəbul sübutlarını və yalnız-oxuma analiz iş axınını yekunlaşdırmaq.
 
 ## Sərhədlər
 
-- Sessiya yaratma formu simvol, interval və `step/max_speed` rejimini qəbul etməlidir.
-- Sessiya siyahısı və detalı mövcud v2 API-lərdən oxunmalıdır.
-- Qanuni lifecycle əmrləri `Idempotency-Key` və cari `state_version` ilə göndərilməlidir.
-- Event səhifələri cursor ilə, keyfiyyət hesabatı yalnız tamamlandıqda göstərilməlidir.
-- Frontend qərar və ticarət əməliyyatı verməməlidir; yalnız replay idarəetməsi və
-  müşahidə təmin etməlidir.
+- Real interval üzrə həm `step`, həm `max_speed` replay sübutu alınmalıdır.
+- Tamamlanmış sessiyaların keyfiyyət hesabatı və event səhifələri yoxlanmalıdır.
+- Eyni dataset üzrə deterministik nəticə sübutu saxlanmalıdır.
+- Analiz çıxışı yalnız müşahidə və hesabat olmalı, ticarət qərarı verməməlidir.
 
 ## Tamamlanma meyarları
 
-- Loading, empty, error, conflict və unauthorized vəziyyətləri aydın göstərilir.
-- Köhnə və təkrar command cavabları təhlükəsiz idarə olunur.
-- Klaviatura istifadəsi və mobil görünüş qorunur.
-- Frontend lint, build və render yoxlamaları, tam backend regressiyası keçir.
+- Qəbul sübutları tarix, session ID, fingerprint və nəticə ilə sənədləşdirilir.
+- Replay xam tick cədvəlini dəyişmir.
+- Determinizm və keyfiyyət qapısı testləri keçir.
+- Tam backend və frontend regressiyası yaşıl qalır.
 
 ## Sonrakı addım
 
-Replay frontend-dən sonra Phase 2 qəbul sübutları və read-only analiz iş axını
-yekunlaşdırılacaq.
+Qəbul sübutlarından sonra texniki analiz göstəricilərinin yalnız-oxuma ilk
+versiyasına keçiləcək.

@@ -1,5 +1,19 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Replay idarəetmə dashboard-u
+
+2026-08-04 tarixində qorunan monitorinq panelinə Phase 2 replay idarəetməsi əlavə edildi.
+
+- İstifadəçi simvol, vaxt intervalı və `step/max_speed` rejimi ilə sessiya yarada bilir.
+- Sessiya siyahısı, detalı, lifecycle əmrləri, event səhifələri və tamamlanmış
+  sessiyanın keyfiyyət hesabatı bir ekrandan idarə olunur.
+- Əmrlər unikal idempotency açarı və cari `state_version` ilə göndərilir.
+- Loading, empty, API xətası, conflict və bitmiş giriş sessiyası göstərilir.
+- Mobil görünüş və klaviatura ilə istifadə qorunur.
+- Replay siyahısı və detal API-si istifadəçi sahibliyini serverdə də məcburi edir.
+- Frontend lint/build/render və tam backend `133 passed` nəticəsi ilə keçdi.
+- Bölmə ticarət qərarı və əməliyyatı vermir.
+
 ## Public replay keyfiyyət hesabatı
 
 2026-08-04 tarixində

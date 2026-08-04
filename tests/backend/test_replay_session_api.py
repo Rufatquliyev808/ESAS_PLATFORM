@@ -328,6 +328,35 @@ def test_replay_session_detail_hides_internal_not_found_information(
     assert response.json() == {"detail": "Replay session was not found"}
 
 
+def test_replay_session_list_and_detail_enforce_ownership(
+    isolated_database: Path,
+) -> None:
+    prepare_schema(isolated_database)
+    owned = seed_sessions(1)[0]
+    foreign = create_replay_session(
+        created_by="OTHER-USER",
+        actor_role="operator",
+        symbol="FOREIGN",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(seconds=1),
+        mode="step",
+    )
+
+    with TestClient(app) as client:
+        headers = dashboard_headers(client)
+        listing = client.get("/api/v2/replay-sessions", headers=headers)
+        detail = client.get(
+            f"/api/v2/replay-sessions/{foreign.session_id}", headers=headers
+        )
+
+    assert listing.status_code == 200
+    assert [item["session_id"] for item in listing.json()["data"]] == [
+        owned.session_id
+    ]
+    assert detail.status_code == 403
+    assert detail.json() == {"detail": "Replay session belongs to another user"}
+
+
 def test_replay_session_page_size_is_bounded(
     isolated_database: Path,
 ) -> None:

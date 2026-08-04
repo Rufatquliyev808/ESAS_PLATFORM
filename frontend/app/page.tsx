@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReplayPanel } from "./replay-panel";
 
 type Bridge = {
   source: string;
@@ -310,6 +311,12 @@ export default function Home() {
     setToken(null);
     setData(null);
   }
+
+  const handleReplayUnauthorized = useCallback(() => {
+    setToken(null);
+    setData(null);
+    setLoginError("Sessiyanın vaxtı bitib. Yenidən daxil olun.");
+  }, []);
 
   async function handleLossAcknowledgement(bridge: Bridge) {
     const confirmed = window.confirm(
@@ -685,6 +692,10 @@ export default function Home() {
               </div>
             )}
           </section>
+          <ReplayPanel
+            token={token}
+            onUnauthorized={handleReplayUnauthorized}
+          />
         </>
       )}
 
