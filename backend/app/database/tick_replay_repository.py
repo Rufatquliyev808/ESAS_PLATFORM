@@ -68,6 +68,7 @@ def read_tick_page(
     end_at: datetime,
     page_size: int = 250,
     after: TickPosition | None = None,
+    through: TickPosition | None = None,
 ) -> ReplayTickPage:
     normalized_symbol = symbol.strip()
     if not normalized_symbol:
@@ -83,6 +84,23 @@ def read_tick_page(
         raise ValueError("end_at must be later than start_at")
 
     parameters: list[object] = [normalized_symbol, start_text, end_text]
+    boundary_sql = ""
+    if through is not None:
+        through_timestamp = _utc_text(
+            through.event_timestamp,
+            "through.event_timestamp",
+        )
+        if not through.event_id:
+            raise ValueError("through.event_id must not be empty")
+        boundary_sql = """
+            AND (
+                event_timestamp < ?
+                OR (event_timestamp = ? AND event_id <= ?)
+            )
+        """
+        parameters.extend(
+            [through_timestamp, through_timestamp, through.event_id]
+        )
     continuation_sql = ""
     if after is not None:
         after_timestamp = _utc_text(
@@ -127,6 +145,7 @@ def read_tick_page(
             WHERE symbol = ?
               AND event_timestamp >= ?
               AND event_timestamp < ?
+              {boundary_sql}
               {continuation_sql}
             ORDER BY event_timestamp ASC, event_id ASC
             LIMIT ?;

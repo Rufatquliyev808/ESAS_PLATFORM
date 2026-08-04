@@ -6,26 +6,24 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Replay sessiyasının event axınını qorunan, yalnız oxuma üçün
-`GET /api/v2/replay-sessions/{session_id}/events` endpoint-i ilə təqdim etmək.
+Replay keyfiyyət hesabatını qorunan public v2 contract-a çıxarmaq:
+`GET /api/v2/replay-sessions/{session_id}/quality-report`.
 
 ## Sərhədlər
 
-- Yalnız sessiyanı yaradan istifadəçi event axınını oxuya bilməlidir.
-- Sıralama `(event_timestamp, event_id)` üzrə deterministik olmalıdır.
-- Cursor imzalanmış, istifadəçiyə və sessiyaya bağlı, vaxtı məhdud olmalıdır.
-- Səhifələmə sessiyanın sabit snapshot sərhədini aşmamalı, təkrar və boşluq
-  yaratmamalıdır.
-- Xam tick-lər dəyişdirilməməli və canlı bazada test məlumatı yaradılmamalıdır.
+- Yalnız sessiyanın sahibi hesabatı oxuya bilməlidir.
+- Hesabat yalnız tamamlanmış replay üçün təqdim edilməlidir.
+- Mövcud deterministik report ID və fingerprint dəyişdirilməməlidir.
+- Daxili endpoint geriyə uyğun saxlanmalı, public cavab versiyalanmalıdır.
+- Xam tick-lər dəyişdirilməməli və testlər yalnız müvəqqəti bazada işləməlidir.
 
 ## Tamamlanma meyarları
 
-- Event səhifəsi deterministik sıra, limit və növbəti cursor qaytarır.
-- Authentication, ownership, cursor saxtalaşdırılması və cursor expiry testlərlə
-  təsdiqlənir.
-- Səhifələr arasında dublikat və itki olmur.
+- Authentication, ownership, incomplete state və not-found sərhədləri test olunur.
+- Public cavab stabil `data` və `meta.api_version=2` contract-ı qaytarır.
+- Eyni replay üçün hesabat reproduksiya olunur.
 - Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-Event API-dən sonra replay keyfiyyət hesabatı public v2 contract-a çıxarılacaq.
+Public keyfiyyət hesabatından sonra Phase 2 replay idarəetmə frontend-i hazırlanacaq.

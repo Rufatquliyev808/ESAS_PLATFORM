@@ -1,5 +1,17 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Replay event oxuma API-si
+
+2026-08-04 tarixində qorunan
+`GET /api/v2/replay-sessions/{session_id}/events` endpoint-i əlavə edildi.
+
+- Yalnız sessiyanın sahibi event-ləri oxuya bilir.
+- Sıra `(event_timestamp, event_id)` üzrə deterministikdir.
+- Cursor imzalanır, istifadəçiyə və sessiyaya bağlanır və vaxtı məhduddur.
+- Sessiya yaradıldıqdan sonra gələn tick-lər snapshot sərhədini keçə bilmir.
+- Səhifələr arasında dublikat və boşluq yaranmır; xam tick-lər dəyişmir.
+- Tam backend nəticəsi `129 passed`.
+
 ## Replay lifecycle command API-si
 
 2026-08-04 tarixində qorunan

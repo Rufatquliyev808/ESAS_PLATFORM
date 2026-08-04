@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
 import sqlite3
 from dataclasses import asdict
 
@@ -50,7 +51,10 @@ from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
     encode_replay_session_cursor,
+    decode_replay_event_cursor,
+    encode_replay_event_cursor,
 )
+from backend.app.database.tick_replay_repository import TickPosition, read_tick_page
 
 
 APP_VERSION = "0.3.0"
@@ -361,5 +365,76 @@ def replay_session_detail(
         ) from error
     return {
         "data": asdict(session),
+        "meta": {"api_version": "2"},
+    }
+
+
+@app.get("/api/v2/replay-sessions/{session_id}/events")
+def replay_session_events(
+    session_id: str,
+    cursor: str | None = None,
+    page_size: int = Query(default=250, ge=1, le=1000),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Replay session was not found",
+        ) from error
+    if session.created_by != user_code:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Replay session belongs to another user",
+        )
+
+    after = None
+    if cursor is not None:
+        try:
+            timestamp, event_id = decode_replay_event_cursor(
+                cursor,
+                session_id=session_id,
+                subject=user_code,
+            )
+            after = TickPosition(datetime.fromisoformat(timestamp), event_id)
+        except (InvalidReplayCursorError, ValueError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Replay event cursor is invalid or expired",
+            ) from error
+
+    page = read_tick_page(
+        symbol=session.symbol,
+        start_at=datetime.fromisoformat(session.start_at),
+        end_at=datetime.fromisoformat(session.end_at),
+        page_size=page_size,
+        after=after,
+        through=session.last_position,
+    )
+    next_cursor = None
+    if page.next_position is not None:
+        next_cursor = encode_replay_event_cursor(
+            session_id=session_id,
+            event_timestamp=page.next_position.event_timestamp.isoformat(
+                timespec="microseconds"
+            ),
+            event_id=page.next_position.event_id,
+            subject=user_code,
+        )
+    return {
+        "data": [asdict(item) for item in page.items],
+        "page": {
+            "limit": page_size,
+            "next_cursor": next_cursor,
+            "has_more": page.has_more,
+        },
+        "snapshot": {
+            "dataset_tick_count": session.dataset_tick_count,
+            "dataset_fingerprint": session.dataset_fingerprint,
+            "last_position": asdict(session.last_position)
+            if session.last_position is not None
+            else None,
+        },
         "meta": {"api_version": "2"},
     }

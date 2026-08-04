@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Replay event-ləri üçün qorunan, yalnız-oxuma v2 API əlavə edildi: sessiya sahibinin
+  girişi, deterministik `(event_timestamp, event_id)` səhifələməsi, sessiya və
+  istifadəçiyə bağlı imzalanmış cursor, sabit snapshot son sərhədi və xam tick
+  toxunulmazlığı; tam backend `129 passed`.
 - Qorunan replay lifecycle command API-si əlavə edildi: `start`, `step`, `pause`,
   `resume` və `cancel` əmrləri üçün ownership, hash-lənmiş idempotency açarı,
   `state_version` optimistic lock, atomik session/audit/command yazısı və xam tick
