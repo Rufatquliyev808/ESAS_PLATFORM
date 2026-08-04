@@ -1,7 +1,7 @@
 # ESAS Platform — Phase 2 icra planı
 
-Status: PLANNED  
-Başlama şərti: Phase 1 qəbul qapılarının tamamlanması
+Status: IN PROGRESS
+Başlama şərti: TAMAMLANIB — Phase 1 Stable
 
 Detallı oxuma müqaviləsi:
 `docs/architecture/PHASE_2_REPLAY_CONTRACT.md`
@@ -42,7 +42,8 @@ API versiyalanması, cursor, limit və xəta cavabı müqaviləsi:
 Audit ixracı və qəbul sübutu paketi müqaviləsi:
 `docs/architecture/PHASE_2_AUDIT_EVIDENCE_EXPORT_CONTRACT.md`
 
-Müqavilə sənədləri hazırlanıb, lakin Phase 2 istehsal kodu hələ başladılmayıb.
+Müqavilə sənədləri hazırlanıb və Phase 2 istehsal kodunun yalnız-oxuma repository
+sərhədi başladılıb.
 
 ## Məqsəd
 
@@ -55,12 +56,14 @@ Phase 2 ticarət qərarı, siqnal, proqnoz və order icrası yaratmır.
 
 ### 1. Oxuma sərhədi və məlumat müqaviləsi
 
-- Xam tick cədvəli üçün yalnız-oxuma repository interfeysi yaratmaq.
-- `symbol`, başlanğıc vaxtı, son vaxt və səhifələmə parametrlərini müəyyən etmək.
-- Sıralamanı `timestamp` və sabit ikinci açarla deterministik etmək.
-- Xam event-lərin dəyişdirilməsini və silinməsini qadağan edən testlər əlavə etmək.
+- [x] Xam tick cədvəli üçün yalnız-oxuma repository interfeysi yaratmaq.
+- [x] `symbol`, başlanğıc vaxtı, son vaxt və səhifələmə parametrlərini müəyyən etmək.
+- [x] Sıralamanı `event_timestamp` və `event_id` ilə deterministik etmək.
+- [x] Xam event-lərin dəyişdirilmədiyini təsdiqləyən test əlavə etmək.
+- [x] Keyset səhifələməsində boşluq və dublikat yaranmadığını yoxlamaq.
 
-Tamamlanma meyarı: eyni sorğu hər dəfə eyni ardıcıllıqda eyni tick-ləri qaytarır.
+Tamamlanma meyarı: KEÇİB — eyni sorğu hər dəfə eyni ardıcıllıqda eyni tick-ləri
+qaytarır; yeni repository testləri `6 passed`, tam backend paketi `22 passed`.
 
 ### 2. Replay sessiyası
 
@@ -113,5 +116,7 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 ## İlk texniki tapşırıq
 
-Phase 1 bağlandıqdan sonra yalnız-oxuma tick repository müqaviləsini və onun
-deterministik sıralama testlərini yaratmaq.
+Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
+
+Növbəti texniki tapşırıq: yalnız müvəqqəti test bazalarında işləyən checksum-lı
+migration runner-i və replay oxuması üçün müqavilədə göstərilmiş indeksi yaratmaq.

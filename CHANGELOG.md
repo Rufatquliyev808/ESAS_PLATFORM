@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 üçün yalnız-oxuma SQLite tick repository-si, `[start_at, end_at)` zaman
+  sərhədi, deterministik `(event_timestamp, event_id)` keyset səhifələməsi və xam
+  tick dəyişməzliyini qoruyan 6 test əlavə edildi; tam backend nəticəsi `22 passed`.
 - Phase 1-in rəsmi 27.18 saatlıq canlı qəbul sınağı `PASSED` nəticəsi ilə
   tamamlandı: `340866` yeni tick, `0` yeni rejection, növbə `0 / 1000`, SQLite
   `quick_check=ok` və bütün avtomatik qəbul qapıları keçdi.

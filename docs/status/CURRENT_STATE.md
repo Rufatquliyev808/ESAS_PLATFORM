@@ -2,7 +2,7 @@
 
 Son yenilənmə: 2026-08-04
 Cari mərhələ: Phase 2
-Status: PHASE 1 STABLE — PHASE 2 READY
+Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
 Əsas budaq: `main`
 
 ## Phase 1 yekun qəbul nəticəsi
@@ -19,6 +19,16 @@ Status: PHASE 1 STABLE — PHASE 2 READY
   real ticarət və ya order icazəsi vermir.
 
 ## Phase 2 üçün bazardan asılı olmayan dizayn hazırlığı
+
+- Phase 2-nin ilk istehsal kodu tamamlandı: SQLite bazasını `mode=ro` və
+  `query_only` ilə açan tick replay repository-si əlavə edildi.
+- Repository `[start_at, end_at)` intervalı, simvol sərhədi, `1..1000` limit və
+  `(event_timestamp, event_id)` keyset səhifələməsi tətbiq edir.
+- Eyni timestamp-li tick-lərin deterministik ardıcıllığı, səhifələr arasında
+  boşluq/dublikat olmaması, boş interval, validation və xam sətirlərin
+  dəyişməzliyi yoxlanıldı: yeni testlər `6 passed`, tam backend `22 passed`.
+- Canlı bazada migration edilməyib, mövcud API dəyişdirilməyib və ticarət/order
+  funksiyası əlavə olunmayıb.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

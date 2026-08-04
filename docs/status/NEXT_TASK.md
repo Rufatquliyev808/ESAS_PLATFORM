@@ -6,28 +6,30 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Xam tick məlumatını dəyişdirmədən oxuyan repository interfeysini və deterministik
-`event_timestamp + event_id` sıralama testlərini yaratmaq.
+Yalnız müvəqqəti test bazalarında işləyən, versiyalanmış və checksum ilə yoxlanan
+migration runner-i yaratmaq; replay oxuması üçün
+`(symbol, event_timestamp, event_id)` indeksini migration vasitəsilə əlavə etmək.
 
 ## Sərhədlər
 
-- Repository yalnız oxuma əməliyyatları təqdim etməlidir.
+- Migration canlı `database/ESAS_PLATFORM.sqlite` üzərində icra edilməməlidir.
+- Testlər yalnız ayrıca müvəqqəti SQLite bazası istifadə etməlidir.
+- Hər migration versiya, ad və dəyişməz checksum ilə qeydə alınmalıdır.
+- Eyni migration ikinci dəfə təhlükəsiz no-op olmalıdır.
+- Checksum uyğunsuzluğu fail-closed xəta verməlidir.
 - Xam `tick_events` sətirləri dəyişdirilə və silinə bilməz.
-- Zaman aralığı `[start_at, end_at)` formasında sabit olmalıdır.
-- Sıralama `event_timestamp`, sonra `event_id` ilə deterministik olmalıdır.
-- Böyük nəticələr cursor və limit ilə səhifələnməlidir.
 - Phase 1 canlı tick qəbulu və mövcud API davranışı dəyişməməlidir.
 
 ## Tamamlanma meyarları
 
-- Eyni giriş iki icrada eyni event ardıcıllığını qaytarmalıdır.
-- Eyni timestamp-li event-lər `event_id` ilə sabit sıralanmalıdır.
-- Boş aralıq təhlükəsiz boş nəticə qaytarmalıdır.
-- Yanlış zaman aralığı və limitlər aydın validation xətası verməlidir.
-- Test xam tick sətirlərinin və sayının dəyişmədiyini təsdiqləməlidir.
+- Təmiz müvəqqəti bazada migration uğurla tətbiq olunmalıdır.
+- Təkrar icra sxemi və məlumatı dəyişməməlidir.
+- Dəyişdirilmiş migration checksum xətası ilə dayandırılmalıdır.
+- Replay indeksi SQLite metadata-sında təsdiqlənməlidir.
+- Migration zamanı sintetik tick sətirlərinin sayı və məzmunu qorunmalıdır.
 - Mövcud backend testləri keçməlidir.
 
 ## Sonrakı addım
 
-Repository sərhədi qəbul edildikdən sonra deterministik replay sessiyasının
+Migration və indeks qəbul edildikdən sonra deterministik replay sessiyasının
 skeleti yaradılacaq.
