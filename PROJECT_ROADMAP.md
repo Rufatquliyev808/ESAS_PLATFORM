@@ -244,8 +244,8 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Phase 2 üçün hazır deterministik batch sərhədi üzərində `max_speed` replay
-orchestrator-u, təhlükəsiz dayandırmanı və qəza sonrası davametməni yaratmaq.
+Phase 2 replay mühərriki üçün iki müstəqil icranın eyni checkpoint ardıcıllığı və
+nəticə fingerprint-i verdiyini təsdiqləyən reproduksiya sübutu yaratmaq.
 
 Ətraflı tapşırıq:
 

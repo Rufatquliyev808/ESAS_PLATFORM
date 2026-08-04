@@ -72,6 +72,16 @@ class ReplayStepResult:
     idempotent_replay: bool
 
 
+@dataclass(frozen=True)
+class ReplayMaxSpeedResult:
+    session_id: str
+    state: str
+    batches_processed: int
+    ticks_processed: int
+    total_processed_ticks: int
+    checkpoint_position: TickPosition | None
+
+
 def _required_text(value: str, field_name: str) -> str:
     normalized = value.strip()
     if not normalized:
@@ -727,4 +737,220 @@ def process_replay_step(
         ),
         ticks=ticks,
         idempotent_replay=False,
+    )
+
+
+def _process_max_speed_batch(
+    *,
+    session_id: str,
+    actor: str,
+    actor_role: str,
+    batch_size: int,
+) -> tuple[str, int, TickPosition | None]:
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        session_row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (session_id,),
+        ).fetchone()
+        if session_row is None:
+            raise ReplaySessionNotFoundError("replay session was not found")
+        if session_row["mode"] != "max_speed":
+            raise ReplayTransitionConflictError(
+                "replay session is not in max_speed mode"
+            )
+
+        current_checkpoint = _row_position(
+            session_row,
+            "checkpoint_event_timestamp",
+            "checkpoint_event_id",
+        )
+        if session_row["state"] != "running":
+            return session_row["state"], 0, current_checkpoint
+
+        remaining = (
+            session_row["dataset_tick_count"]
+            - session_row["processed_ticks"]
+        )
+        if remaining <= 0:
+            raise ReplayTransitionConflictError(
+                "running replay session has no remaining ticks"
+            )
+        batch_limit = min(batch_size, remaining)
+        ticks = _read_step_ticks(
+            connection,
+            symbol=session_row["symbol"],
+            start_at=session_row["start_at"],
+            end_at=session_row["end_at"],
+            after_timestamp=session_row["checkpoint_event_timestamp"],
+            after_event_id=session_row["checkpoint_event_id"],
+            limit=batch_limit,
+        )
+        if len(ticks) != batch_limit:
+            raise ReplayTransitionConflictError(
+                "replay dataset changed after session creation"
+            )
+
+        last_tick = ticks[-1]
+        next_processed = session_row["processed_ticks"] + len(ticks)
+        next_state = (
+            "completed"
+            if next_processed == session_row["dataset_tick_count"]
+            else "running"
+        )
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        completed_at = now if next_state == "completed" else None
+        updated = connection.execute(
+            """
+            UPDATE replay_sessions
+            SET state = ?, processed_ticks = ?,
+                checkpoint_event_timestamp = ?, checkpoint_event_id = ?,
+                last_batch_at = ?, updated_at = ?, completed_at = ?
+            WHERE session_id = ? AND state = 'running'
+              AND processed_ticks = ?;
+            """,
+            (
+                next_state,
+                next_processed,
+                last_tick.event_timestamp,
+                last_tick.event_id,
+                now,
+                now,
+                completed_at,
+                session_id,
+                session_row["processed_ticks"],
+            ),
+        )
+        if updated.rowcount != 1:
+            raise ReplayTransitionConflictError(
+                "replay session changed during max_speed processing"
+            )
+        connection.execute(
+            """
+            INSERT INTO replay_session_audit
+            (
+                session_id, actor, actor_role, action, previous_state,
+                next_state, processed_ticks, checkpoint_time,
+                checkpoint_event, occurred_at
+            )
+            VALUES (?, ?, ?, 'max_speed_batch', 'running', ?, ?, ?, ?, ?);
+            """,
+            (
+                session_id,
+                actor,
+                actor_role,
+                next_state,
+                next_processed,
+                last_tick.event_timestamp,
+                last_tick.event_id,
+                now,
+            ),
+        )
+
+    return (
+        next_state,
+        len(ticks),
+        TickPosition(
+            datetime.fromisoformat(last_tick.event_timestamp),
+            last_tick.event_id,
+        ),
+    )
+
+
+def run_max_speed_replay(
+    *,
+    session_id: str,
+    actor: str,
+    actor_role: str,
+    batch_size: int = 1000,
+    max_batches: int | None = None,
+) -> ReplayMaxSpeedResult:
+    normalized_session_id = _required_text(session_id, "session_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+    if not 1 <= batch_size <= 1000:
+        raise ValueError("batch_size must be between 1 and 1000")
+    if max_batches is not None and max_batches < 1:
+        raise ValueError("max_batches must be positive")
+
+    with get_connection() as connection:
+        initial_row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+    if initial_row is None:
+        raise ReplaySessionNotFoundError("replay session was not found")
+    if initial_row["mode"] != "max_speed":
+        raise ReplayTransitionConflictError(
+            "replay session is not in max_speed mode"
+        )
+    if initial_row["state"] == "running":
+        current_snapshot = create_dataset_snapshot(
+            symbol=initial_row["symbol"],
+            start_at=datetime.fromisoformat(initial_row["start_at"]),
+            end_at=datetime.fromisoformat(initial_row["end_at"]),
+            batch_size=batch_size,
+        )
+        if (
+            current_snapshot.tick_count != initial_row["dataset_tick_count"]
+            or current_snapshot.fingerprint
+            != initial_row["dataset_fingerprint"]
+            or current_snapshot.first_position
+            != _row_position(
+                initial_row,
+                "first_event_timestamp",
+                "first_event_id",
+            )
+            or current_snapshot.last_position
+            != _row_position(
+                initial_row,
+                "last_event_timestamp",
+                "last_event_id",
+            )
+        ):
+            raise ReplayTransitionConflictError(
+                "replay dataset changed after session creation"
+            )
+
+    batches_processed = 0
+    ticks_processed = 0
+    state = "running"
+    checkpoint: TickPosition | None = None
+    while max_batches is None or batches_processed < max_batches:
+        state, batch_ticks, checkpoint = _process_max_speed_batch(
+            session_id=normalized_session_id,
+            actor=normalized_actor,
+            actor_role=normalized_role,
+            batch_size=batch_size,
+        )
+        if batch_ticks == 0:
+            break
+        batches_processed += 1
+        ticks_processed += batch_ticks
+        if state != "running":
+            break
+
+    with get_connection() as connection:
+        session_row = connection.execute(
+            "SELECT * FROM replay_sessions WHERE session_id = ?;",
+            (normalized_session_id,),
+        ).fetchone()
+    if session_row is None:
+        raise ReplaySessionNotFoundError("replay session was not found")
+    if session_row["mode"] != "max_speed":
+        raise ReplayTransitionConflictError(
+            "replay session is not in max_speed mode"
+        )
+
+    return ReplayMaxSpeedResult(
+        session_id=normalized_session_id,
+        state=session_row["state"],
+        batches_processed=batches_processed,
+        ticks_processed=ticks_processed,
+        total_processed_ticks=session_row["processed_ticks"],
+        checkpoint_position=_row_position(
+            session_row,
+            "checkpoint_event_timestamp",
+            "checkpoint_event_id",
+        ),
     )

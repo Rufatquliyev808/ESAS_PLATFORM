@@ -101,7 +101,7 @@ Tamamlanma meyarı: KEÇİB — migration testləri `6 passed`, tam backend pake
   batch-lər şəklində oxumaq.
 - [x] Addım əmrlərini persistent idempotency açarı və append-only qeydlə qorumaq.
 - [x] Son batch-də sessiyanı eyni transaction daxilində avtomatik tamamlamaq.
-- Replay sürətini real vaxtdan ayırmaq: addım-addım və maksimum sürət rejimi.
+- [x] Replay sürətini real vaxtdan ayırmaq: addım-addım və maksimum sürət rejimi.
 - Eyni giriş üçün təkrar istehsal edilə bilən nəticə yaratmaq.
 
 Aralıq nəticə: snapshot testləri `7 passed`; sessiya yaradılması və həyat dövrü üzrə
@@ -112,6 +112,10 @@ checkpoint və uyğun audit ya birlikdə yazılır, ya da tam rollback olur.
 `step` rejimi üzrə əlavə `8` test və tam backend üzrə `75` test keçdi. Ardıcıl
 addımlar bütün dataset-i boşluqsuz və dublikatsız oxuyur; eyni idempotency açarı
 ikinci progress/audit yaratmır, son batch sessiyanı atomik `completed` edir.
+
+`max_speed` orchestrator-u üzrə `9` yeni test və tam backend üzrə `84` test keçdi.
+2005 tick üç limitli batch-lə tamamlandı; restart, pause/resume, terminal no-op,
+audit rollback və eyni saylı dataset əvəzlənməsinin fingerprint ilə rəddi təsdiqləndi.
 
 Tamamlanma meyarı: sessiya həyat dövrü də əlavə edildikdən sonra eyni məlumat aralığı
 iki icrada eyni event ardıcıllığını verir.
@@ -160,5 +164,5 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
-Növbəti texniki tapşırıq: hazır deterministik batch sərhədi üzərində `max_speed`
-orchestrator-u, təhlükəsiz dayandırmanı və qəza sonrası davametməni hazırlamaq.
+Növbəti texniki tapşırıq: eyni dataset və parametrlərlə müstəqil replay icralarının
+eyni checkpoint ardıcıllığı və nəticə fingerprint-i verdiyini sübut etmək.

@@ -75,6 +75,15 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   audit xətası bütün addımı rollback edir.
 - `step` repository-si üzrə `8` yeni test, hədəf paket üzrə `25 passed` və tam backend
   üzrə `75 passed` nəticəsi əldə edildi; yalnız müvəqqəti test bazaları istifadə olundu.
+- `max_speed` orchestrator-u əlavə edildi: hər transaction-da maksimum `1000` tick
+  emal edir, bütün dataset-i yaddaşa yükləmir və hər batch-dən sonra vəziyyəti yenidən
+  yoxlayır.
+- Pause/resume və restart son uğurlu checkpoint-dən boşluqsuz davam edir; completed
+  sessiya yenidən emal olunmur, audit xətasında cari batch rollback edilir.
+- Hər yeni və restart olunmuş icrada dataset say, sərhəd və fingerprint ilə yenidən
+  təsdiqlənir; tick sayı eyni qalsa belə event əvəzlənməsi fail-closed aşkarlanır.
+- `max_speed` üzrə `9` yeni test və tam backend üzrə `84 passed` nəticəsi əldə edildi;
+  canlı baza, API, frontend və ticarət sərhədləri dəyişdirilmədi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

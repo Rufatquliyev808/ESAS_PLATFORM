@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 `max_speed` replay orchestrator-u əlavə edildi: maksimum `1000` tick-lik
+  transaction batch-ləri, checkpoint əsaslı restart, pause sərhədi, terminal no-op,
+  dataset fingerprint təsdiqi və audit rollback; `9` yeni test, tam backend
+  `84 passed`.
 - Phase 2 replay `step` rejimi əlavə edildi: hər əmrdə `1..1000` deterministik tick,
   boşluqsuz checkpoint irəliləməsi, son batch-də atomik tamamlanma və persistent
   idempotency; addım qeydləri append-only qorunur, `8` yeni test və tam backend
