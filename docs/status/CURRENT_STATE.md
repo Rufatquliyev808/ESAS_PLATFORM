@@ -1,5 +1,16 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 causal likvidlik süpürməsi detektoru
+
+2026-08-05 tarixində `liquidity_sweep 1.0.0` tamamlandı. Təsdiqlənmiş causal pivotlardan
+equal-high/equal-low hovuzları mərhələli snapshot kimi yaradılır; sonradan gələn pivot əvvəlki
+hovuzun tarixini dəyişmir. Sweep yalnız hovuz məlum olduqdan sonra bağlanmış barın wick məsafəsi
+və səviyyəyə geri bağlanması ilə təsdiqlənir. Bullish, bearish, yetərsiz, sweep olmayan və eyni
+barda iki tərəfin süpürüldüyü ziddiyyətli hallar ayrıdır. Konfiqurasiya və upstream izlər
+deterministik fingerprint-də saxlanır. Frontend nəticələri ayrı tədqiqat kartlarında göstərir.
+Qat siqnal, giriş, risk ölçüsü və order yaratmır.
+Tam yoxlama: backend `232 passed`; frontend `4` test, lint və production build keçdi.
+
 ## Phase 4 causal bazar strukturu detektoru
 
 2026-08-05 tarixində `market_structure 1.0.0` tamamlandı. Yalnız bağlanmış barlardan

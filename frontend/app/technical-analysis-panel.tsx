@@ -20,6 +20,9 @@ type AnalysisBar = {
 type StructurePivot = { kind: "high" | "low"; classification: string; value: number; pivot_bar_end_at: string; confirmed_at: string };
 type StructureSide = { side: "long" | "short"; state: string; latest_high: string | null; latest_low: string | null; observed_at: string | null };
 type MarketStructure = { version: string; pivot_left: number; pivot_right: number; equality_tolerance_bps: number; warmup_bars: number; pivots: StructurePivot[]; long_observation: StructureSide; short_observation: StructureSide; fingerprint: string };
+type LiquidityPool = { side: "buy_side" | "sell_side"; level: number; touch_count: number; available_at: string };
+type LiquidityObservation = { direction: "bullish" | "bearish"; state: string; pool_side: string; pool_level: number | null; pool_touch_count: number; observed_at: string | null; excursion_bps: number | null; close_back_confirmed: boolean };
+type LiquiditySweep = { version: string; pool_tolerance_bps: number; minimum_touches: number; minimum_sweep_bps: number; maximum_pool_age_bars: number; pools: LiquidityPool[]; bullish_observation: LiquidityObservation; bearish_observation: LiquidityObservation; fingerprint: string };
 type AnalysisResult = {
   session_id: string;
   symbol: string;
@@ -35,10 +38,13 @@ type AnalysisResult = {
     bar_fingerprint: string;
     indicator_package_version: string;
     indicator_fingerprint: string;
+    liquidity_sweep_version: string;
+    liquidity_sweep_fingerprint: string;
   };
   bars: AnalysisBar[];
   indicators: { ema: IndicatorSeries; rsi: IndicatorSeries; atr: IndicatorSeries };
   market_structure: MarketStructure;
+  liquidity_sweep: LiquiditySweep;
   interpretation: string;
   api_version: string;
 };
@@ -155,6 +161,24 @@ function StructurePanel({ structure }: { structure: MarketStructure }) {
   </article>;
 }
 
+function LiquidityPanel({ liquidity }: { liquidity: LiquiditySweep }) {
+  const labels: Record<string, string> = { confirmed_sweep: "Təsdiqlənmiş süpürmə", no_sweep: "Süpürmə yoxdur", insufficient_data: "Məlumat azdır", conflicting: "Zidd müşahidə" };
+  const observations = [liquidity.bullish_observation, liquidity.bearish_observation];
+  return <article className="analysis-card liquidity-card">
+    <header><div><p className="eyebrow">Likvidlik · araşdırma müşahidəsi</p><h4>Bərabər təpə/dib və fitil süpürməsi</h4></div><span className="analysis-badge ready">Versiya {liquidity.version}</span></header>
+    <p>Hovuz əvvəlcədən təsdiqlənmiş dönüşlərdən qurulur. Süpürmə yalnız bağlanmış bar səviyyənin o tərəfinə keçib geri bağlandıqda qeydə alınır.</p>
+    <div className="liquidity-sides">{observations.map((item) => <section key={item.direction} className={`liquidity-side ${item.direction}`}>
+      <span>{item.direction === "bullish" ? "YÜKSƏLİŞ MÜŞAHİDƏSİ" : "ENİŞ MÜŞAHİDƏSİ"}</span>
+      <strong>{labels[item.state] ?? item.state}</strong>
+      <small>Səviyyə: {formatNumber(item.pool_level, 5)} · Toxunuş: {item.pool_touch_count || "—"}</small>
+      <small>Fitil məsafəsi: {formatNumber(item.excursion_bps, 2)} bps · {item.observed_at ? formatTime(item.observed_at) : "vaxt yoxdur"}</small>
+    </section>)}</div>
+    <div className="liquidity-meta">Hovuzlar: {liquidity.pools.length} · Dözümlülük: {liquidity.pool_tolerance_bps} bps · Minimum toxunuş: {liquidity.minimum_touches} · Minimum süpürmə: {liquidity.minimum_sweep_bps} bps</div>
+    {liquidity.pools.length ? <div className="liquidity-pools">{liquidity.pools.slice(-6).reverse().map((pool, index) => <div key={`${pool.side}-${pool.available_at}-${index}`}><b>{pool.side === "buy_side" ? "Təpə hovuzu" : "Dib hovuzu"}</b><span>{formatNumber(pool.level, 5)}</span><small>{pool.touch_count} toxunuş · {formatTime(pool.available_at)} tarixindən məlumdur</small></div>)}</div> : <EmptyChart>Hələ minimum toxunuş sayına çatan likvidlik hovuzu yoxdur.</EmptyChart>}
+    <p className="liquidity-boundary">Bu nəticə siqnal, giriş və ya əməliyyat əmri deyil.</p>
+  </article>;
+}
+
 export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [emaPeriod, setEmaPeriod] = useState(20);
@@ -223,6 +247,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Bağlanmış barlar hesablanır</strong><p>EMA, RSI və ATR eyni replay məlumatından hazırlanır.</p></div></div> : result && <>
         <PriceChart bars={result.bars} ema={result.indicators.ema} />
         <StructurePanel structure={result.market_structure} />
+        <LiquidityPanel liquidity={result.liquidity_sweep} />
         <div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div>
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
@@ -234,6 +259,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
             <Fingerprint label="Dataset izi" value={result.lineage.dataset_fingerprint} />
             <Fingerprint label="Bar izi" value={result.lineage.bar_fingerprint} />
             <Fingerprint label="İndikator izi" value={result.lineage.indicator_fingerprint} />
+            <Fingerprint label="Likvidlik izi" value={result.lineage.liquidity_sweep_fingerprint} />
           </dl>
         </details>
         <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu göstəricilər araşdırma üçündür. Platforma bu mərhələdə alış/satış siqnalı vermir və əməliyyat açmır.</p>

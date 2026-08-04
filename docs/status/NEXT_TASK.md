@@ -2,30 +2,27 @@
 
 Status: READY — ayrıca istifadəçi təsdiqi gözləyir
 Prioritet: HIGH
-Mərhələ: Causal likvidlik süpürməsi detektoru 1.0.0
+Mərhələ: Causal BOS/CHoCH detektoru 1.0.0
 
 ## Məqsəd
 
-Tamamlanmış causal pivotların üzərində bərabər zirvə/dib likvidlik hovuzlarını və yalnız
-bağlanmış barla təsdiqlənən wick sweep + səviyyəyə geri bağlanma müşahidələrini hesablamaq.
+Təsdiqlənmiş bazar strukturu pivotları və yalnız bağlanmış barlarla strukturun davamını (BOS)
+və mümkün istiqamət dəyişməsini (CHoCH) səbəbiyyət qaydasında müşahidə etmək.
 
 ## Sərhədlər
 
-- Bullish və bearish süpürmə müşahidələri ayrı qalır.
-- Açıq bar və gələcək məlumat hesaba daxil edilmir.
-- Hovuz toleransı, minimum toxunuş sayı, sweep məsafəsi, geri bağlanma və köhnəlmə qaydası
-  əvvəlcədən versiyalanır.
-- Yetərsiz və ziddiyyətli məlumat açıq statusla göstərilir.
+- Bullish və bearish müşahidələr ayrıca qalır.
+- Qırılma yalnız pivot əvvəlcədən təsdiqləndikdən və bar bağlandıqdan sonra qiymətləndirilir.
+- BOS və CHoCH anlayışları, bağlanma məsafəsi, köhnəlmə və ziddiyyət qaydaları versiyalanır.
+- Yetərsiz, qırılma olmayan və ziddiyyətli hallar açıq statusla göstərilir.
 - Nəticə yalnız tədqiqat müşahidəsidir; siqnal, giriş, risk ölçüsü və order deyil.
-- Sosial-media şəkilləri yalnız anlayış mənbəyidir, detector üçün sübut deyil.
-- BOS/CHoCH, retest, FVG və order-block bu mərhələyə daxil deyil.
+- Retest, FVG, order-block və avtomatik əməliyyat bu mərhələyə daxil deyil.
 
 ## Tamamlanma meyarları
 
-- Deterministik equal-high/equal-low hovuzu və sweep detector müqaviləsi və testləri.
-- Eyni bağlanmış bar snapshot-u eyni nəticə və fingerprint yaradır.
-- Future-leakage və açıq-bar istifadəsi testlə bloklanır.
-- Replay üzərində bullish və bearish müşahidələrin sadə Azərbaycan dilində ayrıca görünüşü.
+- Deterministik BOS/CHoCH müqaviləsi və no-lookahead testləri.
+- Gələcək bar əvvəlki müşahidəni dəyişmir.
+- Bullish/bearish nəticələr frontend-də sadə Azərbaycan dilində ayrılıqda görünür.
 - Tam backend və frontend yoxlamaları yaşıl qalır.
 
 ## Başlama şərti

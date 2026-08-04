@@ -8,6 +8,19 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Causal liquidity sweep detector
+
+- `liquidity_sweep 1.0.0` əlavə edildi. Detektor yalnız əvvəlcədən təsdiqlənmiş causal
+  pivotlardan equal-high/equal-low hovuzları yaradır və sonrakı bağlanmış barda wick sweep
+  ilə səviyyəyə geri bağlanmanı müşahidə edir.
+- Bullish və bearish müşahidələr ayrıdır; `insufficient_data`, `no_sweep` və `conflicting`
+  halları açıq göstərilir.
+- Hovuz toleransı, minimum toxunuş, minimum sweep məsafəsi və köhnəlmə limiti
+  versiyalanır; nəticə deterministik SHA-256 izi daşıyır.
+- Frontend-də likvidlik hovuzları və iki istiqamət ayrıca, yalnız tədqiqat görünüşündə verilir.
+- Tam yoxlama: backend `232 passed`; frontend `4` test, lint və production build keçdi.
+- Bu qat siqnal, giriş, risk ölçüsü və order yaratmır.
+
 ### Added — Causal market structure detector
 
 - `market_structure 1.0.0` əlavə edildi. Detektor yalnız bağlanmış barlardan və sağ

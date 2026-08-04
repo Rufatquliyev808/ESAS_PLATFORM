@@ -4,11 +4,12 @@ from datetime import datetime, timedelta
 from backend.app.analysis.bars import BarBuildResult, TIMEFRAME_SECONDS, build_closed_mid_bars
 from backend.app.analysis.indicators import IndicatorSetResult, build_indicator_set
 from backend.app.analysis.market_structure import detect_market_structure
+from backend.app.analysis.liquidity_sweep import detect_liquidity_sweeps
 from backend.app.database.replay_session_repository import ReplaySession, ReplayTransitionConflictError
 from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
 
-ANALYSIS_API_VERSION = "1.1.0"
+ANALYSIS_API_VERSION = "1.2.0"
 MAX_ANALYSIS_BARS = 5_000
 
 class ReplayDatasetChangedError(RuntimeError):
@@ -26,6 +27,7 @@ class ReplayTechnicalAnalysis:
     bars: tuple[dict[str, object], ...]
     indicators: dict[str, object]
     market_structure: dict[str, object]
+    liquidity_sweep: dict[str, object]
     interpretation: str = "research_observation_not_trading_signal"
     api_version: str = ANALYSIS_API_VERSION
 
@@ -38,10 +40,10 @@ class ReplayAnalysisContext:
 def _timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
-def create_replay_technical_analysis(*, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int, atr_period: int, bar_limit: int, pivot_left: int = 2, pivot_right: int = 2, equality_tolerance_bps: float = 0.0) -> ReplayTechnicalAnalysis:
-    return create_replay_analysis_context(session=session, timeframe=timeframe, ema_period=ema_period, rsi_period=rsi_period, atr_period=atr_period, bar_limit=bar_limit, pivot_left=pivot_left, pivot_right=pivot_right, equality_tolerance_bps=equality_tolerance_bps).analysis
+def create_replay_technical_analysis(*, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int, atr_period: int, bar_limit: int, pivot_left: int = 2, pivot_right: int = 2, equality_tolerance_bps: float = 0.0, liquidity_pool_tolerance_bps: float = 10.0, liquidity_minimum_touches: int = 2, liquidity_minimum_sweep_bps: float = 1.0, liquidity_maximum_pool_age_bars: int = 250) -> ReplayTechnicalAnalysis:
+    return create_replay_analysis_context(session=session, timeframe=timeframe, ema_period=ema_period, rsi_period=rsi_period, atr_period=atr_period, bar_limit=bar_limit, pivot_left=pivot_left, pivot_right=pivot_right, equality_tolerance_bps=equality_tolerance_bps, liquidity_pool_tolerance_bps=liquidity_pool_tolerance_bps, liquidity_minimum_touches=liquidity_minimum_touches, liquidity_minimum_sweep_bps=liquidity_minimum_sweep_bps, liquidity_maximum_pool_age_bars=liquidity_maximum_pool_age_bars).analysis
 
-def create_replay_analysis_context(*, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int, atr_period: int, bar_limit: int, pivot_left: int = 2, pivot_right: int = 2, equality_tolerance_bps: float = 0.0) -> ReplayAnalysisContext:
+def create_replay_analysis_context(*, session: ReplaySession, timeframe: str, ema_period: int, rsi_period: int, atr_period: int, bar_limit: int, pivot_left: int = 2, pivot_right: int = 2, equality_tolerance_bps: float = 0.0, liquidity_pool_tolerance_bps: float = 10.0, liquidity_minimum_touches: int = 2, liquidity_minimum_sweep_bps: float = 1.0, liquidity_maximum_pool_age_bars: int = 250) -> ReplayAnalysisContext:
     """Build deterministic, read-only analysis from a completed replay snapshot."""
     if session.state != "completed": raise ReplayTransitionConflictError("Replay session is not completed")
     if timeframe not in TIMEFRAME_SECONDS: raise ValueError("Unsupported timeframe")
@@ -55,13 +57,15 @@ def create_replay_analysis_context(*, session: ReplaySession, timeframe: str, em
     bar_result = build_closed_mid_bars(ticks, timeframe=timeframe, end_at=end_at, source_fingerprint=session.dataset_fingerprint)
     indicator_result = build_indicator_set(bar_result.bars, bar_fingerprint=bar_result.fingerprint, ema_period=ema_period, rsi_period=rsi_period, atr_period=atr_period)
     structure_result = detect_market_structure(bar_result.bars, bar_fingerprint=bar_result.fingerprint, pivot_left=pivot_left, pivot_right=pivot_right, equality_tolerance_bps=equality_tolerance_bps)
+    liquidity_result = detect_liquidity_sweeps(bar_result.bars, structure_result.pivots, bar_fingerprint=bar_result.fingerprint, structure_fingerprint=structure_result.fingerprint, pool_tolerance_bps=liquidity_pool_tolerance_bps, minimum_touches=liquidity_minimum_touches, minimum_sweep_bps=liquidity_minimum_sweep_bps, maximum_pool_age_bars=liquidity_maximum_pool_age_bars)
     analysis = ReplayTechnicalAnalysis(
         session_id=session.session_id, symbol=session.symbol, timeframe=timeframe,
         start_at=analysis_start.isoformat(), end_at=end_at.isoformat(),
-        parameters={"ema_period": ema_period, "rsi_period": rsi_period, "atr_period": atr_period, "bar_limit": bar_limit, "pivot_left": pivot_left, "pivot_right": pivot_right, "equality_tolerance_bps": equality_tolerance_bps},
-        lineage={"replay_contract_version": session.replay_contract_version, "dataset_tick_count": session.dataset_tick_count, "dataset_fingerprint": session.dataset_fingerprint, "dataset_fingerprint_version": snapshot.fingerprint_version, "bar_count": len(bar_result.bars), "bar_builder_version": bar_result.builder_version, "bar_fingerprint": bar_result.fingerprint, "indicator_package_version": indicator_result.package_version, "indicator_fingerprint": indicator_result.fingerprint, "market_structure_version": structure_result.version, "market_structure_fingerprint": structure_result.fingerprint},
+        parameters={"ema_period": ema_period, "rsi_period": rsi_period, "atr_period": atr_period, "bar_limit": bar_limit, "pivot_left": pivot_left, "pivot_right": pivot_right, "equality_tolerance_bps": equality_tolerance_bps, "liquidity_pool_tolerance_bps": liquidity_pool_tolerance_bps, "liquidity_minimum_touches": liquidity_minimum_touches, "liquidity_minimum_sweep_bps": liquidity_minimum_sweep_bps, "liquidity_maximum_pool_age_bars": liquidity_maximum_pool_age_bars},
+        lineage={"replay_contract_version": session.replay_contract_version, "dataset_tick_count": session.dataset_tick_count, "dataset_fingerprint": session.dataset_fingerprint, "dataset_fingerprint_version": snapshot.fingerprint_version, "bar_count": len(bar_result.bars), "bar_builder_version": bar_result.builder_version, "bar_fingerprint": bar_result.fingerprint, "indicator_package_version": indicator_result.package_version, "indicator_fingerprint": indicator_result.fingerprint, "market_structure_version": structure_result.version, "market_structure_fingerprint": structure_result.fingerprint, "liquidity_sweep_version": liquidity_result.version, "liquidity_sweep_fingerprint": liquidity_result.fingerprint},
         bars=tuple(asdict(bar) for bar in bar_result.bars),
         indicators={"ema": asdict(indicator_result.ema), "rsi": asdict(indicator_result.rsi), "atr": asdict(indicator_result.atr)},
         market_structure=asdict(structure_result),
+        liquidity_sweep=asdict(liquidity_result),
     )
     return ReplayAnalysisContext(analysis=analysis, bars=bar_result, indicators=indicator_result)
