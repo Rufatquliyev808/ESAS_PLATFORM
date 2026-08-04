@@ -6,30 +6,29 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Yalnız müvəqqəti test bazalarında işləyən, versiyalanmış və checksum ilə yoxlanan
-migration runner-i yaratmaq; replay oxuması üçün
-`(symbol, event_timestamp, event_id)` indeksini migration vasitəsilə əlavə etmək.
+Deterministik replay sessiyasının ilkin skeletini yaratmaq: sabit giriş intervalından
+dataset snapshot metadatasını hesablamaq və eyni giriş üçün eyni fingerprint vermək.
 
 ## Sərhədlər
 
-- Migration canlı `database/ESAS_PLATFORM.sqlite` üzərində icra edilməməlidir.
-- Testlər yalnız ayrıca müvəqqəti SQLite bazası istifadə etməlidir.
-- Hər migration versiya, ad və dəyişməz checksum ilə qeydə alınmalıdır.
-- Eyni migration ikinci dəfə təhlükəsiz no-op olmalıdır.
-- Checksum uyğunsuzluğu fail-closed xəta verməlidir.
-- Xam `tick_events` sətirləri dəyişdirilə və silinə bilməz.
-- Phase 1 canlı tick qəbulu və mövcud API davranışı dəyişməməlidir.
+- Snapshot yalnız repository-nin `[start_at, end_at)` sərhədindən oxunmalıdır.
+- Dataset tick sayı, ilk və son kanonik mövqe hesablanmalıdır.
+- Fingerprint kanonik `event_timestamp + event_id` ardıcıllığından alınmalıdır.
+- Eyni dəyişməz dataset iki icrada eyni fingerprint qaytarmalıdır.
+- Boş dataset təhlükəsiz və deterministik nəticə verməlidir.
+- Xam tick sətrləri dəyişdirilə və silinə bilməz.
+- Hələ worker, API, frontend və canlı bazada migration əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- Təmiz müvəqqəti bazada migration uğurla tətbiq olunmalıdır.
-- Təkrar icra sxemi və məlumatı dəyişməməlidir.
-- Dəyişdirilmiş migration checksum xətası ilə dayandırılmalıdır.
-- Replay indeksi SQLite metadata-sında təsdiqlənməlidir.
-- Migration zamanı sintetik tick sətirlərinin sayı və məzmunu qorunmalıdır.
+- Eyni interval iki icrada eyni tick sayı, sərhədlər və fingerprint verməlidir.
+- Eyni timestamp-li event-lərin `event_id` sırası fingerprint-də qorunmalıdır.
+- Boş dataset üçün say `0`, ilk/son mövqe `NULL` olmalıdır.
+- Səhifələnmiş oxuma böyük intervalı yaddaşa tam yükləməməlidir.
+- Snapshot hesablanması xam tick məlumatını dəyişməməlidir.
 - Mövcud backend testləri keçməlidir.
 
 ## Sonrakı addım
 
-Migration və indeks qəbul edildikdən sonra deterministik replay sessiyasının
-skeleti yaradılacaq.
+Snapshot skeleti qəbul edildikdən sonra replay sessiyası cədvəlləri və append-only
+audit mexanizmi növbəti migration-da, yenə yalnız müvəqqəti bazada yaradılacaq.

@@ -10,6 +10,12 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Phase 2 üçün versiyalanmış, SHA-256 checksum nəzarətli və transaction əsaslı
+  migration runner-i əlavə edildi; təkrar icra no-op, dəyişmiş migration və dağıdıcı
+  SQL fail-closed olur, production yolu açıq icazə tələb edir.
+- Replay sorğusu üçün `idx_tick_events_replay(symbol, event_timestamp, event_id)`
+  indeksi əlavə edildi və müvəqqəti SQLite bazasında query planı ilə yoxlanıldı;
+  migration testləri `6 passed`, tam backend `28 passed` nəticəsi verdi.
 - Phase 2 üçün yalnız-oxuma SQLite tick repository-si, `[start_at, end_at)` zaman
   sərhədi, deterministik `(event_timestamp, event_id)` keyset səhifələməsi və xam
   tick dəyişməzliyini qoruyan 6 test əlavə edildi; tam backend nəticəsi `22 passed`.

@@ -65,6 +65,20 @@ Phase 2 ticarət qərarı, siqnal, proqnoz və order icrası yaratmır.
 Tamamlanma meyarı: KEÇİB — eyni sorğu hər dəfə eyni ardıcıllıqda eyni tick-ləri
 qaytarır; yeni repository testləri `6 passed`, tam backend paketi `22 passed`.
 
+### 1.1. Migration və replay indeksi
+
+- [x] Versiyalanmış migration fayllarını ardıcıllıqla oxuyan runner yaratmaq.
+- [x] SHA-256 checksum uyğunsuzluğunu fail-closed rədd etmək.
+- [x] Migration-u eksklüziv transaction daxilində tətbiq etmək və xətada rollback etmək.
+- [x] Təkrar icranı təhlükəsiz no-op etmək.
+- [x] Dağıdıcı SQL-i ilkin təhlükəsizlik sərhədində rədd etmək.
+- [x] Canlı baza üçün açıq icazə tələb etmək.
+- [x] `(symbol, event_timestamp, event_id)` replay indeksini yaratmaq və query planında
+  istifadəsini təsdiqləmək.
+
+Tamamlanma meyarı: KEÇİB — migration testləri `6 passed`, tam backend paketi
+`28 passed`; bütün dəyişikliklər yalnız müvəqqəti test bazalarında yoxlanılıb.
+
 ### 2. Replay sessiyası
 
 - Replay sessiyasının identifikatorunu və giriş parametrlərini müəyyən etmək.
@@ -118,5 +132,5 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
-Növbəti texniki tapşırıq: yalnız müvəqqəti test bazalarında işləyən checksum-lı
-migration runner-i və replay oxuması üçün müqavilədə göstərilmiş indeksi yaratmaq.
+Növbəti texniki tapşırıq: sabit dataset snapshot-u və deterministik replay
+sessiyasının skeletini yaratmaq; hələ worker, API və frontend əməliyyatı əlavə etməmək.

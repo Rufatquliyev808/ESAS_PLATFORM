@@ -29,6 +29,13 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
   dəyişməzliyi yoxlanıldı: yeni testlər `6 passed`, tam backend `22 passed`.
 - Canlı bazada migration edilməyib, mövcud API dəyişdirilməyib və ticarət/order
   funksiyası əlavə olunmayıb.
+- Versiyalanmış migration runner-i əlavə edildi: SHA-256 checksum nəzarəti,
+  eksklüziv transaction, xətada rollback, təkrar icrada no-op və dağıdıcı SQL-in
+  ilkin rəddi tətbiq olunur.
+- `idx_tick_events_replay(symbol, event_timestamp, event_id)` indeksi yalnız
+  müvəqqəti bazada tətbiq və query planında təsdiq edildi; canlı database faylına
+  toxunulmadı və production yolu default olaraq açıq icazəsiz rədd edilir.
+- Migration üzrə yeni `6` test və tam backend üzrə `28` test keçdi.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

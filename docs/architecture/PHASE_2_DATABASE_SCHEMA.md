@@ -1,6 +1,6 @@
 # Phase 2 — Verilənlər bazası sxemi və migration müqaviləsi
 
-Status: DESIGN READY — NOT IMPLEMENTED  
+Status: IMPLEMENTATION STARTED — TEST DATABASE ONLY
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 Saxlama, backup yoxlaması və bərpa qaydaları:
@@ -413,5 +413,6 @@ Rollback xam məlumatı riskə atan avtomatik `DROP TABLE` ardıcıllığı deyi
 6. Backup, qəbul və bərpa alətlərinin dry-run sınağı.
 7. İstifadəçi təsdiqli nəzarətli production migration.
 
-Bu sənədin hazırlanması real migration və ya Phase 2 istehsal kodunun başladılması
-demək deyil.
+İlkin migration runner və `idx_tick_events_replay` indeksi müvəqqəti test bazasında
+tətbiq edilib. Canlı bazada migration hələ aparılmayıb və yalnız istifadəçi təsdiqli
+nəzarətli pəncərədə ayrıca qəbul sübutları ilə icra oluna bilər.
