@@ -101,7 +101,7 @@ Status: IN PROGRESS
 - [x] Məlumat boşluqlarının aşkarlanması
 - [x] Tick ardıcıllığının yoxlanması
 - [ ] Spread və tick sürəti statistikası
-- [ ] Simvollar üzrə məlumat keyfiyyəti hesabatı
+- [x] Simvollar üzrə məlumat keyfiyyəti hesabatı
 - [x] Replay nəticələrinin təkrar istehsal edilə bilməsi
 
 # Phase 3 — Statistik analiz

@@ -97,6 +97,11 @@ Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
 - Eyni timestamp-li qanuni tick, hədd sərhədləri, module keçidi, fərqli batch
   ölçülərində deterministik nəticə, stabil finding ID və xam tick dəyişməzliyi
   yoxlanıldı; `5` yeni test və tam backend üzrə `97 passed` nəticəsi əldə edildi.
+- Tamamlanmış replay sessiyasını nəticə manifesti ilə bağlayan keyfiyyət hesabatı
+  əlavə edildi. Hesabat tapıntı səviyyələrindən deterministik `pass`, `review` və
+  `fail` statusu, səviyyə sayları, stabil report ID və məzmun fingerprint-i yaradır.
+- `DQ-005` mənfi spread qaydası critical səviyyədə əlavə edildi; sıfır qiymət bu
+  qaydaya düşmür. Hesabat üzrə `5` yeni test, bütün backend üzrə `102 passed` oldu.
 
 - Phase 11 üçün tam qərar-nəticə lineage-i, abstain/risk-block daxil selection-bias
   qoruması, yetişmiş label, model performansı və drift monitorinqi, təhlükəsiz REVIEW,

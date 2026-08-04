@@ -10,6 +10,9 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Replay manifesti ilə bağlı deterministik məlumat keyfiyyəti hesabatı əlavə edildi:
+  `pass/review/fail` status qapısı, səviyyə sayları, stabil report ID və məzmun
+  fingerprint-i; `DQ-005` mənfi spread critical qaydası və tam backend `102 passed`.
 - Phase 2 streaming tick keyfiyyəti analizatorunun ilk qaydaları əlavə edildi:
   geriyə gedən source timestamp, parametrli ardıcıl zaman boşluğu və `event_id`
   dublikatından ayrılmış ardıcıl payload namizədi; stabil finding ID, limitli nümunə,

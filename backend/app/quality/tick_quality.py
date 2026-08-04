@@ -124,6 +124,9 @@ def analyze_tick_quality(
         "DQ-004-warning": _FindingAccumulator(
             "DQ-004", "warning", "consecutive tick gap exceeded long threshold"
         ),
+        "DQ-005": _FindingAccumulator(
+            "DQ-005", "critical", "ask was lower than bid"
+        ),
         "DQ-011": _FindingAccumulator(
             "DQ-011", "info", "consecutive market payload duplicate candidate"
         ),
@@ -140,6 +143,8 @@ def analyze_tick_quality(
     ):
         for tick in batch:
             tick_count += 1
+            if tick.bid > 0 and tick.ask > 0 and tick.ask < tick.bid:
+                accumulators["DQ-005"].add(tick)
             segment = (tick.source, tick.module_version)
             previous_source_time = source_times.get(segment)
             if previous_source_time is not None and tick.source_time_msc < previous_source_time:

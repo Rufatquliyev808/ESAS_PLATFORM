@@ -6,29 +6,29 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-İlk streaming məlumat keyfiyyəti tapıntılarını replay sessiyası ilə bağlı yekun
-hesabata çevirmək və `pass`, `review`, `fail` keyfiyyət statusunu hesablamaq.
+Məlumat keyfiyyəti kataloqunun qalan əsas qaydalarını streaming analizatora əlavə
+etmək: event/source vaxt uyğunsuzluğu, natamam qiymət cütü, qeyri-sonlu və mənfi
+ədədlər, event müqaviləsi və qəbul gecikməsi.
 
 ## Sərhədlər
 
-- Hesabat yalnız tamamlanmış və dataset-i yenidən təsdiqlənmiş replay sessiyasından
-  yaradılmalıdır.
-- `critical` tapıntı `fail`, yalnız `warning` tapıntı `review`, qalan hal `pass`
-  statusu verməlidir.
-- Hesabat replay manifesti, qayda versiyası, ümumi tick və səviyyə saylarını daşımalıdır.
-- Eyni sessiya və qaydalar üçün deterministik məzmun fingerprint-i yaranmalıdır.
-- Tapıntı nümunələri məhdud qalmalı və bütün dataset yaddaşa yüklənməməlidir.
+- `DQ-003`, `DQ-006`, `DQ-007`, `DQ-008` və `DQ-009` müqavilədəki dəqiq hədlərlə
+  tətbiq edilməlidir.
+- Hər qayda digər qaydanın mənasını qarışdırmadan ayrıca tapıntı qaytarmalıdır.
+- Timestamp və qeyri-sonlu ədəd xətaları təhlükəsiz və deterministik işlənməlidir.
+- Tapıntılar mövcud yekun hesabat statusuna avtomatik daxil olmalıdır.
+- Streaming və məhdud nümunə sərhədi qorunmalıdır.
 - Xam tick-lər dəyişdirilməməli; API, frontend və canlı migration hələ əlavə edilməməlidir.
 
 ## Tamamlanma meyarları
 
-- `pass`, `review` və `fail` statusları ayrıca test edilir.
-- Natamam və sonradan dəyişmiş datasetli sessiya fail-closed rədd edilir.
-- Fərqli batch ölçüləri eyni hesabat fingerprint-i verir.
-- Replay manifesti və keyfiyyət xülasəsi bir nəticədə bağlanır.
+- Hər yeni qayda üçün minimal sintetik sərhəd testi mövcuddur.
+- Warning və critical hədlərinin tam sərhədi ayrıca yoxlanılır.
+- Sıfır qiymət, retry gecikməsi və modul/source sərhədləri səhv təsnif edilmir.
+- Tam backend regressiyası keçir və canlı baza toxunulmaz qalır.
 - Mövcud backend testləri keçir və canlı baza toxunulmaz qalır.
 
 ## Sonrakı addım
 
-Hesabat qatı qəbul edildikdən sonra qalan `DQ-003`, `DQ-005..010` qaydaları mərhələli
-şəkildə analizatora əlavə ediləcək.
+Qayda kataloqu tamamlandıqdan sonra `DQ-010` təsviri spread və tick sürəti
+statistikaları streaming üsulla əlavə ediləcək.
