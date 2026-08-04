@@ -6,23 +6,27 @@ Mərhələ: Phase 2
 
 ## Tapşırıq
 
-Phase 2 qəbul sübutlarını və yalnız-oxuma analiz iş axınını yekunlaşdırmaq.
+MT5/backend vaxt normallaşdırmasını düzəltmək və yalnız-oxuma texniki analiz
+göstəricilərinin ilk versiyasını qurmaq.
 
 ## Sərhədlər
 
-- Real interval üzrə həm `step`, həm `max_speed` replay sübutu alınmalıdır.
-- Tamamlanmış sessiyaların keyfiyyət hesabatı və event səhifələri yoxlanmalıdır.
-- Eyni dataset üzrə deterministik nəticə sübutu saxlanmalıdır.
+- `DQ-009` xəbərdarlığının kök səbəbi saat zonası və qəbul vaxtı müqaviləsi üzrə
+  müəyyən edilməlidir.
+- Mövcud xam tick-lər dəyişdirilməməli; düzəliş yeni qəbul olunan event-lər və ya
+  yalnız-oxuma normallaşdırma qatında edilməlidir.
+- İlk analiz indikatorları versiyalanmış, deterministik və replay dataset-inə bağlı
+  olmalıdır.
 - Analiz çıxışı yalnız müşahidə və hesabat olmalı, ticarət qərarı verməməlidir.
 
 ## Tamamlanma meyarları
 
-- Qəbul sübutları tarix, session ID, fingerprint və nəticə ilə sənədləşdirilir.
-- Replay xam tick cədvəlini dəyişmir.
-- Determinizm və keyfiyyət qapısı testləri keçir.
+- Yeni real intervalda yanlış `received_at < event_timestamp` xəbərdarlığı yaranmır.
+- Eyni replay dataset-i üçün indikator nəticəsi təkrar icrada eyni fingerprint verir.
+- Replay və analiz xam tick cədvəlini dəyişmir.
 - Tam backend və frontend regressiyası yaşıl qalır.
 
 ## Sonrakı addım
 
-Qəbul sübutlarından sonra texniki analiz göstəricilərinin yalnız-oxuma ilk
-versiyasına keçiləcək.
+İlk indikator paketindən sonra yalnız-oxuma analiz API-si və dashboard kartları
+əlavə ediləcək; ticarət qərarı və order icrası hələ bağlı qalacaq.

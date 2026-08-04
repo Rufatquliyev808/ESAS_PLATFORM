@@ -102,7 +102,7 @@ Tamamlanma meyarı: KEÇİB — migration testləri `6 passed`, tam backend pake
 - [x] Addım əmrlərini persistent idempotency açarı və append-only qeydlə qorumaq.
 - [x] Son batch-də sessiyanı eyni transaction daxilində avtomatik tamamlamaq.
 - [x] Replay sürətini real vaxtdan ayırmaq: addım-addım və maksimum sürət rejimi.
-- Eyni giriş üçün təkrar istehsal edilə bilən nəticə yaratmaq.
+- [x] Eyni giriş üçün təkrar istehsal edilə bilən nəticə yaratmaq.
 
 Aralıq nəticə: snapshot testləri `7 passed`; sessiya yaradılması və həyat dövrü üzrə
 hədəf testlər `22 passed`, tam backend `67 passed`. Eyni məlumat aralığı iki icrada
@@ -117,26 +117,27 @@ ikinci progress/audit yaratmır, son batch sessiyanı atomik `completed` edir.
 2005 tick üç limitli batch-lə tamamlandı; restart, pause/resume, terminal no-op,
 audit rollback və eyni saylı dataset əvəzlənməsinin fingerprint ilə rəddi təsdiqləndi.
 
-Tamamlanma meyarı: sessiya həyat dövrü də əlavə edildikdən sonra eyni məlumat aralığı
-iki icrada eyni event ardıcıllığını verir.
+Tamamlanma meyarı: KEÇİB — 2026-08-04 tarixində real `GOLD` intervalının `542`
+tick-i iki `step` və iki `max_speed` sessiyasında eyni dataset və nəticə
+fingerprint-i verdi; cross-mode müqayisəsi keçdi və xam tick sayı dəyişmədi.
 
 ### 3. Məlumat keyfiyyəti
 
-- Zaman boşluqlarını aşkarlamaq.
-- Geriyə gedən və ya uyğunsuz timestamp-ləri aşkarlamaq.
-- Dublikat və ardıcıllıq pozuntularını hesablamaq.
-- Bid/ask uyğunsuzluğu və mənfi spread hallarını hesablamaq.
-- Tick sürəti və spread paylanmasını simvol üzrə hesablamaq.
+- [x] Zaman boşluqlarını aşkarlamaq.
+- [x] Geriyə gedən və ya uyğunsuz timestamp-ləri aşkarlamaq.
+- [x] Dublikat və ardıcıllıq pozuntularını hesablamaq.
+- [x] Bid/ask uyğunsuzluğu və mənfi spread hallarını hesablamaq.
+- [x] Tick sürəti və spread paylanmasını simvol üzrə hesablamaq.
 
 Tamamlanma meyarı: hər analiz nəticəsi istifadə olunan zaman aralığı və qayda
 versiyası ilə audit edilə bilir.
 
 ### 4. API
 
-- [ ] Replay yaratmaq və vəziyyətini oxumaq üçün backend endpoint-ləri.
+- [x] Replay yaratmaq və vəziyyətini oxumaq üçün backend endpoint-ləri.
   - [x] Replay sessiyası siyahısı və detalı.
-  - [ ] Replay sessiyası yaratma endpoint-i.
-  - [ ] Replay lifecycle command endpoint-i.
+  - [x] Replay sessiyası yaratma endpoint-i.
+  - [x] Replay lifecycle command endpoint-i.
 - [x] Məlumat keyfiyyəti hesabatını oxumaq üçün qorunan endpoint.
 - [x] Sessiya siyahısında yaddaş limitini qoruyan keyset səhifələmə.
 - [ ] `/api/v2`, imzalanmış snapshot cursor-u, idempotency, rate limit və standart
@@ -150,10 +151,10 @@ Tamamlanma meyarı: frontend bazaya birbaşa qoşulmadan bütün nəticələri A
 
 ### 5. Monitorinq paneli
 
-- Replay sessiyalarının vəziyyəti.
-- Simvol və zaman aralığı üzrə məlumat keyfiyyəti kartları.
-- Boşluq, dublikat, ardıcıllıq və spread xəbərdarlıqları.
-- Hesabatın qayda versiyası və yaradılma vaxtı.
+- [x] Replay sessiyalarının vəziyyəti.
+- [x] Simvol və zaman aralığı üzrə məlumat keyfiyyəti kartları.
+- [x] Boşluq, dublikat, ardıcıllıq və spread xəbərdarlıqları.
+- [x] Hesabatın qayda versiyası və yaradılma vaxtı.
 
 Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və ticarət etmir.
 
@@ -171,5 +172,6 @@ Tamamlanma meyarı: panel yalnız müşahidə və analiz göstərir, qərar və 
 
 Tamamlanıb: yalnız-oxuma tick repository-si və deterministik sıralama testləri.
 
-Növbəti texniki tapşırıq: eyni dataset və parametrlərlə müstəqil replay icralarının
-eyni checkpoint ardıcıllığı və nəticə fingerprint-i verdiyini sübut etmək.
+Növbəti texniki tapşırıq: real qəbul sınağında aşkarlanan `DQ-009` saat fərqinin
+kök səbəbini aradan qaldırmaq, sonra yalnız-oxuma texniki analiz göstəricilərinin
+ilk versiyasını qurmaq.

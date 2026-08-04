@@ -10,6 +10,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Production bazası yoxlanmış SQLite backup-dan sonra Phase 2 sxeminə keçirildi;
+  real `GOLD` intervalında iki `step` və iki `max_speed` replay ilə deterministik
+  qəbul sınağı `PASSED` oldu. `542` tick üzrə dataset/nəticə fingerprint-ləri eyni,
+  cross-mode nəticəsi bərabər və xam tick sayı dəyişməz qaldı. Təhlükəsiz migration
+  və qəbul sübutu üçün açıq production icazəsi tələb edən iki operator aləti əlavə
+  edildi; `DQ-009` saat normallaşdırma xəbərdarlığı növbəti prioritet kimi qeydə alındı.
+
 - Qorunan dashboard-a Phase 2 replay idarəetməsi əlavə edildi: sessiya yaratma,
   siyahı/detal, qanuni lifecycle əmrləri, cursor-lu event baxışı və tamamlanmış
   sessiyanın keyfiyyət hesabatı; API list/detail ownership sərtləşdirildi,
