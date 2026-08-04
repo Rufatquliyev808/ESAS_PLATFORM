@@ -814,3 +814,11 @@ versiyalanmış qeyri-müəyyənlik qatı əlavə edildi.
   95% intervalı və effekt ölçüsünü sadə Azərbaycan dilində göstərir.
 - Tam backend regressiyası `222 passed`; frontend `3` test, lint və production build keçdi.
 - Bu nəticə ticarət siqnalı, mənfəət zəmanəti, risk icazəsi və order deyil.
+- 2026-08-05: `pattern_hypothesis_registry 1.0.0` tamamlandı. Bazar strukturu,
+  likvidlik süpürməsi, BOS/CHoCH/retest və sonrakı zona modelləri üçün LONG/SHORT
+  hipotezləri ayrıca, versiyalanmış və maşınla oxunan formada qeydiyyata alındı.
+- Qorunan `/api/v2/research/pattern-hypotheses` endpoint-i və sadə Azərbaycan dilində
+  frontend kartları əlavə edildi. Şəkillər sübut deyil, yalnız hipotez mənbəyidir.
+- Reyestr heç bir siqnal, giriş, risk ölçüsü və order yaratmır. Növbəti mərhələ ayrıca
+  təsdiqdən sonra causal HH/HL və LH/LL detektorunun tərifidir.
+- Yoxlama: backend `224 passed`; frontend `4` test, lint və production build keçdi.

@@ -8,6 +8,16 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Pattern hypothesis registry
+
+- `pattern_hypothesis_registry 1.0.0` əlavə edildi. Bazar strukturu, likvidlik süpürməsi,
+  BOS/CHoCH/retest və gələcək zona modelləri ayrıca versiyalanmış hipotezlərdir.
+- LONG və SHORT qaydaları qarışdırılmır; tələblər, invalidasiya halları, timeframe-lər,
+  readiness və deterministik fingerprint saxlanır.
+- Qorunan read-only API və Azərbaycan dilində frontend reyestri əlavə edildi.
+- Tam yoxlama: backend `224 passed`; frontend `4` test, lint və production build keçdi.
+- Bu qat siqnal, risk ölçüsü və order yaratmır.
+
 ### Added
 
 - Versiyalanmış `purged_validation_mean_vs_zero_baseline 1.0.0` statistik etibarlılıq

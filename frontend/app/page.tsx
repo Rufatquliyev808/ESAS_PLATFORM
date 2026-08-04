@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayPanel } from "./replay-panel";
+import { PatternHypothesisRegistry } from "./pattern-hypothesis-registry";
 
 type Bridge = {
   source: string;
@@ -693,6 +694,10 @@ export default function Home() {
             )}
           </section>
           <ReplayPanel
+            token={token}
+            onUnauthorized={handleReplayUnauthorized}
+          />
+          <PatternHypothesisRegistry
             token={token}
             onUnauthorized={handleReplayUnauthorized}
           />

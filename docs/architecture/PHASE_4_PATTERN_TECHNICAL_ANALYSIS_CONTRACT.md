@@ -272,3 +272,17 @@ Xam tick və əvvəlki nəticə heç vaxt səssiz yenilənmir.
 
 Bu sənəd pattern və texniki analiz tədqiqatının sərhədidir; strategiya və real
 ticarət icazəsi deyil.
+# İcra əlavəsi — hipotez reyestri 1.0.0 (2026-08-05)
+
+İlk təməl qat həyata keçirildi:
+
+- Bazar strukturu, likvidlik süpürməsi və BOS/CHoCH/retest ailələri LONG və SHORT
+  istiqamətləri üçün ayrı obyektlərdir.
+- Hər obyektin versiyası, həyat dövrü, tədqiqat sualı, tələb olunan müşahidələri,
+  invalidasiya müşahidələri və timeframe sərhədi var.
+- FVG/order-block yalnız tərifi tamamlanmalı neytral namizəd kimi saxlanır.
+- Reyestr deterministik SHA-256 fingerprint verir və qorunan read-only API ilə göstərilir.
+- Frontend bütün hipotezləri ayrıca kartlarda göstərir və onları “siqnal deyil” kimi işarələyir.
+
+Bu əlavə detector və ya strategiya deyil. İlk detector ayrıca təsdiqdən sonra yalnız bağlanmış
+barlarla causal HH/HL və LH/LL müşahidəsi kimi hazırlanmalıdır.

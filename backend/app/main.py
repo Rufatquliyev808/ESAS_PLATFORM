@@ -52,6 +52,7 @@ from backend.app.analysis.replay_analysis import (
     create_replay_technical_analysis,
 )
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
+from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
@@ -77,6 +78,16 @@ app = FastAPI(
     version=APP_VERSION,
     lifespan=lifespan,
 )
+
+
+@app.get("/api/v2/research/pattern-hypotheses")
+def pattern_hypothesis_registry(
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    return {
+        "data": get_pattern_hypothesis_registry(),
+        "meta": {"api_version": "2"},
+    }
 
 app.add_middleware(
     CORSMiddleware,
