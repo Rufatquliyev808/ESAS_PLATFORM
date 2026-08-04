@@ -10,6 +10,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Added
 
+- Qorunan `POST /api/v2/replay-sessions` endpoint-i əlavə edildi: ciddi giriş
+  validation-u, autentifikasiyalı yaradıcı audit izi, atomik snapshot/session/audit
+  yazısı, boş dataset üçün təhlükəsiz `completed` davranışı və xam tick
+  dəyişməzliyi; replay API testləri `11 passed`, tam backend `121 passed`.
 - Phase 2 replay sessiyalarının autentifikasiyalı siyahı və detal API-si əlavə
   edildi: `created_at + session_id` deterministik keyset səhifələmə, istifadəçiyə
   bağlı imzalanmış və vaxtı məhdud cursor, təhlükəsiz 400/404 cavabları; tam backend
@@ -103,6 +107,10 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ### Fixed
 
+- `1.22` milyondan çox tick olan canlı bazada sağlam backend-in frontend tərəfindən
+  vaxtından əvvəl əlçatmaz sayılması düzəldildi: sorğu müddəti təhlükəsiz artırıldı
+  və primary key ilə zəmanətli event unikallığının lazımsız təkrar skanı çıxarıldı;
+  PR `#5` üzrə bütün backend/frontend GitHub yoxlamaları keçdi.
 - Cari vəziyyət və dəyişiklik tarixçəsində artıq tamamlanmış Phase 1 işlərinin
   qalan və planlaşdırılmış işlər kimi göstərilməsi aradan qaldırıldı.
 - GitHub Actions checkout, Python və Node qurulum addımları Node 24 əsaslı rəsmi

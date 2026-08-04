@@ -428,9 +428,34 @@ Bütün qəbul qapıları keçib və Phase 1 `2026-08-04` tarixində rəsmi bağ
 
 ## Növbəti əsas texniki prioritet
 
-Replay sessiyası yaratmaq üçün `POST /api/v2/replay-sessions` endpoint-ini mövcud
-snapshot və append-only audit repository sərhədinə bağlamaq; giriş məlumatlarını
-fail-closed yoxlamaq və dəyişdirici əməliyyat üçün ownership/audit əsasını qorumaq.
+Replay sessiyasının lifecycle əmrləri üçün
+`POST /api/v2/replay-sessions/{session_id}/commands` endpoint-ini ownership,
+idempotency və optimistic state nəzarəti ilə mövcud transaction sərhədinə bağlamaq.
+
+## Phase 2 replay yaratma API-si
+
+- `POST /api/v2/replay-sessions` dashboard sessiyası ilə qorunur və `symbol`,
+  `[start_at, end_at)` intervalı, eləcə də `step|max_speed` rejimini qəbul edir.
+- Naməlum sahə, timezone-suz vaxt, boş/tərs interval və naməlum rejim fail-closed
+  `422` cavabı alır; uğurlu yaradılma `202 Accepted` qaytarır.
+- Snapshot, replay sessiyası və ilkin append-only audit mövcud repository
+  transaction-u ilə atomik saxlanılır; audit xətası bütün yazını geri qaytarır.
+- Məlumatlı dataset `created`, boş dataset təhlükəsiz `completed` vəziyyətində
+  yaradılır və yaradıcı istifadəçi `operator` rolu ilə auditə yazılır.
+- API testləri xam tick dəyişməzliyini, uğursuz audit rollback-ini və etibarsız
+  sorğuların heç bir yazı yaratmamasını təsdiqləyir.
+- Replay API hədəf testləri `11 passed`, tam backend `121 passed` nəticəsi verir;
+  bütün testlər yalnız müvəqqəti SQLite bazasında işləyir.
+
+## Böyük baza üçün frontend cavab müddəti düzəlişi
+
+- Canlı bazada tick sayı `1.22` milyonu keçdikdə operational və statistika
+  cavablarının əvvəlki `3` saniyə həddini aşdığı ölçüldü.
+- Frontend sorğu müddəti `10` saniyəyə qaldırıldı və `event_id` primary key-inin
+  artıq təmin etdiyi unikallıq üçün lazımsız `COUNT(DISTINCT event_id)` skanı
+  çıxarıldı.
+- Backend `116 passed`, frontend lint/build/render və GitHub yoxlamaları keçdi;
+  düzəliş PR `#5` ilə `main` budağına birləşdirildi.
 
 ## Phase 2 replay oxuma API-si
 
