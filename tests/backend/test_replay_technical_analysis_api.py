@@ -386,3 +386,95 @@ def test_strategy_analysis_api_enforces_owner_and_completed_state(
         )
     assert unfinished.status_code == 409
     assert forbidden.status_code == 403
+
+
+def test_pattern_candidates_api_is_protected_deterministic_and_research_only(
+    isolated_database: Path,
+) -> None:
+    session = _prepare(isolated_database)
+    url = (
+        f"/api/v2/replay-sessions/{session.session_id}/pattern-candidates"
+        "?timeframe=M1&bar_limit=10"
+    )
+    with get_connection() as connection:
+        before = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
+        ).fetchall()
+    with TestClient(app) as client:
+        assert client.get(url).status_code == 401
+        headers = _headers(client)
+        first = client.get(url, headers=headers)
+        second = client.get(url, headers=headers)
+
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    data = first.json()["data"]
+    assert data["session_id"] == session.session_id
+    assert data["timeframe"] == "M1"
+    assert data["api_version"] == "1.0.0"
+    assert data["interpretation"] == (
+        "research_pattern_candidate_draft_not_trading_signal_not_order"
+    )
+    candidates = data["pattern_candidates"]
+    assert candidates["version"] == "1.0.0"
+    assert candidates["fingerprint"].startswith("sha256:")
+    assert len(candidates["slots"]) == 6
+    hypothesis_ids = {slot["hypothesis_id"] for slot in candidates["slots"]}
+    assert hypothesis_ids == {
+        "market_structure_long", "market_structure_short",
+        "liquidity_sweep_reclaim_long", "liquidity_sweep_reclaim_short",
+        "structure_break_long", "structure_break_short",
+    }
+    for slot in candidates["slots"]:
+        assert slot["lifecycle_state"] == "draft"
+        assert slot["condition_state"] in {
+            "candidate_confirmed", "no_candidate", "insufficient_data",
+        }
+        assert slot["candidate_id"].startswith(slot["hypothesis_id"])
+    with get_connection() as connection:
+        after = connection.execute(
+            "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
+        ).fetchall()
+    assert [tuple(row) for row in after] == [tuple(row) for row in before]
+    serialized = str(first.json()).lower()
+    assert "'order'" not in serialized
+    assert "buy" not in serialized
+    assert "sell" not in serialized
+    assert "position_size" not in serialized
+
+
+def test_pattern_candidates_api_enforces_owner_completed_state_and_safe_parameters(
+    isolated_database: Path,
+) -> None:
+    incomplete = _prepare(isolated_database, completed=False)
+    foreign = create_replay_session(
+        created_by="OTHER",
+        actor_role="operator",
+        symbol="GOLD",
+        start_at=BASE_TIME,
+        end_at=BASE_TIME + timedelta(minutes=3),
+        mode="max_speed",
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        unfinished = client.get(
+            f"/api/v2/replay-sessions/{incomplete.session_id}/pattern-candidates",
+            headers=headers,
+        )
+        forbidden = client.get(
+            f"/api/v2/replay-sessions/{foreign.session_id}/pattern-candidates",
+            headers=headers,
+        )
+        invalid = client.get(
+            f"/api/v2/replay-sessions/{incomplete.session_id}/pattern-candidates"
+            "?timeframe=M2",
+            headers=headers,
+        )
+        missing = client.get(
+            "/api/v2/replay-sessions/missing/pattern-candidates",
+            headers=headers,
+        )
+    assert unfinished.status_code == 409
+    assert forbidden.status_code == 403
+    assert invalid.status_code == 422
+    assert missing.status_code == 404

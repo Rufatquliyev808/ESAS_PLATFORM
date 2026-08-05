@@ -515,6 +515,12 @@ export default function Home() {
       impact: "GOLD üçün ideyaları koddan ayrı və ölçülə bilən formada saxlayır; təsdiqlənməmiş hipotez canlı qərar kimi istifadə edilmir.",
       evidence: "Hipotezin adı, versiyası, şərtləri, vəziyyəti və sınaq qeydləri audit izi ilə saxlanılır.",
     },
+    "pattern-candidates": {
+      title: "Pattern namizədləri (draft)",
+      metric: "Hipotez + detektor",
+      impact: "Struktur, likvidlik və struktur qırılması/retest detektorlarının eyni anda üst-üstə düşməsi GOLD üçün daha güclü kontekst yarada bilər, amma bu hələ sübut deyil.",
+      evidence: "Hər namizəd mövcud causal detektorların nəticəsini müvafiq hipotezə bağlayır; yalnız `draft` vəziyyətdədir, backtest və qəbul qərarı yoxdur.",
+    },
   };
 
   const sectionSteps: Record<DashboardSection, string[]> = {
@@ -572,6 +578,11 @@ export default function Home() {
       "Qaydanı ölçülə bilən və versiyalanmış hipotez kimi qeyd edin.",
       "Hipotezi ayrıca replay məlumatında sınayın.",
       "Yalnız təkrar yoxlamalarda sabit qalan müşahidəni növbəti mərhələyə keçirin.",
+    ],
+    "pattern-candidates": [
+      "Hər namizədin `draft` vəziyyətdə olduğunu, sübut olmadığını xatırlayın.",
+      "Şərti təsdiqlənən (candidate_confirmed) namizədlərin sübutunu digər bölmələrdən yoxlayın.",
+      "Backtest və qəbul qərarı hələ yoxdur; namizədi əməliyyat üçün istifadə etməyin.",
     ],
   };
 
@@ -847,7 +858,7 @@ export default function Home() {
           </section>
                 </>
               )}
-              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies"] as DashboardSection[]).includes(activeSection) && (
+              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies", "pattern-candidates"] as DashboardSection[]).includes(activeSection) && (
           <ReplayPanel
             view={activeSection}
             token={token}

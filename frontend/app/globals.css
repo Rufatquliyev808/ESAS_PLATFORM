@@ -497,6 +497,19 @@ footer p { margin: 0; }
 .bos-choch-side strong { font-size: 20px; }
 @media (max-width: 800px) { .bos-choch-sides { grid-template-columns: 1fr; } }
 
+.pattern-candidate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+.pattern-candidate-slot { display: grid; gap: 8px; border: 1px solid var(--line); border-left: 4px solid var(--muted); border-radius: 12px; padding: 16px; background: #fbfdfc; }
+.pattern-candidate-slot header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.pattern-candidate-slot h5 { margin: 3px 0 0; font-size: 15px; }
+.pattern-candidate-slot.confirmed { border-left-color: #16805f; }
+.pattern-candidate-slot.warmup { border-left-color: var(--amber); }
+.pattern-candidate-slot.empty { border-left-color: var(--muted); }
+.pattern-candidate-time { margin: 0; color: var(--muted); font-size: 12px; }
+.pattern-candidate-evidence { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 4px 0 0; }
+.pattern-candidate-evidence dt { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.pattern-candidate-evidence dd { margin: 2px 0 0; font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 800px) { .pattern-candidate-grid { grid-template-columns: 1fr; } }
+
 /* Section-based dashboard navigation keeps one learning topic in focus. */
 .dashboard-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
 .dashboard-sidebar { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: rgba(255,255,255,.94); box-shadow: 0 14px 32px rgba(15,44,34,.07); }

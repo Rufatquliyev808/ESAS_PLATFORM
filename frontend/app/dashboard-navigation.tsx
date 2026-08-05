@@ -11,7 +11,8 @@ export type DashboardSection =
   | "retest"
   | "fvg"
   | "strategies"
-  | "hypotheses";
+  | "hypotheses"
+  | "pattern-candidates";
 
 type MenuItem = {
   id: DashboardSection;
@@ -32,6 +33,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "fvg", title: "Fair Value Gap", description: "Qiymət boşluğu və doldurulması", group: "Qiymət davranışı" },
   { id: "strategies", title: "Strategiya müqayisəsi", description: "Ayrı yanaşmaların nəticələri", group: "Qiymətləndirmə" },
   { id: "hypotheses", title: "Hipotezlər", description: "Sınaq üçün qaydalar reyestri", group: "Qiymətləndirmə" },
+  { id: "pattern-candidates", title: "Pattern namizədləri", description: "Draft — hipotezlərin birləşmiş nəticəsi", group: "Qiymətləndirmə" },
 ];
 
 const MENU_ENTRIES = MENU_ITEMS.map((item, index) => ({

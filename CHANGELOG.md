@@ -8,6 +8,26 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Draft pattern candidate generator (Phase 4, partial)
+
+- `pattern_candidate 1.0.0` combines the existing causal detectors (market
+  structure, liquidity sweep, BOS/CHoCH + retest) into draft, versioned
+  pattern candidate slots for the 6 hypotheses already defined in the pattern
+  hypothesis registry (`market_structure_long/short`,
+  `liquidity_sweep_reclaim_long/short`, `structure_break_long/short`).
+- Every slot carries a fixed `draft` lifecycle state plus an explicit
+  `candidate_confirmed`, `no_candidate`, or `insufficient_data` condition
+  state and cites the evidence from its source detector.
+- New protected, read-only `GET /api/v2/replay-sessions/{session_id}/pattern-candidates`
+  endpoint and a "Pattern namizədləri" frontend section.
+- This increment intentionally excludes backtesting, label/horizon
+  measurement, persistence/state machine transitions beyond `draft`, and any
+  accept/reject decision — those remain separate future steps per
+  `PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`.
+- Verification: backend `251 passed`, frontend production build and `10/10`
+  tests passed, lint clean.
+- This layer creates no strategy, signal, entry, risk sizing, or order.
+
 ### Fixed — Sidebar render-time mutation (lint)
 
 - `dashboard-navigation.tsx`-də menyu qrup başlığını göstərmək üçün render

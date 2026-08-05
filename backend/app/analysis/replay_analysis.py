@@ -2,12 +2,12 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 
 from backend.app.analysis.bars import BarBuildResult, TIMEFRAME_SECONDS, build_closed_mid_bars
-from backend.app.analysis.bos_choch import detect_bos_choch
+from backend.app.analysis.bos_choch import BosChochResult, detect_bos_choch
 from backend.app.analysis.fair_value_gap import detect_fair_value_gaps
 from backend.app.analysis.indicators import IndicatorSetResult, build_indicator_set
-from backend.app.analysis.market_structure import detect_market_structure
-from backend.app.analysis.liquidity_sweep import detect_liquidity_sweeps
-from backend.app.analysis.retest import detect_retests
+from backend.app.analysis.market_structure import MarketStructureResult, detect_market_structure
+from backend.app.analysis.liquidity_sweep import LiquiditySweepResult, detect_liquidity_sweeps
+from backend.app.analysis.retest import RetestResult, detect_retests
 from backend.app.database.replay_session_repository import ReplaySession, ReplayTransitionConflictError
 from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
@@ -42,6 +42,10 @@ class ReplayAnalysisContext:
     analysis: ReplayTechnicalAnalysis
     bars: BarBuildResult
     indicators: IndicatorSetResult
+    market_structure: MarketStructureResult
+    liquidity_sweep: LiquiditySweepResult
+    bos_choch: BosChochResult
+    retest: RetestResult
 
 def _timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -80,4 +84,8 @@ def create_replay_analysis_context(*, session: ReplaySession, timeframe: str, em
         retest=asdict(retest_result),
         fair_value_gap=asdict(fvg_result),
     )
-    return ReplayAnalysisContext(analysis=analysis, bars=bar_result, indicators=indicator_result)
+    return ReplayAnalysisContext(
+        analysis=analysis, bars=bar_result, indicators=indicator_result,
+        market_structure=structure_result, liquidity_sweep=liquidity_result,
+        bos_choch=bos_choch_result, retest=retest_result,
+    )

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { TechnicalAnalysisPanel } from "./technical-analysis-panel";
 import { StrategyComparisonPanel } from "./strategy-comparison-panel";
+import { PatternCandidatesPanel } from "./pattern-candidates-panel";
 import type { DashboardSection } from "./dashboard-navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
@@ -194,6 +195,8 @@ export function ReplayPanel({ token, onUnauthorized, view, onOpenReplay }: { tok
         </section>
         {selected?.state === "completed" && view === "strategies" &&
           <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
+        {selected?.state === "completed" && view === "pattern-candidates" &&
+          <PatternCandidatesPanel key={`pattern-candidates-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest", "fvg"].includes(view) &&
           <TechnicalAnalysisPanel key={`technical-${selected.session_id}`} view={view as Exclude<ReplayView, "replay" | "strategies">} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
       </>

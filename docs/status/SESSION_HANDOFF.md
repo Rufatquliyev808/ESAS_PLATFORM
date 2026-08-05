@@ -11,6 +11,27 @@ Son yenilənmə: 2026-08-05
 
 ## Son tamamlanan iş
 
+- Draft pattern namizədi generatoru (Phase 4, "Pattern namizədlərinin
+  yaradılması" bəndinin **hissəvi** tamamlanması): `backend/app/strategies/
+  pattern_candidate.py` (pure detektor birləşdirmə), `replay_pattern_candidates.py`
+  (assembly), yeni `GET /api/v2/replay-sessions/{id}/pattern-candidates`
+  endpoint-i, frontend `pattern-candidates-panel.tsx`.
+- 6 hipotez slotu (`market_structure_long/short`, `liquidity_sweep_reclaim_long/short`,
+  `structure_break_long/short`), hər biri `draft` lifecycle-də, `candidate_confirmed/
+  no_candidate/insufficient_data` şərt statusu ilə. Backtest, label/horizon,
+  persistence/state machine və qəbul qərarı bu artıma daxil deyil (bax
+  `docs/status/NEXT_TASK.md`).
+- `ReplayAnalysisContext`-ə `market_structure`/`liquidity_sweep`/`bos_choch`/
+  `retest` dataclass-ları əlavə edildi (əvvəllər yalnız `analysis` daxilində
+  dict idi); mövcud `replay_strategy.py` çağırışı pozulmayıb.
+- Backend `251 passed` (yeni `test_pattern_candidate.py` `6` test +
+  `test_replay_technical_analysis_api.py`-a `2` yeni test), frontend
+  production build və `10/10` test, lint təmiz.
+- Canlı brauzerdə vizual yoxlama edilməyib (yalnız avtomatlaşdırılmış sübut).
+- Commit hələ edilməyib (aşağıda).
+
+## Əvvəlki tamamlanan iş (eyni sessiya)
+
 - `fair_value_gap 1.0.0` causal/no-lookahead Fair Value Gap detektoru backend
   (`backend/app/analysis/fair_value_gap.py`, `replay_analysis.py`, `main.py`)
   və frontend-ə (`technical-analysis-panel.tsx`, `dashboard-navigation.tsx`,
@@ -46,9 +67,10 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-`Causal FVG detector 1.0.0` tamamlandı və CI-də yaşıldır. Növbəti mərhələ hələ
-seçilməyib — namizədlər `docs/status/NEXT_TASK.md`-dədir və istifadəçinin
-ayrıca təsdiqini gözləyir.
+`Causal FVG detector 1.0.0` və draft pattern namizədi generatoru tamamlandı.
+Pattern namizədi işinin qalan hissəsi (vəziyyət maşını, persistence, backtest,
+tam CRUD API) hələ seçilməyib — namizədlər `docs/status/NEXT_TASK.md`-dədir və
+istifadəçinin ayrıca təsdiqini gözləyir.
 
 ## Təhlükəsizlik
 
@@ -92,3 +114,15 @@ Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olm
   düzəliş commit `7d49f97` ilə push edildi və ikinci CI run (`31011108501`)
   Backend + Frontend (lint daxil) tam uğurla keçdi. `main` CI-də yaşıldır.
 - Növbəti mərhələ seçilməyib; namizədlər `docs/status/NEXT_TASK.md`-dədir.
+
+## Ən son etibarlı vəziyyət — 2026-08-05 (draft pattern namizədi generatoru)
+
+- `pattern_candidate 1.0.0` mövcud struktur/likvidlik/BOS-CHoCH+retest
+  detektorlarını `pattern_hypothesis_registry`-nin 6 hipotezinə bağlayır;
+  yalnız `draft` lifecycle, backtest/persistence/qəbul qərarı yoxdur.
+- Yeni `GET /api/v2/replay-sessions/{id}/pattern-candidates` endpoint-i və
+  frontend "Pattern namizədləri" bölməsi əlavə edildi.
+- Backend `251 passed`, frontend build və `10/10` test, lint təmiz.
+- Commit hələ edilməyib; commit/push yalnız istifadəçi təsdiqindən sonra.
+- Növbəti sessiya əvvəlcə `git fetch`/`git log origin/main` ilə paralel fon
+  sessiyasının (`task_b2a032b5`) bir şey push edib-etmədiyini yoxlamalıdır.

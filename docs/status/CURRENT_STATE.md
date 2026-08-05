@@ -1,5 +1,33 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Draft pattern namizədi generatoru (Phase 4)
+
+- `pattern_candidate 1.0.0` əlavə edildi (`backend/app/strategies/pattern_candidate.py`):
+  mövcud causal detektorların (bazar strukturu, likvidlik süpürməsi, BOS/CHoCH+retest)
+  nəticələrini `pattern_hypothesis_registry`-dəki 6 hipotezə (market_structure_long/short,
+  liquidity_sweep_reclaim_long/short, structure_break_long/short) birləşdirir.
+- Hər namizəd yalnız `draft` lifecycle vəziyyətindədir; `candidate_confirmed`,
+  `no_candidate` və `insufficient_data` şərt statusları açıq ayrılır. Backtest,
+  label/horizon ölçümü, persistence/state machine və qəbul/rədd qərarı bu artıma
+  daxil deyil — `PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`-də ayrıca sonrakı
+  addımlar kimi qeyd olunub.
+- Yeni qorunan, yalnız-oxuma `GET /api/v2/replay-sessions/{session_id}/pattern-candidates`
+  endpoint-i əlavə edildi (`replay_pattern_candidates.py`); ownership, completed-state
+  və dataset-drift qoruması digər analiz endpoint-ləri ilə eynidir.
+- `ReplayAnalysisContext` mövcud `market_structure`/`liquidity_sweep`/`bos_choch`/
+  `retest` nəticələrini artıq dataclass kimi də daşıyır (əvvəllər yalnız dict idi);
+  bu, `replay_strategy.py` kimi mövcud çağırış yerlərini pozmayıb.
+- Frontend-də "Pattern namizədləri" bölməsi əlavə edildi
+  (`pattern-candidates-panel.tsx`): 6 slotu ayrı kartlarda, `draft` etiketi və
+  "backtest/label/qəbul qərarı yoxdur" xəbərdarlığı ilə göstərir.
+- Yoxlama: backend `251 passed` (yeni `test_pattern_candidate.py` — `6` test,
+  `test_replay_technical_analysis_api.py`-a `2` yeni API testi); frontend
+  production build və `10/10` test keçdi, lint təmizdir.
+- Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır; "draft" statusu
+  real ticarət icazəsi deyil.
+- Canlı brauzerdə vizual yoxlama edilməyib (əvvəlki sessiyalardakı eyni xarici
+  mühit məhdudiyyətinə görə); yalnız avtomatlaşdırılmış test/build sübutu var.
+
 ## 2026-08-05 — Causal Fair Value Gap 1.0.0 tamamlandı
 
 - `fair_value_gap 1.0.0` üç ardıcıl bağlanmış bar arasında yaranan bullish/bearish

@@ -34,6 +34,7 @@ test("sidebar exposes educational section guidance", () => {
 test("large analysis areas render independently", () => {
   assert.match(replay, /view === "replay"/);
   assert.match(replay, /view === "strategies"/);
+  assert.match(replay, /view === "pattern-candidates"/);
   assert.match(analysis, /view === "technical"/);
   assert.match(analysis, /view === "structure"/);
   assert.match(analysis, /view === "liquidity"/);

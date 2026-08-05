@@ -53,6 +53,7 @@ from backend.app.analysis.replay_analysis import (
 )
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
+from backend.app.strategies.replay_pattern_candidates import create_replay_pattern_candidates
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
@@ -397,6 +398,60 @@ def replay_strategy_analysis(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(analysis), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/replay-sessions/{session_id}/pattern-candidates")
+def replay_pattern_candidates(
+    session_id: str,
+    timeframe: str = Query(default="M5", pattern="^(M1|M5|M15|H1)$"),
+    bar_limit: int = Query(default=500, ge=1, le=5_000),
+    pivot_left: int = Query(default=2, ge=1, le=50),
+    pivot_right: int = Query(default=2, ge=1, le=50),
+    equality_tolerance_bps: float = Query(default=0.0, ge=0, le=500),
+    liquidity_pool_tolerance_bps: float = Query(default=10.0, ge=0, le=500),
+    liquidity_minimum_touches: int = Query(default=2, ge=2, le=20),
+    liquidity_minimum_sweep_bps: float = Query(default=1.0, ge=0, le=500),
+    liquidity_maximum_pool_age_bars: int = Query(default=250, ge=1, le=5_000),
+    bos_choch_minimum_close_break_bps: float = Query(default=1.0, ge=0, le=500),
+    bos_choch_maximum_pivot_age_bars: int = Query(default=250, ge=1, le=5_000),
+    retest_touch_tolerance_bps: float = Query(default=5.0, ge=0, le=500),
+    retest_confirmation_close_bps: float = Query(default=0.0, ge=0, le=500),
+    retest_invalidation_close_bps: float = Query(default=10.0, ge=0, le=500),
+    retest_maximum_age_bars: int = Query(default=100, ge=1, le=5_000),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Replay session was not found") from error
+    if session.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Replay session belongs to another user")
+    try:
+        candidates = create_replay_pattern_candidates(
+            session=session, timeframe=timeframe, bar_limit=bar_limit,
+            pivot_left=pivot_left, pivot_right=pivot_right,
+            equality_tolerance_bps=equality_tolerance_bps,
+            liquidity_pool_tolerance_bps=liquidity_pool_tolerance_bps,
+            liquidity_minimum_touches=liquidity_minimum_touches,
+            liquidity_minimum_sweep_bps=liquidity_minimum_sweep_bps,
+            liquidity_maximum_pool_age_bars=liquidity_maximum_pool_age_bars,
+            bos_choch_minimum_close_break_bps=bos_choch_minimum_close_break_bps,
+            bos_choch_maximum_pivot_age_bars=bos_choch_maximum_pivot_age_bars,
+            retest_touch_tolerance_bps=retest_touch_tolerance_bps,
+            retest_confirmation_close_bps=retest_confirmation_close_bps,
+            retest_invalidation_close_bps=retest_invalidation_close_bps,
+            retest_maximum_age_bars=retest_maximum_age_bars,
+        )
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(status_code=409, detail="Replay session is not completed") from error
+    except ReplayDatasetChangedError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Replay dataset no longer matches the session snapshot",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(candidates), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")
