@@ -40,16 +40,16 @@ type AnalysisResult = {
     bar_fingerprint: string;
     indicator_package_version: string;
     indicator_fingerprint: string;
-    liquidity_sweep_version: string;
-    liquidity_sweep_fingerprint: string;
-    bos_choch_version: string;
-    bos_choch_fingerprint: string;
+    liquidity_sweep_version?: string;
+    liquidity_sweep_fingerprint?: string;
+    bos_choch_version?: string;
+    bos_choch_fingerprint?: string;
   };
   bars: AnalysisBar[];
   indicators: { ema: IndicatorSeries; rsi: IndicatorSeries; atr: IndicatorSeries };
-  market_structure: MarketStructure;
-  liquidity_sweep: LiquiditySweep;
-  bos_choch: BosChoch;
+  market_structure?: MarketStructure;
+  liquidity_sweep?: LiquiditySweep;
+  bos_choch?: BosChoch;
   interpretation: string;
   api_version: string;
 };
@@ -150,12 +150,12 @@ function AtrChart({ series }: { series: IndicatorSeries }) {
   );
 }
 
-function Fingerprint({ label, value }: { label: string; value: string }) {
-  return <div><dt>{label}</dt><dd title={value}>{value.slice(0, 12)}…{value.slice(-8)}</dd></div>;
+function Fingerprint({ label, value }: { label: string; value?: string }) {
+  return <div><dt>{label}</dt><dd title={value}>{value ? `${value.slice(0, 12)}…${value.slice(-8)}` : "—"}</dd></div>;
 }
 
 function StructurePanel({ structure }: { structure: MarketStructure }) {
-  const recent = structure.pivots.slice(-8).reverse();
+  const recent = (structure.pivots ?? []).slice(-8).reverse();
   const labels: Record<string, string> = { confirmed_structure: "Uyğun struktur", conflicting: "Zidd struktur", partial: "Qismən formalaşıb", neutral: "Neytral", insufficient_data: "Məlumat azdır" };
   return <article className="analysis-card structure-card">
     <header><div><p className="eyebrow">Bazar strukturu · araşdırma müşahidəsi</p><h4>HH/HL və LH/LL detektoru</h4></div><span className="analysis-badge ready">Versiya {structure.version}</span></header>
@@ -163,6 +163,13 @@ function StructurePanel({ structure }: { structure: MarketStructure }) {
     <div className="structure-sides">{[structure.long_observation, structure.short_observation].map((side) => <section key={side.side} className={`structure-side ${side.side}`}><span>{side.side === "long" ? "YÜKSƏLİŞ MÜŞAHİDƏSİ" : "ENİŞ MÜŞAHİDƏSİ"}</span><strong>{labels[side.state] ?? side.state}</strong><small>Son təpə: {side.latest_high ?? "—"} · Son dib: {side.latest_low ?? "—"}</small></section>)}</div>
     <div className="structure-meta">Qayda: {structure.pivot_left} sol / {structure.pivot_right} sağ bar · Bərabərlik həddi: {structure.equality_tolerance_bps} bps · Warm-up: {structure.warmup_bars} bar</div>
     {recent.length ? <div className="structure-pivots">{recent.map((pivot, index) => <div key={`${pivot.confirmed_at}-${pivot.kind}-${index}`}><b>{pivot.classification}</b><span>{formatNumber(pivot.value, 5)}</span><small>{formatTime(pivot.confirmed_at)} tarixində təsdiq</small></div>)}</div> : <EmptyChart>Hələ təsdiqlənmiş dönüş nöqtəsi yoxdur.</EmptyChart>}
+  </article>;
+}
+
+function CompatibilityNotice({ layer }: { layer: string }) {
+  return <article className="analysis-card analysis-error" role="status">
+    <strong>{layer} hələ göstərilmir</strong>
+    <p>Backend köhnə analiz formatı qaytarıb. Backend-i yenidən başladıb analizi yeniləyin.</p>
   </article>;
 }
 
@@ -274,9 +281,9 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
       {error && <div className="analysis-error" role="alert"><strong>Analiz göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void loadAnalysis()}>Yenidən yoxla</button></div>}
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Bağlanmış barlar hesablanır</strong><p>EMA, RSI və ATR eyni replay məlumatından hazırlanır.</p></div></div> : result && <>
         <PriceChart bars={result.bars} ema={result.indicators.ema} />
-        <StructurePanel structure={result.market_structure} />
-        <BosChochPanel result={result.bos_choch} />
-        <LiquidityPanel liquidity={result.liquidity_sweep} />
+        {result.market_structure ? <StructurePanel structure={result.market_structure} /> : <CompatibilityNotice layer="Bazar strukturu" />}
+        {result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />}
+        {result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />}
         <div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div>
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
