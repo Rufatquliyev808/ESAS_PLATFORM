@@ -49,13 +49,43 @@ type PersistedPatternCandidate = {
   source_fingerprint: string;
   timeframe: string;
   parameters: Record<string, unknown>;
-  lifecycle_state: "registered" | "archived";
+  lifecycle_state: "registered" | "evaluated" | "archived";
   state_version: number;
   created_at: string;
   updated_at: string;
 };
+type BacktestScenario = {
+  scenario: string;
+  total_cost_bps: number;
+  effective_sample_size: number;
+  net_mean_return_percent: number | null;
+  hit_rate_percent: number | null;
+  confidence_interval_low_percent: number | null;
+  confidence_interval_high_percent: number | null;
+  status: "supportive_evidence" | "insufficient_evidence";
+  reason: string;
+};
+type PersistedPatternCandidateBacktest = {
+  backtest_id: string;
+  candidate_id: string;
+  horizon_bars: number;
+  result: {
+    total_events: number;
+    matured_events: number;
+    immature_events: number;
+    scenarios: BacktestScenario[];
+  };
+  fingerprint: string;
+  created_at: string;
+};
 type Envelope<T> = { data: T };
 type Page<T> = Envelope<T[]>;
+
+const BACKTESTABLE_HYPOTHESES = new Set(["structure_break_long", "structure_break_short"]);
+const BACKTEST_STATUS_LABELS: Record<string, string> = {
+  supportive_evidence: "Sübut yetərlidir",
+  insufficient_evidence: "Sübut yetərli deyil",
+};
 
 const HYPOTHESIS_TITLES: Record<string, string> = {
   market_structure_long: "Yüksələn bazar strukturu",
@@ -130,6 +160,8 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
   const [registeredError, setRegisteredError] = useState<string | null>(null);
   const [registeringHypothesis, setRegisteringHypothesis] = useState<string | null>(null);
   const [archivingCandidateId, setArchivingCandidateId] = useState<string | null>(null);
+  const [backtests, setBacktests] = useState<Record<string, PersistedPatternCandidateBacktest>>({});
+  const [backtestingId, setBacktestingId] = useState<string | null>(null);
 
   const loadRegistered = useCallback(async () => {
     try {
@@ -186,6 +218,27 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
     } catch (failure) {
       setRegisteredError(failure instanceof Error ? failure.message : "Namizəd arxivləşdirilə bilmədi.");
     } finally { setArchivingCandidateId(null); }
+  }, [loadRegistered, onUnauthorized, token]);
+
+  const runBacktest = useCallback(async (candidate: PersistedPatternCandidate) => {
+    setBacktestingId(candidate.candidate_id);
+    setRegisteredError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/pattern-candidates/${candidate.candidate_id}/backtest`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 422) throw new Error("Bu hipotez üçün backtest v1 hələ dəstəklənmir.");
+      if (!response.ok) throw new Error(`Backtest icra edilə bilmədi (HTTP ${response.status}).`);
+      const payload = await response.json() as Envelope<PersistedPatternCandidateBacktest>;
+      setBacktests((current) => ({ ...current, [candidate.candidate_id]: payload.data }));
+      await loadRegistered();
+    } catch (failure) {
+      setRegisteredError(failure instanceof Error ? failure.message : "Backtest icra edilə bilmədi.");
+    } finally { setBacktestingId(null); }
   }, [loadRegistered, onUnauthorized, token]);
 
   useEffect(() => {
@@ -272,27 +325,52 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
         {registered.length === 0 ? <p className="empty-state">Hələ qeydə alınmış namizəd yoxdur.</p> : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Hipotez</th><th>Sessiya</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
+              <thead><tr><th>Hipotez</th><th>Sessiya</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Backtest (v1)</th><th /></tr></thead>
               <tbody>
-                {registered.map((candidate) => (
-                  <tr key={candidate.candidate_id}>
-                    <td>{HYPOTHESIS_TITLES[candidate.hypothesis_id] ?? candidate.hypothesis_id}</td>
-                    <td>{candidate.replay_session_id.slice(0, 16)}…</td>
-                    <td>{candidate.lifecycle_state === "registered" ? "Qeydə alınıb (draft)" : "Arxivləşdirilib"}</td>
-                    <td>{formatTime(candidate.created_at)}</td>
-                    <td>
-                      {candidate.lifecycle_state === "registered" && (
-                        <button type="button" className="secondary-button" disabled={archivingCandidateId === candidate.candidate_id} onClick={() => void archiveCandidate(candidate)}>
-                          {archivingCandidateId === candidate.candidate_id ? "Arxivləşdirilir…" : "Arxivləşdir"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {registered.map((candidate) => {
+                  const backtest = backtests[candidate.candidate_id];
+                  const supported = BACKTESTABLE_HYPOTHESES.has(candidate.hypothesis_id);
+                  return (
+                    <tr key={candidate.candidate_id}>
+                      <td>{HYPOTHESIS_TITLES[candidate.hypothesis_id] ?? candidate.hypothesis_id}</td>
+                      <td>{candidate.replay_session_id.slice(0, 16)}…</td>
+                      <td>{candidate.lifecycle_state === "archived" ? "Arxivləşdirilib" : candidate.lifecycle_state === "evaluated" ? "Backtest edilib" : "Qeydə alınıb (draft)"}</td>
+                      <td>{formatTime(candidate.created_at)}</td>
+                      <td>
+                        {!supported ? <span className="pattern-candidate-time">v1-də dəstəklənmir</span> : candidate.lifecycle_state === "archived" ? "—" : (
+                          <div className="pattern-candidate-backtest-cell">
+                            <button type="button" className="secondary-button" disabled={backtestingId === candidate.candidate_id} onClick={() => void runBacktest(candidate)}>
+                              {backtestingId === candidate.candidate_id ? "Hesablanır…" : backtest ? "Yenidən hesabla" : "Backtest et"}
+                            </button>
+                            {backtest && (
+                              <ul className="pattern-candidate-backtest-scenarios">
+                                {backtest.result.scenarios.map((scenario) => (
+                                  <li key={scenario.scenario} className={scenario.status}>
+                                    <strong>{scenario.scenario}</strong>
+                                    <span>n={scenario.effective_sample_size} · net {scenario.net_mean_return_percent === null ? "—" : `${scenario.net_mean_return_percent >= 0 ? "+" : ""}${scenario.net_mean_return_percent.toFixed(3)}%`}</span>
+                                    <span>{BACKTEST_STATUS_LABELS[scenario.status] ?? scenario.status}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {candidate.lifecycle_state !== "archived" && (
+                          <button type="button" className="secondary-button" disabled={archivingCandidateId === candidate.candidate_id} onClick={() => void archiveCandidate(candidate)}>
+                            {archivingCandidateId === candidate.candidate_id ? "Arxivləşdirilir…" : "Arxivləşdir"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 yalnız &ldquo;Struktur qırılması + retest&rdquo; hipotezlərini dəstəkləyir (bazar strukturu və likvidlik hipotezləri hələ yalnız son müşahidəni saxlayır, tarixi nümunə üçün kifayət etmir). Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
       </section>
     </section>
   );

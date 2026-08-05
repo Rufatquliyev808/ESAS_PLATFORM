@@ -8,6 +8,39 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Pattern candidate backtest v1 (Phase 4, partial)
+
+- `run_pattern_candidate_backtest` scans every historical `confirmed_retest`
+  event for a candidate's hypothesis and simulates a theoretical trade per
+  event: entry at the confirming bar's own close (matching the existing
+  `forward_closed_bar_outcome` convention), exit at the close `horizon_bars`
+  later. Produces normal/adverse/stress cost scenarios, hit rate, effective
+  sample size, and a 95% confidence interval using the same threshold
+  (n >= 30) and formula already used by `statistical_reliability.py`.
+- v1 intentionally only supports `structure_break_long`/`structure_break_short`
+  -- these are the only hypotheses whose upstream detectors
+  (`bos_choch.observations`, `retest.observations`) already expose every
+  historical confirmation rather than just the latest one. Backtesting
+  `market_structure`/`liquidity_sweep` today would only ever have one
+  sample, which would be statistically dishonest.
+- New `pattern_candidate_backtests` append-only table (migration `0006`).
+  Migration `0005` (added earlier this session, never applied to any real
+  database) was amended in place to pre-declare the full contract-defined
+  `lifecycle_state` vocabulary (including `evaluated`), since SQLite cannot
+  widen a CHECK constraint without a table rebuild and this migration
+  runner refuses DROP statements by design.
+- New endpoints: `POST/GET /api/v2/pattern-candidates/{id}/backtest`. A
+  candidate's first successful backtest moves it `registered -> evaluated`;
+  re-runs stay `evaluated` but append a new immutable backtest row and
+  audit entry rather than overwriting the previous result.
+- Frontend adds a "Backtest et" action per supported registered candidate
+  with an inline per-scenario result summary.
+- Verification: backend `277 passed` (7 new pure-function tests, 5 new
+  repository tests, 3 new API tests), frontend production build and `10/10`
+  tests passed, lint clean.
+- This layer creates no strategy, entry, risk sizing, or order. "Evaluated"
+  is a historical simulation status, not a trading or execution decision.
+
 ### Added — Pattern candidate persistence and `registered` lifecycle (Phase 4, partial)
 
 - New `pattern_candidates` and append-only `pattern_candidate_audit` tables

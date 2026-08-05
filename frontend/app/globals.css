@@ -513,6 +513,12 @@ footer p { margin: 0; }
 .pattern-candidate-registered-list { margin-top: 20px; }
 .pattern-candidate-registered-list h4 { margin: 0 0 4px; }
 .pattern-candidate-registered-list > p { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.pattern-candidate-backtest-cell { display: grid; gap: 6px; }
+.pattern-candidate-backtest-scenarios { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.pattern-candidate-backtest-scenarios li { display: grid; grid-template-columns: 60px 1fr auto; align-items: center; gap: 6px; border-radius: 6px; padding: 3px 6px; font-size: 11px; background: #f5f8f6; }
+.pattern-candidate-backtest-scenarios li.supportive_evidence { background: var(--green-soft); }
+.pattern-candidate-backtest-scenarios li.insufficient_evidence { background: var(--amber-soft); }
+.pattern-candidate-backtest-disclaimer { margin: 14px 0 0; border-left: 4px solid var(--amber); padding: 10px 13px; background: #fff8ea; font-size: 12px; color: #67450d; }
 @media (max-width: 800px) { .pattern-candidate-grid { grid-template-columns: 1fr; } }
 
 /* Section-based dashboard navigation keeps one learning topic in focus. */

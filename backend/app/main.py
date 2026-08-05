@@ -29,6 +29,7 @@ from backend.app.models.replay_session import ReplaySessionCreateRequest
 from backend.app.models.replay_command import ReplayCommandRequest
 from backend.app.models.pattern_candidate import (
     PatternCandidateArchiveRequest,
+    PatternCandidateBacktestRequest,
     PatternCandidateRegisterRequest,
 )
 from backend.app.auth import (
@@ -60,7 +61,11 @@ from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypot
 from backend.app.strategies.replay_pattern_candidates import (
     PatternCandidateNotConfirmedError,
     create_replay_pattern_candidates,
+    evaluate_replay_pattern_candidate_backtest,
     register_replay_pattern_candidate,
+)
+from backend.app.strategies.pattern_candidate_backtest import (
+    PatternCandidateBacktestUnsupportedError,
 )
 from backend.app.database.pattern_candidate_repository import (
     PatternCandidateConflictError,
@@ -70,6 +75,10 @@ from backend.app.database.pattern_candidate_repository import (
     archive_pattern_candidate,
     get_pattern_candidate,
     list_pattern_candidates,
+)
+from backend.app.database.pattern_candidate_backtest_repository import (
+    PatternCandidateBacktestNotFoundError,
+    get_latest_pattern_candidate_backtest,
 )
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
@@ -596,6 +605,59 @@ def pattern_candidate_archive(
     except PatternCandidateConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     return {"data": asdict(candidate), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/pattern-candidates/{candidate_id}/backtest")
+def pattern_candidate_backtest_endpoint(
+    candidate_id: str,
+    backtest_request: PatternCandidateBacktestRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        backtest = evaluate_replay_pattern_candidate_backtest(
+            candidate_id=candidate_id, actor=user_code, actor_role="operator",
+            horizon_bars=backtest_request.horizon_bars, spread_bps=backtest_request.spread_bps,
+            commission_bps=backtest_request.commission_bps, slippage_bps=backtest_request.slippage_bps,
+            latency_bps=backtest_request.latency_bps,
+            adverse_multiplier=backtest_request.adverse_multiplier,
+            stress_multiplier=backtest_request.stress_multiplier,
+        )
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    except PatternCandidateOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except PatternCandidateBacktestUnsupportedError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except PatternCandidateConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(status_code=409, detail="Replay session is not completed") from error
+    except ReplayDatasetChangedError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Replay dataset no longer matches the session snapshot",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(backtest), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/pattern-candidates/{candidate_id}/backtest")
+def pattern_candidate_backtest_detail(
+    candidate_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        candidate = get_pattern_candidate(candidate_id)
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    if candidate.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Pattern candidate belongs to another user")
+    try:
+        backtest = get_latest_pattern_candidate_backtest(candidate_id)
+    except PatternCandidateBacktestNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate has no backtest yet") from error
+    return {"data": asdict(backtest), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

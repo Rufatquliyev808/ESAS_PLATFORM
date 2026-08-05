@@ -28,4 +28,10 @@ test("pattern candidates UI stays draft-only, research-only and covers all six h
   assert.match(source, /pattern-candidates\?page_size=100/);
   assert.match(source, /expected_state_version: candidate\.state_version/);
   assert.match(source, /Qeydə alınmış namizədlər \(bütün sessiyalar\)/);
+  assert.match(source, /Backtest et/);
+  assert.match(source, /pattern-candidates\/\$\{candidate\.candidate_id\}\/backtest/);
+  assert.match(source, /BACKTESTABLE_HYPOTHESES/);
+  assert.match(source, /Sübut yetərlidir/);
+  assert.match(source, /Sübut yetərli deyil/);
+  assert.match(source, /Nəticə tarixi simulyasiyadır/);
 });

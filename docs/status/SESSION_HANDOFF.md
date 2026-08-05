@@ -11,57 +11,65 @@ Son yenilənmə: 2026-08-05
 
 ## Cari vəziyyət (ətraflı: `docs/status/CURRENT_STATE.md`)
 
-- **Phase 1: STABLE.** **Phase 2 (Replay və məlumat keyfiyyəti): STABLE**
-  (`docs/releases/PHASE_2_STABLE.md`, 2026-08-05, 2026-08-04 tarixli real
-  qəbul sınağına əsaslanır). **Phase 4: IN PROGRESS** (cari aktiv mərhələ).
-- Phase 4-də tamamlanan detektorlar: bazar strukturu, likvidlik süpürməsi,
-  BOS/CHoCH, retest, Fair Value Gap — hamısı causal/no-lookahead, frontend-də
-  ayrıca kartlar.
-- Pattern namizədi işi iki qatda var:
-  1. **Draft generator** — mövcud detektorları 6 hipotezə (`pattern_hypothesis_registry`)
-     bağlayıb hesablama-zamanı slot yaradır (`backend/app/strategies/pattern_candidate.py`,
-     `GET /api/v2/replay-sessions/{id}/pattern-candidates`).
-  2. **Persistence/`registered` qatı** — `candidate_confirmed` slotları
-     dəyişməz qeyd edir (`pattern_candidate_repository.py`,
-     `0005_pattern_candidates.sql`, `POST/GET/GET{id}/archive
-     /api/v2/pattern-candidates`). Yalnız `registered`/`archived`
-     vəziyyətləri var; `running`/`evaluated`/`accepted_for_shadow`/`rejected`
-     backtest mühərriki olmadan qəsdən tətbiq edilməyib.
-- Frontend: sol menyulu, bölmə əsaslı iş sahəsi (`dashboard-navigation.tsx`).
-  Hər bölmə GOLD-a mümkün təsirin sadə izahını göstərir. "Pattern namizədləri"
-  bölməsində indi həm draft kartlar, həm qeydiyyat düyməsi, həm də qeydə
-  alınmış namizədlər cədvəli (arxivləşdirmə daxil) var.
-- Backend `262 passed`, frontend production build və `10/10` test, lint təmiz
-  (bax "Yoxlama vəziyyəti").
+- **Phase 1: STABLE. Phase 2 (Replay və məlumat keyfiyyəti): STABLE**
+  (`docs/releases/PHASE_2_STABLE.md`). **Phase 4: IN PROGRESS** (cari aktiv
+  mərhələ).
+- Phase 4 detektorları (hamısı causal/no-lookahead, frontend-də ayrıca
+  kartlar): bazar strukturu, likvidlik süpürməsi, BOS/CHoCH, retest, FVG.
+- Pattern namizədi işi üç qatdan ibarətdir:
+  1. **Draft generator** — hesablama-zamanı 6 hipotez slotu
+     (`pattern_candidate.py`, `GET .../pattern-candidates`).
+  2. **Persistence/`registered`** — `candidate_confirmed` slotları dəyişməz
+     qeyd edir (`pattern_candidate_repository.py`, migration `0005`,
+     `POST/GET/GET{id}/archive`).
+  3. **Backtest v1** — YALNIZ `structure_break_long/short` üçün (səbəb:
+     yalnız bu ikisinin arxasındakı `bos_choch`/`retest` detektorları tam
+     tarixi saxlayır; `market_structure`/`liquidity_sweep` yalnız son
+     müşahidəni saxladığı üçün kənarda qalıb). Tarixi hadisə skanı, horizon
+     nəticəsi, xərc ssenariləri, statistik etibarlılıq
+     (`pattern_candidate_backtest.py`, migration `0006`,
+     `POST/GET .../{id}/backtest`). Uğurlu ilk backtest `registered →
+     evaluated` keçirir.
+- Vəziyyət maşınının qalanı (`running` async icra, `accepted_for_shadow`,
+  `rejected`, `blocked_by_data_quality`, `invalid_leakage`,
+  `insufficient_evidence`, `failed`, `cancelled`) DB CHECK-də icazəlidir
+  (əvvəlcədən genişləndirilib), amma tətbiq məntiqi hələ yoxdur.
+- Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
+  bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) var.
+- Backend `277 passed`, frontend production build və `10/10` test, lint təmiz.
 
 ## Commit/push vəziyyəti
 
-- `main` origin-ə sinxrondur, ta ki bu sessiyanın son işi (pattern namizədi
-  persistence qatı) commit/push edilənə qədər — sənədin bu versiyası yazılan
-  anda hələ commit edilməyib, tamamlanma qeydlərinə bax.
-- Son push edilmiş commit-lər (xronoloji): `1aa85c8` (FVG) → `7d49f97`
-  (sidebar lint) → `0a0f2d2` (draft pattern namizədi) → `847249b` (Phase 2
-  Stable). Hamısı CI-də yaşıl idi.
+- Bu sənədin yazıldığı anda son backtest artımı (migration `0006` və
+  əlaqəli kod) hələ commit/push edilməyib — əvvəlki 4 addım (`1aa85c8` →
+  `7d49f97` → `0a0f2d2` → `847249b` → `14345fd`) artıq push edilib və CI-də
+  yaşıl idi.
 - Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
   sessiyasında da (`task_b2a032b5`) başlatmışdı. Növbəti sessiya `git fetch`/
   `git log origin/main` ilə gözlənilməz commit olub-olmadığını yoxlamalıdır.
+- `0005` migrasiyası bu sessiyada bir dəfə **amend edildi** (heç bir real
+  bazaya tətbiq edilmədən) ki, `lifecycle_state` CHECK-i başdan tam
+  müqavilə lüğətini əhatə etsin — SQLite-də CHECK genişləndirmək DROP tələb
+  edir, migration runner isə DROP-u təhlükəsizlik naminə bloklayır. Əgər
+  başqa migrasiya artıq tətbiq edilibsə, bu barədə diqqətli ol.
 
 ## Yoxlama vəziyyəti
 
-- Backend: `.venv/Scripts/python -m pytest tests/backend -q` — `262 passed`
-  (bu maşında `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp`
-  ilə başqa qovluq göstərmək lazımdır, məs. scratchpad daxilində).
-- Frontend: `npm run lint` və `npm run test` (build + `10/10` test) təmiz.
+- Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
+  `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində).
+- Frontend: `npm run lint` və `npm run test` (build + testlər) təmiz.
 - Canlı brauzerdə vizual yoxlama edilməyib (bu maşındakı naməlum xarici
   mühit məhdudiyyətinə görə, əvvəlki sessiyalardan bəri davam edir). Bütün
   frontend işi yalnız avtomatlaşdırılmış test/build ilə təsdiqlənib.
 
 ## Növbəti mərhələ
 
-Seçilməyib. Namizədlər (`docs/status/NEXT_TASK.md`): backtesting (pattern
-namizədini `registered`-dən `running`/`evaluated`-ə aparan məntiqi növbəti
-addım), uğursuz eksperimentlərin arxivləşdirilməsi, SHADOW hazırlığı.
-İstifadəçinin ayrıca təsdiqi tələb olunur.
+Seçilməyib. Namizədlər (`docs/status/NEXT_TASK.md`): backtest əhatəsini
+`market_structure`/`liquidity_sweep`-ə genişləndirmək (əvvəlcə onlara tam
+tarixi `observations` əlavə etmək lazımdır), vəziyyət maşınının qalanı,
+multiple-testing reyestri, SHADOW hazırlığı. İstifadəçinin ayrıca təsdiqi
+tələb olunur.
 
 ## Təhlükəsizlik
 

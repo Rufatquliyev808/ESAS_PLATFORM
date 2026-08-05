@@ -27,3 +27,15 @@ class PatternCandidateArchiveRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     expected_state_version: int = Field(ge=0)
+
+
+class PatternCandidateBacktestRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    horizon_bars: int = Field(default=3, ge=1, le=100)
+    spread_bps: float = Field(default=2.0, ge=0, le=1_000)
+    commission_bps: float = Field(default=1.0, ge=0, le=1_000)
+    slippage_bps: float = Field(default=1.0, ge=0, le=1_000)
+    latency_bps: float = Field(default=0.5, ge=0, le=1_000)
+    adverse_multiplier: float = Field(default=1.5, ge=1, le=10)
+    stress_multiplier: float = Field(default=2.5, ge=1, le=10)

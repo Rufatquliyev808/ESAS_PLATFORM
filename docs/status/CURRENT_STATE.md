@@ -1,5 +1,36 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Pattern namizədi backtest v1 (Phase 4)
+
+- Backtest v1 **yalnız** `structure_break_long`/`structure_break_short`
+  hipotezlərini dəstəkləyir — səbəb: yalnız bu ikisinin arxasındakı
+  detektorlar (`bos_choch.observations`, `retest.observations`) **bütün
+  tarixi təkrarları** saxlayır. `market_structure` və `liquidity_sweep`
+  hazırda yalnız son müşahidəni saxlayır; onları backtest etmək statistik
+  cəhətdən mənasız (1 nümunə) olardı, ona görə v1-ə şüurlu şəkildə
+  daxil edilmədi.
+- `run_pattern_candidate_backtest` (`pattern_candidate_backtest.py`):
+  hipotezin bütün tarixi `confirmed_retest` hadisələrini tapır, hər biri
+  üçün giriş = təsdiq barının öz bağlanışı (mövcud `forward_closed_bar_outcome`
+  konvensiyası ilə eyni), çıxış = horizon bar sonrakı bağlanış. Normal/pis/stress
+  xərc ssenariləri, effektiv nümunə sayı, hit rate, 95% etibar intervalı
+  (`statistical_reliability.py` ilə eyni düstur və `n≥30` həddi) hesablanır.
+- `0006_pattern_candidate_backtests.sql`: append-only backtest nəticələri
+  cədvəli. `0005` migrasiyası (bu sessiyada yaradılıb, heç bir real bazaya
+  tətbiq edilməyib) `lifecycle_state` CHECK-i müqavilədəki tam vəziyyət
+  lüğəti ilə (`evaluated` daxil) əvvəlcədən genişləndirilərək düzəldildi —
+  DROP-based rebuild lazım olmasın deyə.
+- Yeni endpoint-lər: `POST/GET /api/v2/pattern-candidates/{id}/backtest`.
+  İlk uğurlu backtest namizədi `registered → evaluated`-ə keçirir; təkrar
+  işlətmə `evaluated`-də qalır, amma yeni backtest sətri və audit qeydi
+  əlavə edir (heç bir əvvəlki nəticə silinmir/üzərinə yazılmır).
+- Frontend: qeydə alınmış namizədlər cədvəlində "Backtest et" düyməsi və
+  ssenari nəticələri (n, net %, sübut statusu).
+- Yoxlama: backend `277 passed` (yeni backtest pure `7` + repository `5` +
+  API `3` test); frontend production build və `10/10` test, lint təmiz.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; "evaluated" real
+  ticarət icazəsi deyil, yalnız tarixi simulyasiyadır.
+
 ## 2026-08-05 — Pattern namizədi persistence/`registered` qatı (Phase 4)
 
 - `0005_pattern_candidates.sql` migrasiyası: `pattern_candidates` (dəyişməz
