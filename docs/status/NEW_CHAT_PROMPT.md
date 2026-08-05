@@ -16,4 +16,10 @@ docs\status\SESSION_HANDOFF.md-də göstərilən ən son yarımçıq işi faktik
 Əvvəl uyğun testləri icra et. Commit yalnız yoxlanmış, məqsədli fayllardan yaradılsın. GitHub-a push yalnız mən açıq şəkildə istəyəndə edilsin. Yeni mərhələyə başlamazdan əvvəl mənə qısa nəticə və növbəti mərhələni bildirərək təsdiq al. Real ticarət və order açılması mənim ayrıca açıq icazəm olmadan qadağandır.
 
 Cavabları Azərbaycan dilində, qısa və konkret ver. Kontekstə qənaət et; artıq məlum olanları təkrar izah etmə.
+
+Cari konkret vəziyyət: 2026-08-05 tarixində frontend sol menyu və mərkəzi iş panelinə keçirilib.
+Standart bölmə `Nəticələr`dir. Menyudakı hər bölmə rəqəm, GOLD-a mümkün təsir və açılan
+`Nəyə əsaslanır?` izahı göstərir. Frontend production build və `8/8` test keçib.
+Əvvəl bu vəziyyəti Git statusu və testlərlə təsdiqlə; işi təkrarlama. Növbəti ayrıca mərhələ
+`Causal FVG detektoru 1.0.0`-dır və yalnız istifadəçinin yeni, açıq təsdiqindən sonra başlanmalıdır.
 ```

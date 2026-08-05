@@ -243,7 +243,9 @@ function RetestPanel({ result }: { result: Retest }) {
   </article>;
 }
 
-export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
+type AnalysisView = "technical" | "structure" | "liquidity" | "bos-choch" | "retest";
+
+export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized, view }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void; view: AnalysisView }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [emaPeriod, setEmaPeriod] = useState(20);
   const [rsiPeriod, setRsiPeriod] = useState(14);
@@ -309,12 +311,11 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
 
       {error && <div className="analysis-error" role="alert"><strong>Analiz göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void loadAnalysis()}>Yenidən yoxla</button></div>}
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Bağlanmış barlar hesablanır</strong><p>EMA, RSI və ATR eyni replay məlumatından hazırlanır.</p></div></div> : result && <>
-        <PriceChart bars={result.bars} ema={result.indicators.ema} />
-        {result.market_structure ? <StructurePanel structure={result.market_structure} /> : <CompatibilityNotice layer="Bazar strukturu" />}
-         {result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />}
-         {result.retest ? <RetestPanel result={result.retest} /> : <CompatibilityNotice layer="Retest analizi" />}
-         {result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />}
-        <div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div>
+        {view === "technical" && <><PriceChart bars={result.bars} ema={result.indicators.ema} /><div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div></>}
+        {view === "structure" && (result.market_structure ? <StructurePanel structure={result.market_structure} /> : <CompatibilityNotice layer="Bazar strukturu" />)}
+        {view === "bos-choch" && (result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />)}
+        {view === "retest" && (result.retest ? <RetestPanel result={result.retest} /> : <CompatibilityNotice layer="Retest analizi" />)}
+        {view === "liquidity" && (result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />)}
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
           <dl>

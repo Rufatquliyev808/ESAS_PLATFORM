@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayPanel } from "./replay-panel";
 import { PatternHypothesisRegistry } from "./pattern-hypothesis-registry";
+import { DashboardSidebar, SectionGuide, type DashboardSection } from "./dashboard-navigation";
 
 type Bridge = {
   source: string;
@@ -194,6 +195,7 @@ export default function Home() {
   const [acknowledgementBusy, setAcknowledgementBusy] = useState(false);
   const [acknowledgementError, setAcknowledgementError] = useState<string | null>(null);
   const [selectedBridgeKey, setSelectedBridgeKey] = useState("all");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("results");
   const running = useRef(false);
   const activeController = useRef<AbortController | null>(null);
 
@@ -446,6 +448,68 @@ export default function Home() {
   const overallStatus = error
     ? "unavailable"
     : data?.operational.status ?? "waiting";
+  const sectionGuides: Record<DashboardSection, { title: string; metric: string; impact: string; evidence: string }> = {
+    results: {
+      title: "Nəticələrin ümumi görünüşü",
+      metric: data ? `${formatNumber(data.statistics.total_ticks)} tick` : "Gözlənilir",
+      impact: "Məlumat axını sağlamdırsa, GOLD üzrə sonrakı analizlər daha etibarlı məlumat üzərində hesablanır. Bu göstərici qiymətin istiqamətini özü müəyyən etmir.",
+      evidence: "Ümumi tick sayı, son tick vaxtı, Bridge vəziyyəti, disk növbəsi və rədd edilən event sayı birlikdə yoxlanılır.",
+    },
+    live: {
+      title: "Canlı məlumatın sağlamlığı",
+      metric: data ? relativeSeconds(data.operational.tick_stream.seconds_since_last_tick) : "Gözlənilir",
+      impact: "Gecikmə az və növbə boş olduqda GOLD qiyməti platformaya vaxtında çatır; gecikmə artdıqda analiz köhnə qiymətə əsaslana bilər.",
+      evidence: `Son tick yaşı, ${formatNumber(queueCount)} / ${formatNumber(queueCapacity)} növbə istifadəsi və ${formatNumber(rejectedEvents)} rədd edilən event izlənir.`,
+    },
+    replay: {
+      title: "Replay sessiyasının seçimi",
+      metric: "Tarixi interval",
+      impact: "Seçilən vaxt aralığı GOLD davranışının hansı bazar şəraitində öyrənildiyini müəyyən edir; nəticə yalnız həmin interval üçün keçərlidir.",
+      evidence: "Sessiyanın simvolu, başlanğıc və son vaxtı, emal olunan event sayı və tamamlanma vəziyyəti saxlanılır.",
+    },
+    technical: {
+      title: "Texniki göstəricilər",
+      metric: "EMA · RSI · ATR",
+      impact: "EMA istiqaməti, RSI momentumu, ATR isə GOLD-un dəyişkənliyini izah edir. Birlikdə kontekst verir, təkbaşına əməliyyat qərarı vermir.",
+      evidence: "Yalnız bağlanmış barlardan EMA, RSI və ATR hesablanır; warm-up nöqtələri və hesablama izi ayrıca göstərilir.",
+    },
+    structure: {
+      title: "Bazar strukturu",
+      metric: "HH · HL · LH · LL",
+      impact: "Ardıcıl HH/HL yüksəliş quruluşunu, LH/LL isə eniş quruluşunu dəstəkləyir. Qarışıq quruluş qeyri-müəyyənlik deməkdir.",
+      evidence: "Təsdiqlənmiş pivot zirvə və dibləri müqayisə olunur; gələcək bar istifadə edilmir və hər pivotun vaxtı ilə qiyməti göstərilir.",
+    },
+    liquidity: {
+      title: "Likvidlik müşahidəsi",
+      metric: "Sweep · reclaim",
+      impact: "Əvvəlki zirvə və ya dibin süpürülüb səviyyənin geri alınması GOLD-da saxta qırılma ehtimalını göstərə bilər.",
+      evidence: "Bərabər zirvə/diblər, fitilin səviyyəni keçməsi və bağlanışın səviyyəni geri alması bağlanmış barlarla yoxlanılır.",
+    },
+    "bos-choch": {
+      title: "BOS və CHoCH müşahidəsi",
+      metric: "Qırılma · dönüş",
+      impact: "BOS mövcud istiqamətin davamını, CHoCH isə GOLD strukturunda mümkün istiqamət dəyişikliyini göstərən müşahidədir.",
+      evidence: "Təsdiqlənmiş struktur səviyyəsinin bağlanışla qırılması və qırılmadan əvvəlki struktur ardıcıllığı yoxlanılır.",
+    },
+    retest: {
+      title: "Retest müşahidəsi",
+      metric: "Səviyyəyə dönüş",
+      impact: "Qırılmış səviyyənin yenidən yoxlanıb saxlanması hərəkətin davam etmə ehtimalını izah edə bilər; uğursuz retest əks riski artırır.",
+      evidence: "BOS/CHoCH səviyyəsinə sonrakı toxunuş, barın reaksiyası və bağlanışın səviyyənin hansı tərəfində qalması ölçülür.",
+    },
+    strategies: {
+      title: "Strategiya müqayisəsi",
+      metric: "Ayrı qaydalar",
+      impact: "Fərqli qaydaların eyni GOLD məlumatında necə davrandığını müqayisə etməyə imkan verir; ən çox siqnal verən yanaşma mütləq ən yaxşı deyil.",
+      evidence: "Hər strategiyanın versiyası, qaydası, hadisə sayı və eyni replay sessiyasındakı nəticəsi ayrı saxlanılır.",
+    },
+    hypotheses: {
+      title: "Hipotez reyestri",
+      metric: "Sınaq qaydaları",
+      impact: "GOLD üçün ideyaları koddan ayrı və ölçülə bilən formada saxlayır; təsdiqlənməmiş hipotez canlı qərar kimi istifadə edilmir.",
+      evidence: "Hipotezin adı, versiyası, şərtləri, vəziyyəti və sınaq qeydləri audit izi ilə saxlanılır.",
+    },
+  };
 
   return (
     <main>
@@ -499,6 +563,30 @@ export default function Home() {
         </section>
       ) : (
         <>
+          <div className="dashboard-shell">
+            <DashboardSidebar active={activeSection} onSelect={setActiveSection} />
+            <div className="dashboard-workspace">
+              <SectionGuide {...sectionGuides[activeSection]} />
+              {activeSection === "results" && (
+                <section className="panel results-overview" aria-labelledby="results-overview-title">
+                  <div className="section-heading">
+                    <div><p className="eyebrow">Defolt görünüş</p><h2 id="results-overview-title">Nəticələr</h2></div>
+                    <StatusPill status={overallStatus} />
+                  </div>
+                  <div className="result-summary-grid">
+                    <article><span>Canlı GOLD məlumatı</span><strong>{relativeSeconds(data.operational.tick_stream.seconds_since_last_tick)}</strong><p>Son qiymətin platformaya çatma vaxtı.</p></article>
+                    <article><span>Toplanan məlumat</span><strong>{formatNumber(data.statistics.total_ticks)}</strong><p>Analiz üçün bazada olan ümumi tick sayı.</p></article>
+                    <article><span>Disk növbəsi</span><strong>{formatNumber(queueCount)} / {formatNumber(queueCapacity)}</strong><p>Backend dayanarsa qorunan eventlər.</p></article>
+                    <article><span>Məlumat itkisi</span><strong>{formatNumber(rejectedEvents)}</strong><p>Qəbul edilməyən eventlərin sayı.</p></article>
+                  </div>
+                  <div className="result-interpretation">
+                    <h3>Bu nəticə nə deyir?</h3>
+                    <p>{error ? "Backend hazırda əlçatan deyil; son uğurlu məlumat göstərilir." : queueCount === 0 && data.operational.tick_stream.status === "active" ? "Məlumat axını aktivdir və növbə boşdur. Texniki analiz üçün giriş məlumatı normal görünür." : "Məlumat axınında gecikmə və ya növbə var. Analiz nəticələrini şərh etməzdən əvvəl Canlı məlumat bölməsini yoxlayın."}</p>
+                  </div>
+                </section>
+              )}
+              {activeSection === "live" && (
+                <>
           <section className="bridge-filter" aria-labelledby="bridge-filter-title">
             <div>
               <p className="eyebrow">Görünüş filtri</p>
@@ -693,14 +781,23 @@ export default function Home() {
               </div>
             )}
           </section>
+                </>
+              )}
+              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "strategies"] as DashboardSection[]).includes(activeSection) && (
           <ReplayPanel
+            view={activeSection}
             token={token}
             onUnauthorized={handleReplayUnauthorized}
           />
+              )}
+              {activeSection === "hypotheses" && (
           <PatternHypothesisRegistry
             token={token}
             onUnauthorized={handleReplayUnauthorized}
           />
+              )}
+            </div>
+          </div>
         </>
       )}
 

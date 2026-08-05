@@ -32,3 +32,16 @@ Son yenilənmə: 2026-08-05
 ## Təhlükəsizlik
 
 Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olmadan real ticarət aktivləşdirilməməlidir. Push yalnız istifadəçi ayrıca tələb etdikdə edilməlidir.
+
+## Ən son etibarlı vəziyyət — 2026-08-05
+
+- Son tamamlanan vahid: frontendin sol menyulu, bölmə əsaslı iş sahəsinə çevrilməsi.
+- Standart mərkəzi görünüş `Nəticələr`dir.
+- Hər bölmədə rəqəm, GOLD-a mümkün təsirin sadə izahı və açılan `Nəyə əsaslanır?` tədris qeydi var.
+- Yeni əsas fayl: `frontend/app/dashboard-navigation.tsx`.
+- Dəyişən fayllar: `frontend/app/page.tsx`, `frontend/app/replay-panel.tsx`,
+  `frontend/app/technical-analysis-panel.tsx`, `frontend/app/globals.css`.
+- Yeni müqavilə testi: `frontend/tests/dashboard-navigation.test.mjs`.
+- Frontend production build və bütün `8/8` test uğurla keçib.
+- Növbəti müstəqil mərhələ `Causal FVG detektoru 1.0.0`-dır və ayrıca istifadəçi təsdiqi tələb edir.
+- Bu vahid üçün GitHub push edilməyib. Push yalnız açıq istifadəçi istəyi ilə edilməlidir.

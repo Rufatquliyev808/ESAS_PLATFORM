@@ -19,3 +19,9 @@ Bağlanmış barlardan yaranan bullish və bearish fair value gap sahələrini y
 ## Başlama şərti
 
 Bu yeni mərhələ istifadəçinin ayrıca təsdiqindən sonra başlanacaq.
+
+## 2026-08-05 frontend mərhələsinin vəziyyəti
+
+Sol menyulu, bölmə əsaslı frontend iş sahəsi tamamlanıb və `8/8` frontend testi ilə yoxlanıb.
+Aktiv növbəti müstəqil iş yuxarıda göstərilən `Causal FVG detektoru 1.0.0` mərhələsidir.
+Bu mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlanmalıdır.

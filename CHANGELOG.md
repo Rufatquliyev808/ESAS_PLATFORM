@@ -479,3 +479,19 @@ Format Semantic Versioning prinsipinə əsaslanır:
 - RAM buferi MT5 bağlandıqda itir.
 - Bufer dolması siyasəti tam müəyyən edilməyib.
 - Modul versiyası bütün fayllarda uyğunlaşdırılmayıb.
+
+## 2026-08-05 — Bölmə əsaslı frontend iş sahəsi
+
+### Added
+
+- Sol naviqasiya menyusu və seçilmiş bölməni göstərən mərkəzi panel.
+- Standart `Nəticələr` görünüşü.
+- Hər bölmə üçün GOLD-a mümkün təsir, cari rəqəm və açılan tədris izahı.
+- Bölmələr üzrə ayrılmış replay, texniki analiz, struktur, likvidlik, BOS/CHoCH,
+  retest, strategiya və hipotez görünüşləri.
+- Responsiv menyu və frontend naviqasiya müqavilə testləri.
+
+### Validation
+
+- Frontend production build uğurludur.
+- Frontend testləri: `8/8 passed`.

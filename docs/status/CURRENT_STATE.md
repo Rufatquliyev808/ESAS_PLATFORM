@@ -861,3 +861,16 @@ versiyalanmış qeyri-müəyyənlik qatı əlavə edildi.
 - Reyestr heç bir siqnal, giriş, risk ölçüsü və order yaratmır. Növbəti mərhələ ayrıca
   təsdiqdən sonra causal HH/HL və LH/LL detektorunun tərifidir.
 - Yoxlama: backend `224 passed`; frontend `4` test, lint və production build keçdi.
+
+## 2026-08-05 — Bölmə əsaslı frontend iş sahəsi
+
+- Uzun, alt-alta açılan monitorinq səhifəsi sol menyu və mərkəzi iş paneli ilə əvəz edildi.
+- Standart açılan bölmə `Nəticələr`dir; istifadəçi başqa bölməni seçənədək ümumi GOLD xülasəsi görünür.
+- Menyuda nəticələr, canlı vəziyyət, replay, texniki göstəricilər, bazar strukturu,
+  likvidlik, BOS/CHoCH, retest, strategiya müqayisəsi və hipotez reyestri ayrıca bölmələrdir.
+- Hər bölmə cari rəqəmi, GOLD-a mümkün təsirin sadə dildə izahını və açılan
+  `Nəyə əsaslanır?` tədris qeydini göstərir.
+- Texniki analiz alt panelləri seçilmiş menyuya görə ayrı göstərilir; mövcud hesablamalar və API müqavilələri dəyişdirilməyib.
+- Masaüstü üçün sabit sol menyu, dar ekranlar üçün üfüqi və responsiv menyu əlavə edildi.
+- Təhlükəsizlik sərhədi saxlanılıb: ekranlar araşdırma/monitorinq üçündür, siqnal və ticarət əməliyyatı yaratmır.
+- Yoxlama: frontend production build və bütün `8/8` frontend testi uğurla keçdi.
