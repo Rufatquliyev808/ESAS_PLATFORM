@@ -22,4 +22,10 @@ test("pattern candidates UI stays draft-only, research-only and covers all six h
   assert.match(source, /Bütün namizədlər `draft` vəziyyətindədir/);
   assert.match(source, /Platforma bu bölmədə alış\/satış siqnalı vermir və order yaratmır/);
   assert.match(source, /Məlumat mənbəyi və hesablamanın izi/);
+  assert.match(source, /Draft kimi qeydə al/);
+  assert.match(source, /Qeydə alınıb \(draft\)/);
+  assert.match(source, /Arxivləşdir/);
+  assert.match(source, /pattern-candidates\?page_size=100/);
+  assert.match(source, /expected_state_version: candidate\.state_version/);
+  assert.match(source, /Qeydə alınmış namizədlər \(bütün sessiyalar\)/);
 });

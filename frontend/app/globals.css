@@ -508,6 +508,11 @@ footer p { margin: 0; }
 .pattern-candidate-evidence { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 4px 0 0; }
 .pattern-candidate-evidence dt { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
 .pattern-candidate-evidence dd { margin: 2px 0 0; font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.pattern-candidate-slot button { margin-top: 4px; }
+.pattern-candidate-registered { margin: 4px 0 0; color: #16805f; font-size: 12px; font-weight: 750; }
+.pattern-candidate-registered-list { margin-top: 20px; }
+.pattern-candidate-registered-list h4 { margin: 0 0 4px; }
+.pattern-candidate-registered-list > p { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
 @media (max-width: 800px) { .pattern-candidate-grid { grid-template-columns: 1fr; } }
 
 /* Section-based dashboard navigation keeps one learning topic in focus. */

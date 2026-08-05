@@ -27,6 +27,10 @@ from backend.app.models.bridge_status import (
 )
 from backend.app.models.replay_session import ReplaySessionCreateRequest
 from backend.app.models.replay_command import ReplayCommandRequest
+from backend.app.models.pattern_candidate import (
+    PatternCandidateArchiveRequest,
+    PatternCandidateRegisterRequest,
+)
 from backend.app.auth import (
     LoginRequest,
     create_session,
@@ -53,13 +57,28 @@ from backend.app.analysis.replay_analysis import (
 )
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
-from backend.app.strategies.replay_pattern_candidates import create_replay_pattern_candidates
+from backend.app.strategies.replay_pattern_candidates import (
+    PatternCandidateNotConfirmedError,
+    create_replay_pattern_candidates,
+    register_replay_pattern_candidate,
+)
+from backend.app.database.pattern_candidate_repository import (
+    PatternCandidateConflictError,
+    PatternCandidateListPosition,
+    PatternCandidateNotFoundError,
+    PatternCandidateOwnershipError,
+    archive_pattern_candidate,
+    get_pattern_candidate,
+    list_pattern_candidates,
+)
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
     encode_replay_session_cursor,
     decode_replay_event_cursor,
     encode_replay_event_cursor,
+    decode_pattern_candidate_cursor,
+    encode_pattern_candidate_cursor,
 )
 from backend.app.database.tick_replay_repository import TickPosition, read_tick_page
 
@@ -452,6 +471,131 @@ def replay_pattern_candidates(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(candidates), "meta": {"api_version": "2"}}
+
+
+@app.post(
+    "/api/v2/pattern-candidates",
+    status_code=status.HTTP_201_CREATED,
+)
+def register_pattern_candidate_endpoint(
+    register_request: PatternCandidateRegisterRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(register_request.session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Replay session was not found") from error
+    if session.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Replay session belongs to another user")
+    try:
+        candidate = register_replay_pattern_candidate(
+            session=session, hypothesis_id=register_request.hypothesis_id,
+            actor=user_code, actor_role="operator",
+            timeframe=register_request.timeframe, bar_limit=register_request.bar_limit,
+            pivot_left=register_request.pivot_left, pivot_right=register_request.pivot_right,
+            equality_tolerance_bps=register_request.equality_tolerance_bps,
+            liquidity_pool_tolerance_bps=register_request.liquidity_pool_tolerance_bps,
+            liquidity_minimum_touches=register_request.liquidity_minimum_touches,
+            liquidity_minimum_sweep_bps=register_request.liquidity_minimum_sweep_bps,
+            liquidity_maximum_pool_age_bars=register_request.liquidity_maximum_pool_age_bars,
+            bos_choch_minimum_close_break_bps=register_request.bos_choch_minimum_close_break_bps,
+            bos_choch_maximum_pivot_age_bars=register_request.bos_choch_maximum_pivot_age_bars,
+            retest_touch_tolerance_bps=register_request.retest_touch_tolerance_bps,
+            retest_confirmation_close_bps=register_request.retest_confirmation_close_bps,
+            retest_invalidation_close_bps=register_request.retest_invalidation_close_bps,
+            retest_maximum_age_bars=register_request.retest_maximum_age_bars,
+        )
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(status_code=409, detail="Replay session is not completed") from error
+    except ReplayDatasetChangedError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Replay dataset no longer matches the session snapshot",
+        ) from error
+    except PatternCandidateNotConfirmedError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except PatternCandidateOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except sqlite3.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pattern candidate storage is unavailable",
+        ) from error
+    return {"data": asdict(candidate), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/pattern-candidates")
+def pattern_candidates_list(
+    cursor: str | None = None,
+    page_size: int = Query(default=50, ge=1, le=200),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    position = None
+    if cursor is not None:
+        try:
+            created_at, candidate_id = decode_pattern_candidate_cursor(
+                cursor, subject=user_code,
+            )
+            position = PatternCandidateListPosition(created_at, candidate_id)
+        except InvalidReplayCursorError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pattern candidate cursor is invalid or expired",
+            ) from error
+
+    page = list_pattern_candidates(owner=user_code, page_size=page_size, after=position)
+    next_cursor = None
+    if page.next_position is not None:
+        next_cursor = encode_pattern_candidate_cursor(
+            created_at=page.next_position.created_at,
+            candidate_id=page.next_position.candidate_id,
+            subject=user_code,
+        )
+    return {
+        "data": [asdict(item) for item in page.items],
+        "page": {
+            "limit": page_size,
+            "next_cursor": next_cursor,
+            "has_more": page.next_position is not None,
+        },
+        "meta": {"api_version": "2"},
+    }
+
+
+@app.get("/api/v2/pattern-candidates/{candidate_id}")
+def pattern_candidate_detail(
+    candidate_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        candidate = get_pattern_candidate(candidate_id)
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    if candidate.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Pattern candidate belongs to another user")
+    return {"data": asdict(candidate), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/pattern-candidates/{candidate_id}/archive")
+def pattern_candidate_archive(
+    candidate_id: str,
+    archive_request: PatternCandidateArchiveRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        candidate = archive_pattern_candidate(
+            candidate_id=candidate_id, actor=user_code, actor_role="operator",
+            expected_state_version=archive_request.expected_state_version,
+        )
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    except PatternCandidateOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except PatternCandidateConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(candidate), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

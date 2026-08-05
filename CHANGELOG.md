@@ -8,6 +8,28 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Pattern candidate persistence and `registered` lifecycle (Phase 4, partial)
+
+- New `pattern_candidates` and append-only `pattern_candidate_audit` tables
+  (migration `0005`). A candidate can only be persisted from an already
+  `candidate_confirmed` draft slot; registration is idempotent by
+  `candidate_id` and archiving uses an optimistic `state_version` lock.
+- `register_replay_pattern_candidate` always recomputes the candidate
+  server-side from the completed replay session before persisting -- the
+  client never supplies evidence or condition state directly.
+- New protected endpoints: `POST /api/v2/pattern-candidates`,
+  `GET /api/v2/pattern-candidates`, `GET /api/v2/pattern-candidates/{id}`,
+  `POST /api/v2/pattern-candidates/{id}/archive`.
+- Frontend adds a "Draft kimi qeydə al" action on confirmed slots and a
+  registered-candidates table with archive support.
+- Intentionally out of scope: `running`, `evaluated`, `accepted_for_shadow`,
+  `rejected`, and other backtest-dependent lifecycle states -- there is no
+  backtest engine yet, so those transitions would be unearned.
+- Verification: backend `262 passed` (7 new repository tests, 4 new API
+  tests; existing migration-count assertions updated for migration `0005`),
+  frontend production build and `10/10` tests passed, lint clean.
+- This layer creates no strategy, signal, entry, risk sizing, or order.
+
 ### Added — Phase 2 Stable release decision
 
 - Phase 2 (replay and data quality) formally declared `STABLE`

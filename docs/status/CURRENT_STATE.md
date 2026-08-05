@@ -1,5 +1,37 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Pattern namizədi persistence/`registered` qatı (Phase 4)
+
+- `0005_pattern_candidates.sql` migrasiyası: `pattern_candidates` (dəyişməz
+  qeydiyyat, `lifecycle_state IN ('registered','archived')`, optimistic
+  `state_version` lock) və append-only `pattern_candidate_audit` cədvəlləri
+  əlavə edildi.
+- `backend/app/database/pattern_candidate_repository.py`: `register_pattern_candidate`
+  (yalnız `candidate_confirmed` slotlar, `candidate_id`-ə görə idempotent),
+  `get_pattern_candidate`, `list_pattern_candidates` (owner-scoped keyset
+  pagination), `archive_pattern_candidate` (ownership + optimistic lock).
+- `replay_pattern_candidates.py`-a `register_replay_pattern_candidate`
+  əlavə edildi: server HƏMİŞƏ sessiyanı yenidən hesablayır, klient heç vaxt
+  evidence/condition_state göndərmir — yalnız real, hazırkı causal nəticə
+  qeydə alına bilir.
+- Yeni qorunan API-lər (müqavilədə göstərilən adlarla): `POST
+  /api/v2/pattern-candidates`, `GET /api/v2/pattern-candidates`, `GET
+  /api/v2/pattern-candidates/{id}`, `POST /api/v2/pattern-candidates/{id}/archive`.
+  `features`/`backtest` alt-resursları hələ tətbiq edilməyib (backtest
+  infrastrukturu yoxdur).
+- Frontend: hər `candidate_confirmed` kartında "Draft kimi qeydə al" düyməsi,
+  ayrıca "Qeydə alınmış namizədlər" cədvəli (bütün sessiyalar, owner-scoped)
+  və "Arxivləşdir" əməliyyatı əlavə edildi.
+- Şüurlu şəkildə kənarda: `running`, `evaluated`, `accepted_for_shadow`,
+  `rejected` və digər backtest-asılı vəziyyətlər tətbiq edilməyib — bunlar
+  backtest mühərriki olmadan mənasız/saxta olardı.
+- Yoxlama: backend `262 passed` (yeni `test_pattern_candidate_repository.py`
+  `7` test + `test_pattern_candidates_persistence_api.py` `4` test; mövcud
+  `test_migration_runner.py` sayğacları `0005`-ə uyğunlaşdırıldı); frontend
+  production build və `10/10` test, lint təmiz.
+- Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır; "registered"
+  vəziyyəti real ticarət icazəsi deyil.
+
 ## 2026-08-05 — Phase 2 rəsmi bağlanışı (STABLE)
 
 Phase 2 (Replay və məlumat keyfiyyəti) rəsmi olaraq bağlanıb. Qərar və rəsmi

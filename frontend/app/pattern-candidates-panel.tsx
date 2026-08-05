@@ -33,7 +33,29 @@ type ReplayPatternCandidates = {
   interpretation: string;
   api_version: string;
 };
+type PersistedPatternCandidate = {
+  candidate_id: string;
+  created_by: string;
+  replay_session_id: string;
+  hypothesis_id: string;
+  hypothesis_version: string;
+  family: string;
+  direction: string;
+  condition_state: string;
+  observed_at: string | null;
+  evidence: Record<string, unknown>;
+  pattern_candidate_version: string;
+  hypothesis_registry_version: string;
+  source_fingerprint: string;
+  timeframe: string;
+  parameters: Record<string, unknown>;
+  lifecycle_state: "registered" | "archived";
+  state_version: number;
+  created_at: string;
+  updated_at: string;
+};
 type Envelope<T> = { data: T };
+type Page<T> = Envelope<T[]>;
 
 const HYPOTHESIS_TITLES: Record<string, string> = {
   market_structure_long: "Yüksələn bazar strukturu",
@@ -58,7 +80,12 @@ function evidenceEntries(evidence: Record<string, unknown>) {
   return Object.entries(evidence).filter(([, value]) => value !== null && value !== undefined);
 }
 
-function PatternSlotCard({ slot }: { slot: PatternCandidateSlot }) {
+function PatternSlotCard({ slot, registeredCandidateId, registering, onRegister }: {
+  slot: PatternCandidateSlot;
+  registeredCandidateId?: string;
+  registering: boolean;
+  onRegister: (slot: PatternCandidateSlot) => void;
+}) {
   const tone = slot.condition_state === "candidate_confirmed" ? "confirmed" : slot.condition_state === "insufficient_data" ? "warmup" : "empty";
   return (
     <article className={`pattern-candidate-slot ${tone}`}>
@@ -79,6 +106,15 @@ function PatternSlotCard({ slot }: { slot: PatternCandidateSlot }) {
           ))}
         </dl>
       )}
+      {slot.condition_state === "candidate_confirmed" && (
+        registeredCandidateId ? (
+          <p className="pattern-candidate-registered">Qeydə alınıb (draft) · {registeredCandidateId.slice(0, 24)}…</p>
+        ) : (
+          <button type="button" className="secondary-button" disabled={registering} onClick={() => onRegister(slot)}>
+            {registering ? "Qeydə alınır…" : "Draft kimi qeydə al"}
+          </button>
+        )
+      )}
     </article>
   );
 }
@@ -90,6 +126,72 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
   const [result, setResult] = useState<ReplayPatternCandidates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<PersistedPatternCandidate[]>([]);
+  const [registeredError, setRegisteredError] = useState<string | null>(null);
+  const [registeringHypothesis, setRegisteringHypothesis] = useState<string | null>(null);
+  const [archivingCandidateId, setArchivingCandidateId] = useState<string | null>(null);
+
+  const loadRegistered = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/pattern-candidates?page_size=100`, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(`Qeydə alınmış namizədlər alına bilmədi (HTTP ${response.status}).`);
+      const payload = await response.json() as Page<PersistedPatternCandidate>;
+      setRegistered(payload.data);
+      setRegisteredError(null);
+    } catch (failure) {
+      setRegisteredError(failure instanceof Error ? failure.message : "Qeydə alınmış namizədlər alına bilmədi.");
+    }
+  }, [onUnauthorized, token]);
+
+  const registerSlot = useCallback(async (slot: PatternCandidateSlot) => {
+    setRegisteringHypothesis(slot.hypothesis_id);
+    setRegisteredError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/pattern-candidates`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          session_id: sessionId, hypothesis_id: slot.hypothesis_id,
+          timeframe: query.timeframe, bar_limit: query.barLimit,
+        }),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 409) throw new Error("Namizəd artıq təsdiqlənmiş vəziyyətdə deyil; əvvəlcə yenidən hesablayın.");
+      if (!response.ok) throw new Error(`Namizəd qeydə alına bilmədi (HTTP ${response.status}).`);
+      await loadRegistered();
+    } catch (failure) {
+      setRegisteredError(failure instanceof Error ? failure.message : "Namizəd qeydə alına bilmədi.");
+    } finally { setRegisteringHypothesis(null); }
+  }, [loadRegistered, onUnauthorized, query, sessionId, token]);
+
+  const archiveCandidate = useCallback(async (candidate: PersistedPatternCandidate) => {
+    setArchivingCandidateId(candidate.candidate_id);
+    setRegisteredError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/pattern-candidates/${candidate.candidate_id}/archive`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ expected_state_version: candidate.state_version }),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 409) throw new Error("Namizəd vəziyyəti dəyişib; siyahını yeniləyin.");
+      if (!response.ok) throw new Error(`Namizəd arxivləşdirilə bilmədi (HTTP ${response.status}).`);
+      await loadRegistered();
+    } catch (failure) {
+      setRegisteredError(failure instanceof Error ? failure.message : "Namizəd arxivləşdirilə bilmədi.");
+    } finally { setArchivingCandidateId(null); }
+  }, [loadRegistered, onUnauthorized, token]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadRegistered(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadRegistered]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,7 +241,18 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
       {error && <div className="analysis-error" role="alert"><strong>Pattern namizədləri göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void load()}>Yenidən yoxla</button></div>}
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Mövcud detektorlar birləşdirilir</strong><p>Yalnız bağlanmış barlardan alınan causal nəticələr istifadə olunur.</p></div></div> : result && <>
         <div className="pattern-candidate-grid">
-          {result.pattern_candidates.slots.map((slot) => <PatternSlotCard key={slot.candidate_id} slot={slot} />)}
+          {result.pattern_candidates.slots.map((slot) => {
+            const existing = registered.find((item) => item.replay_session_id === sessionId && item.hypothesis_id === slot.hypothesis_id && item.lifecycle_state === "registered");
+            return (
+              <PatternSlotCard
+                key={slot.candidate_id}
+                slot={slot}
+                registeredCandidateId={existing?.candidate_id}
+                registering={registeringHypothesis === slot.hypothesis_id}
+                onRegister={(item) => void registerSlot(item)}
+              />
+            );
+          })}
         </div>
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
@@ -151,6 +264,36 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
         </details>
         <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bütün namizədlər `draft` vəziyyətindədir. Backtest, label/horizon ölçümü, qəbul/rədd qərarı və SHADOW hazırlığı ayrıca, sonrakı mərhələlərdir. Platforma bu bölmədə alış/satış siqnalı vermir və order yaratmır.</p>
       </>}
+
+      <section className="pattern-candidate-registered-list" aria-labelledby="pattern-candidates-registered-title">
+        <h4 id="pattern-candidates-registered-title">Qeydə alınmış namizədlər (bütün sessiyalar)</h4>
+        <p>Yalnız sizin qeydə aldığınız draft namizədlər. Bu siyahı da backtest, label və ya qəbul qərarı deyil.</p>
+        {registeredError && <div className="analysis-error" role="alert"><strong>Siyahı göstərilə bilmədi</strong><span>{registeredError}</span></div>}
+        {registered.length === 0 ? <p className="empty-state">Hələ qeydə alınmış namizəd yoxdur.</p> : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Hipotez</th><th>Sessiya</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
+              <tbody>
+                {registered.map((candidate) => (
+                  <tr key={candidate.candidate_id}>
+                    <td>{HYPOTHESIS_TITLES[candidate.hypothesis_id] ?? candidate.hypothesis_id}</td>
+                    <td>{candidate.replay_session_id.slice(0, 16)}…</td>
+                    <td>{candidate.lifecycle_state === "registered" ? "Qeydə alınıb (draft)" : "Arxivləşdirilib"}</td>
+                    <td>{formatTime(candidate.created_at)}</td>
+                    <td>
+                      {candidate.lifecycle_state === "registered" && (
+                        <button type="button" className="secondary-button" disabled={archivingCandidateId === candidate.candidate_id} onClick={() => void archiveCandidate(candidate)}>
+                          {archivingCandidateId === candidate.candidate_id ? "Arxivləşdirilir…" : "Arxivləşdir"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </section>
   );
 }

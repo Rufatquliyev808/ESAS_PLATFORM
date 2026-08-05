@@ -9,136 +9,62 @@ Son yenilənmə: 2026-08-05
 - Git statusunu, branch-i və son commitləri yoxla; mövcud dəyişiklikləri silmə və görülmüş işi təkrarlama.
 - GitHub girişini `gh auth status` ilə yoxla; məxfi tokeni istəmə və çap etmə.
 
-## Son tamamlanan iş
+## Cari vəziyyət (ətraflı: `docs/status/CURRENT_STATE.md`)
 
-- Faza 2 (Replay və məlumat keyfiyyəti) rəsmi olaraq `STABLE` elan edildi:
-  `docs/releases/PHASE_2_STABLE.md`, `PROJECT_ROADMAP.md`-də status
-  `COMPLETED — STABLE`-ə yeniləndi. Bütün roadmap bəndləri əvvəlcədən
-  `[x]` idi; bu addım yalnız Phase 1-dəki kimi rəsmi qəbul sənədini yazdı,
-  2026-08-04 tarixli real qəbul sınağına (`.runtime/phase2-acceptance/
-  phase2-replay-latest.json`, `PASSED`, `0` kritik tapıntı) istinad edərək.
-  Kod, test və CI dəyişmədi.
-- Draft pattern namizədi generatoru (Phase 4, "Pattern namizədlərinin
-  yaradılması" bəndinin **hissəvi** tamamlanması): `backend/app/strategies/
-  pattern_candidate.py` (pure detektor birləşdirmə), `replay_pattern_candidates.py`
-  (assembly), yeni `GET /api/v2/replay-sessions/{id}/pattern-candidates`
-  endpoint-i, frontend `pattern-candidates-panel.tsx`.
-- 6 hipotez slotu (`market_structure_long/short`, `liquidity_sweep_reclaim_long/short`,
-  `structure_break_long/short`), hər biri `draft` lifecycle-də, `candidate_confirmed/
-  no_candidate/insufficient_data` şərt statusu ilə. Backtest, label/horizon,
-  persistence/state machine və qəbul qərarı bu artıma daxil deyil (bax
-  `docs/status/NEXT_TASK.md`).
-- `ReplayAnalysisContext`-ə `market_structure`/`liquidity_sweep`/`bos_choch`/
-  `retest` dataclass-ları əlavə edildi (əvvəllər yalnız `analysis` daxilində
-  dict idi); mövcud `replay_strategy.py` çağırışı pozulmayıb.
-- Backend `251 passed` (yeni `test_pattern_candidate.py` `6` test +
-  `test_replay_technical_analysis_api.py`-a `2` yeni test), frontend
-  production build və `10/10` test, lint təmiz.
-- Canlı brauzerdə vizual yoxlama edilməyib (yalnız avtomatlaşdırılmış sübut).
-- Commit hələ edilməyib (aşağıda).
+- **Phase 1: STABLE.** **Phase 2 (Replay və məlumat keyfiyyəti): STABLE**
+  (`docs/releases/PHASE_2_STABLE.md`, 2026-08-05, 2026-08-04 tarixli real
+  qəbul sınağına əsaslanır). **Phase 4: IN PROGRESS** (cari aktiv mərhələ).
+- Phase 4-də tamamlanan detektorlar: bazar strukturu, likvidlik süpürməsi,
+  BOS/CHoCH, retest, Fair Value Gap — hamısı causal/no-lookahead, frontend-də
+  ayrıca kartlar.
+- Pattern namizədi işi iki qatda var:
+  1. **Draft generator** — mövcud detektorları 6 hipotezə (`pattern_hypothesis_registry`)
+     bağlayıb hesablama-zamanı slot yaradır (`backend/app/strategies/pattern_candidate.py`,
+     `GET /api/v2/replay-sessions/{id}/pattern-candidates`).
+  2. **Persistence/`registered` qatı** — `candidate_confirmed` slotları
+     dəyişməz qeyd edir (`pattern_candidate_repository.py`,
+     `0005_pattern_candidates.sql`, `POST/GET/GET{id}/archive
+     /api/v2/pattern-candidates`). Yalnız `registered`/`archived`
+     vəziyyətləri var; `running`/`evaluated`/`accepted_for_shadow`/`rejected`
+     backtest mühərriki olmadan qəsdən tətbiq edilməyib.
+- Frontend: sol menyulu, bölmə əsaslı iş sahəsi (`dashboard-navigation.tsx`).
+  Hər bölmə GOLD-a mümkün təsirin sadə izahını göstərir. "Pattern namizədləri"
+  bölməsində indi həm draft kartlar, həm qeydiyyat düyməsi, həm də qeydə
+  alınmış namizədlər cədvəli (arxivləşdirmə daxil) var.
+- Backend `262 passed`, frontend production build və `10/10` test, lint təmiz
+  (bax "Yoxlama vəziyyəti").
 
-## Əvvəlki tamamlanan iş (eyni sessiya)
+## Commit/push vəziyyəti
 
-- `fair_value_gap 1.0.0` causal/no-lookahead Fair Value Gap detektoru backend
-  (`backend/app/analysis/fair_value_gap.py`, `replay_analysis.py`, `main.py`)
-  və frontend-ə (`technical-analysis-panel.tsx`, `dashboard-navigation.tsx`,
-  `page.tsx`, `replay-panel.tsx`) əlavə edildi.
-- Bullish və bearish boşluqlar ayrıdır; `open/partially_filled/filled/invalidated/
-  no_gap/insufficient_data` halları açıq göstərilir. Bu qat strategiya, siqnal,
-  giriş, risk ölçüsü və order yaratmır.
-- Tam backend regressiyası: `243 passed`.
-- Frontend production build və `9/9` test keçdi.
-- `git diff --check` xəta vermədi; yalnız sətir sonluğu xəbərdarlıqları mövcuddur.
-- Backend kodu bu sessiyaya başlamazdan əvvəl artıq commit edilməmiş şəkildə iş
-  qovluğunda var idi (əvvəlki sessiyadan); bu sessiya onu yoxladı, tamamladı
-  (frontend əlavə etdi) və sənədləşdirdi.
-- Commit `1aa85c8` (FVG) istifadəçi təsdiqi ilə `origin/main`-ə push edildi.
-- İlk CI run (`31010235297`) `dashboard-navigation.tsx`-dəki əvvəldən mövcud
-  `react-hooks/immutability` lint xətasına görə uğursuz oldu (FVG kodu ilə
-  əlaqəsi yoxdur).
-- Bu lint xətası düzəldildi (render-zamanı `previousGroup` mutasiyası modul
-  səviyyəli sabit massivlə əvəz olundu), lokal lint/test/build təmiz keçdi,
-  commit `7d49f97` push edildi.
-- İkinci CI run (`31011108501`): Backend və Frontend (lint daxil) job-larının
-  hər ikisi **uğurlu**. `main` budağı hazırda CI-də yaşıldır.
-- Diqqət: istifadəçi eyni lint düzəlişini paralel bir fon sessiyasında da
-  (`task_b2a032b5`) başlatmışdı; həmin sessiya də `dashboard-navigation.tsx`-ə
-  toxunubsa, növbəti push cəhdində konflikt/non-fast-forward ehtimalı var —
-  yeni sessiya əvvəlcə `git status`/`git log` ilə yoxlamalıdır.
+- `main` origin-ə sinxrondur, ta ki bu sessiyanın son işi (pattern namizədi
+  persistence qatı) commit/push edilənə qədər — sənədin bu versiyası yazılan
+  anda hələ commit edilməyib, tamamlanma qeydlərinə bax.
+- Son push edilmiş commit-lər (xronoloji): `1aa85c8` (FVG) → `7d49f97`
+  (sidebar lint) → `0a0f2d2` (draft pattern namizədi) → `847249b` (Phase 2
+  Stable). Hamısı CI-də yaşıl idi.
+- Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
+  sessiyasında da (`task_b2a032b5`) başlatmışdı. Növbəti sessiya `git fetch`/
+  `git log origin/main` ilə gözlənilməz commit olub-olmadığını yoxlamalıdır.
 
-## Vizual yoxlama qeydi
+## Yoxlama vəziyyəti
 
-- Brauzer avtomatlaşdırması layihədən kənardakı `C:\Users\user\package.json` faylının etibarsız olması səbəbindən qoşula bilmədi.
-- Bu, layihə kodunun testi deyil; frontend build və avtomatik UI testləri uğurla keçib.
-- Həmin xarici fayla istifadəçinin ayrıca icazəsi olmadan toxunma.
+- Backend: `.venv/Scripts/python -m pytest tests/backend -q` — `262 passed`
+  (bu maşında `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp`
+  ilə başqa qovluq göstərmək lazımdır, məs. scratchpad daxilində).
+- Frontend: `npm run lint` və `npm run test` (build + `10/10` test) təmiz.
+- Canlı brauzerdə vizual yoxlama edilməyib (bu maşındakı naməlum xarici
+  mühit məhdudiyyətinə görə, əvvəlki sessiyalardan bəri davam edir). Bütün
+  frontend işi yalnız avtomatlaşdırılmış test/build ilə təsdiqlənib.
 
 ## Növbəti mərhələ
 
-`Causal FVG detector 1.0.0`, Faza 2 rəsmi bağlanışı və draft pattern namizədi
-generatoru tamamlandı. Pattern namizədi işinin qalan hissəsi (vəziyyət maşını,
-persistence, backtest, tam CRUD API) hələ seçilməyib — namizədlər
-`docs/status/NEXT_TASK.md`-dədir və istifadəçinin ayrıca təsdiqini gözləyir.
+Seçilməyib. Namizədlər (`docs/status/NEXT_TASK.md`): backtesting (pattern
+namizədini `registered`-dən `running`/`evaluated`-ə aparan məntiqi növbəti
+addım), uğursuz eksperimentlərin arxivləşdirilməsi, SHADOW hazırlığı.
+İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 
-Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olmadan real ticarət aktivləşdirilməməlidir. Push yalnız istifadəçi ayrıca tələb etdikdə edilməlidir.
-
-## Ən son etibarlı vəziyyət — 2026-08-05
-
-- Son tamamlanan vahid: frontendin sol menyulu, bölmə əsaslı iş sahəsinə çevrilməsi.
-- Standart mərkəzi görünüş `Nəticələr`dir.
-- Hər bölmədə rəqəm, GOLD-a mümkün təsirin sadə izahı və açılan `Nəyə əsaslanır?` tədris qeydi var.
-- Yeni əsas fayl: `frontend/app/dashboard-navigation.tsx`.
-- Dəyişən fayllar: `frontend/app/page.tsx`, `frontend/app/replay-panel.tsx`,
-  `frontend/app/technical-analysis-panel.tsx`, `frontend/app/globals.css`.
-- Yeni müqavilə testi: `frontend/tests/dashboard-navigation.test.mjs`.
-- Frontend production build və bütün `8/8` test uğurla keçib.
-- Növbəti müstəqil mərhələ `Causal FVG detektoru 1.0.0`-dır və ayrıca istifadəçi təsdiqi tələb edir.
-- Bu vahid üçün GitHub push edilməyib. Push yalnız açıq istifadəçi istəyi ilə edilməlidir.
-
-## Ən son etibarlı vəziyyət — 2026-08-05 (frontend fokus düzəlişi)
-
-- Tam replay sessiya idarəetməsi yalnız `Replay sessiyaları` bölməsində görünür.
-- Digər analiz menyuları seçilmiş replay-in qısa kontekstini və yalnız aid analizi göstərir.
-- `Sessiyanı dəyiş` düyməsi istifadəçini replay seçiminə aparır.
-- Hər menyuda üç addımlı istifadə qaydası, GOLD-a mümkün təsir və açılan əsaslandırma var.
-- İstifadəçi görünüşündəki texniki `Phase 2` başlığı çıxarılıb.
-- Frontend production build və `9/9` test uğurla keçib.
-- GitHub push edilməyib. Növbəti müstəqil mərhələ ayrıca təsdiqlə
-  `Causal FVG detektoru 1.0.0`-dır.
-
-## Ən son etibarlı vəziyyət — 2026-08-05 (Causal FVG detektoru)
-
-- `fair_value_gap 1.0.0` backend modulu (`backend/app/analysis/fair_value_gap.py`)
-  `replay_analysis.py` (`ANALYSIS_API_VERSION 1.5.0`) və `main.py`-a calanıb.
-- Frontend-ə "Fair Value Gap" menyu bölməsi, `FvgPanel` kartı və uyğunluq
-  xəbərdarlığı əlavə edildi (`technical-analysis-panel.tsx`,
-  `dashboard-navigation.tsx`, `page.tsx`, `replay-panel.tsx`).
-- Backend `243 passed`, frontend production build və `9/9` test keçdi.
-- Commit `1aa85c8` istifadəçi təsdiqi ilə `origin/main`-ə push edildi.
-- İlk CI run `dashboard-navigation.tsx`-dəki əvvəldən mövcud
-  `react-hooks/immutability` lint xətasına görə uğursuz oldu (FVG-dən asılı deyil);
-  düzəliş commit `7d49f97` ilə push edildi və ikinci CI run (`31011108501`)
-  Backend + Frontend (lint daxil) tam uğurla keçdi. `main` CI-də yaşıldır.
-- Növbəti mərhələ seçilməyib; namizədlər `docs/status/NEXT_TASK.md`-dədir.
-
-## Ən son etibarlı vəziyyət — 2026-08-05 (draft pattern namizədi generatoru)
-
-- `pattern_candidate 1.0.0` mövcud struktur/likvidlik/BOS-CHoCH+retest
-  detektorlarını `pattern_hypothesis_registry`-nin 6 hipotezinə bağlayır;
-  yalnız `draft` lifecycle, backtest/persistence/qəbul qərarı yoxdur.
-- Yeni `GET /api/v2/replay-sessions/{id}/pattern-candidates` endpoint-i və
-  frontend "Pattern namizədləri" bölməsi əlavə edildi.
-- Backend `251 passed`, frontend build və `10/10` test, lint təmiz.
-- Commit hələ edilməyib; commit/push yalnız istifadəçi təsdiqindən sonra.
-- Növbəti sessiya əvvəlcə `git fetch`/`git log origin/main` ilə paralel fon
-  sessiyasının (`task_b2a032b5`) bir şey push edib-etmədiyini yoxlamalıdır.
-
-## Ən son etibarlı vəziyyət — 2026-08-05 (Faza 2 rəsmi bağlanışı)
-
-- `docs/releases/PHASE_2_STABLE.md` yaradıldı; qərar 2026-08-04 tarixli real
-  qəbul sınağına əsaslanır (`PASSED`, `0` kritik tapıntı, xam tick sayı
-  dəyişməz).
-- `PROJECT_ROADMAP.md`: Phase 2 statusu `COMPLETED — STABLE`, cari mərhələ
-  `Phase 4`-ə yeniləndi.
-- Kod dəyişmədi; commit yalnız sənəd fayllarındandır.
+Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olmadan
+real ticarət aktivləşdirilməməlidir. Push yalnız istifadəçi ayrıca tələb
+etdikdə edilməlidir.
