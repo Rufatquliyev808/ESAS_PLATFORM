@@ -8,6 +8,14 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 2 Stable release decision
+
+- Phase 2 (replay and data quality) formally declared `STABLE`
+  (`docs/releases/PHASE_2_STABLE.md`), based on the 2026-08-04 real-data
+  acceptance run (`PASSED`, 0 critical findings, raw tick count unchanged).
+  `PROJECT_ROADMAP.md` status updated accordingly. Documentation only, no
+  code or test changes.
+
 ### Added — Draft pattern candidate generator (Phase 4, partial)
 
 - `pattern_candidate 1.0.0` combines the existing causal detectors (market

@@ -1,5 +1,25 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Phase 2 rəsmi bağlanışı (STABLE)
+
+Phase 2 (Replay və məlumat keyfiyyəti) rəsmi olaraq bağlanıb. Qərar və rəsmi
+qəbul sübutu: `docs/releases/PHASE_2_STABLE.md`.
+
+- Bütün Phase 2 roadmap bəndləri (`PROJECT_ROADMAP.md`) tamamlanmış idi;
+  bu addım yalnız Phase 1-dəki kimi rəsmi qəbul sənədini yazdı — yeni kod
+  dəyişikliyi yoxdur.
+- Əsas sübut mənbəyi: 2026-08-04 tarixli real `GOLD` intervalı üzərində
+  aparılmış `step`/`max_speed` cross-mode qəbul sınağı
+  (`.runtime/phase2-acceptance/phase2-replay-latest.json`), nəticə `PASSED`,
+  kritik tapıntı `0`, xam tick sayı dəyişməz (`1,258,269`).
+- Tarixi `DQ-009` (`542` warning, `received_at` < `event_timestamp`) qalıq
+  keyfiyyət qeydi kimi sənədləşdirilib; kök səbəb MT5 Bridge `1.6.1`-də
+  düzəldilib, canlı axına aid deyil, Phase 2 xam məlumatı dəyişdirmədiyi üçün
+  tarixi tick-lər geriyə düzəldilməyib.
+- `PROJECT_ROADMAP.md`-də Phase 2 statusu `IN PROGRESS`-dən
+  `COMPLETED — STABLE`-ə, cari mərhələ `Phase 4`-ə yeniləndi.
+- Kod, test və CI dəyişmədi — bu, sənədləşdirmə/qərar addımıdır.
+
 ## 2026-08-05 — Draft pattern namizədi generatoru (Phase 4)
 
 - `pattern_candidate 1.0.0` əlavə edildi (`backend/app/strategies/pattern_candidate.py`):
@@ -211,9 +231,9 @@ sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı
 - Audit xətası bütün əməliyyatı geri qaytarır və xam tick-lər dəyişmir.
 - Tam backend nəticəsi `125 passed`; frontend lint və production build keçdi.
 
-Son yenilənmə: 2026-08-04
-Cari mərhələ: Phase 2
-Status: PHASE 1 STABLE — PHASE 2 IN PROGRESS
+Son yenilənmə: 2026-08-05
+Cari mərhələ: Phase 4
+Status: PHASE 1 STABLE — PHASE 2 STABLE — PHASE 4 IN PROGRESS
 Əsas budaq: `main`
 
 ## Phase 1 yekun qəbul nəticəsi

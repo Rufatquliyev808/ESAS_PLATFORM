@@ -10,7 +10,9 @@ Mərhələ: Phase 4-ün qalan maddələri
 - Sidebar render-zamanı mutasiya lint düzəlişi (commit `7d49f97`).
 - Draft pattern namizədi generatoru — 6 hipotez (market_structure, liquidity_sweep,
   structure_break long/short), `GET /pattern-candidates` endpoint-i, frontend
-  bölməsi. Backend `251 passed`, frontend build və `10/10` test.
+  bölməsi. Backend `251 passed`, frontend build və `10/10` test (commit `0a0f2d2`).
+- Faza 2 rəsmi olaraq `STABLE` elan edildi (`docs/releases/PHASE_2_STABLE.md`).
+  Kod dəyişmədi, yalnız sənədləşdirmə/qərar.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -25,11 +27,6 @@ Mərhələ: Phase 4-ün qalan maddələri
   (pattern namizədi backtest edilmədən `registered`-dən irəli gedə bilməz).
 - Uğursuz eksperimentlərin arxivləşdirilməsi.
 - SHADOW mərhələsi üçün hazırlıq.
-
-## Kənar (əlaqəsiz, kiçik) iş
-
-- Faza 2 formal olaraq "Stable" elan edilməyib (Faza 1-dəki kimi rəsmi qəbul
-  sənədi yoxdur) — bütün roadmap bəndləri `[x]` olsa da, formal bağlanış sənədi yazılmayıb.
 
 ## Vizual yoxlama qeydi
 

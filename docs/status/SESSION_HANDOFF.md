@@ -11,6 +11,13 @@ Son yenilənmə: 2026-08-05
 
 ## Son tamamlanan iş
 
+- Faza 2 (Replay və məlumat keyfiyyəti) rəsmi olaraq `STABLE` elan edildi:
+  `docs/releases/PHASE_2_STABLE.md`, `PROJECT_ROADMAP.md`-də status
+  `COMPLETED — STABLE`-ə yeniləndi. Bütün roadmap bəndləri əvvəlcədən
+  `[x]` idi; bu addım yalnız Phase 1-dəki kimi rəsmi qəbul sənədini yazdı,
+  2026-08-04 tarixli real qəbul sınağına (`.runtime/phase2-acceptance/
+  phase2-replay-latest.json`, `PASSED`, `0` kritik tapıntı) istinad edərək.
+  Kod, test və CI dəyişmədi.
 - Draft pattern namizədi generatoru (Phase 4, "Pattern namizədlərinin
   yaradılması" bəndinin **hissəvi** tamamlanması): `backend/app/strategies/
   pattern_candidate.py` (pure detektor birləşdirmə), `replay_pattern_candidates.py`
@@ -67,10 +74,10 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-`Causal FVG detector 1.0.0` və draft pattern namizədi generatoru tamamlandı.
-Pattern namizədi işinin qalan hissəsi (vəziyyət maşını, persistence, backtest,
-tam CRUD API) hələ seçilməyib — namizədlər `docs/status/NEXT_TASK.md`-dədir və
-istifadəçinin ayrıca təsdiqini gözləyir.
+`Causal FVG detector 1.0.0`, Faza 2 rəsmi bağlanışı və draft pattern namizədi
+generatoru tamamlandı. Pattern namizədi işinin qalan hissəsi (vəziyyət maşını,
+persistence, backtest, tam CRUD API) hələ seçilməyib — namizədlər
+`docs/status/NEXT_TASK.md`-dədir və istifadəçinin ayrıca təsdiqini gözləyir.
 
 ## Təhlükəsizlik
 
@@ -126,3 +133,12 @@ Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olm
 - Commit hələ edilməyib; commit/push yalnız istifadəçi təsdiqindən sonra.
 - Növbəti sessiya əvvəlcə `git fetch`/`git log origin/main` ilə paralel fon
   sessiyasının (`task_b2a032b5`) bir şey push edib-etmədiyini yoxlamalıdır.
+
+## Ən son etibarlı vəziyyət — 2026-08-05 (Faza 2 rəsmi bağlanışı)
+
+- `docs/releases/PHASE_2_STABLE.md` yaradıldı; qərar 2026-08-04 tarixli real
+  qəbul sınağına əsaslanır (`PASSED`, `0` kritik tapıntı, xam tick sayı
+  dəyişməz).
+- `PROJECT_ROADMAP.md`: Phase 2 statusu `COMPLETED — STABLE`, cari mərhələ
+  `Phase 4`-ə yeniləndi.
+- Kod dəyişmədi; commit yalnız sənəd fayllarındandır.

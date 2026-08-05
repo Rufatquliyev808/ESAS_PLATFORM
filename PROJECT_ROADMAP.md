@@ -1,7 +1,7 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-08-04
-Cari mərhələ: Phase 2
+Son yenilənmə: 2026-08-05
+Cari mərhələ: Phase 4
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -94,7 +94,10 @@ MT5-dən gələn tick məlumatını itkisiz, yoxlanıla bilən və monitorinq ol
 
 # Phase 2 — Replay və məlumat keyfiyyəti
 
-Status: IN PROGRESS
+Status: COMPLETED — STABLE
+
+Rəsmi qəbul sübutu və qərar: `docs/releases/PHASE_2_STABLE.md`
+(`2026-08-05`).
 
 - [x] Tarixi tick məlumatının oxunması
 - [x] Müəyyən zaman aralığının replay edilməsi
@@ -244,8 +247,9 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Phase 2 məlumat keyfiyyəti analizinin ilk qaydalarını — zaman boşluğu, geriyə gedən
-timestamp və dublikat aşkarlanmasını — deterministik və versiyalanmış formada qurmaq.
+Phase 4-ün qalan bəndləri: pattern namizədi persistence/`registered` vəziyyəti,
+backtesting, uğursuz eksperimentlərin arxivləşdirilməsi və SHADOW mərhələsi
+üçün hazırlıq. Növbəti konkret addım istifadəçinin ayrıca təsdiqi ilə seçilir.
 
 Ətraflı tapşırıq:
 
