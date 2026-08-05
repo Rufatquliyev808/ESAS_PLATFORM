@@ -53,13 +53,17 @@ Son yenilənmə: 2026-08-05
 
 ## Commit/push vəziyyəti
 
-- Bu sənədin yazıldığı anda son artım (`classify` endpoint-i, arxivləşdirmə
-  genişlənməsi) hələ commit/push edilməyib — əvvəlki 7 addım (`1aa85c8` →
-  `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` → `73bf580` → `90133ac` →
-  `4fcaff6`) artıq push edilib və CI-də yaşıl idi.
+- **Hər şey commit və push edilib, `main` origin ilə sinxrondur.** Sessiya
+  ərzində 9 commit ardıcıl push edildi və hər biri ayrıca CI-də (Backend +
+  Frontend) yaşıl nəticə aldı: `1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b`
+  → `14345fd` → `73bf580` → `90133ac` → `4fcaff6` → `1b891db` (sonuncu).
+  Son CI run: Backend + Frontend `success`.
+  İşçi qovluqda yalnız `.tmp/` (əvvəlki sessiyanın pytest qalıqları,
+  untracked, əhəmiyyətsiz) qalıb.
 - Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
-  sessiyasında da (`task_b2a032b5`) başlatmışdı. Növbəti sessiya `git fetch`/
-  `git log origin/main` ilə gözlənilməz commit olub-olmadığını yoxlamalıdır.
+  sessiyasında da (`task_b2a032b5`) başlatmışdı; nəticəsi bu sessiyaya
+  gəlməyib. Növbəti sessiya `git fetch`/`git log origin/main` ilə
+  gözlənilməz commit olub-olmadığını yoxlamalıdır (ehtiyat tədbiri kimi).
 - `0005` migrasiyası bu sessiyada bir dəfə **amend edildi** (heç bir real
   bazaya tətbiq edilmədən) ki, `lifecycle_state` CHECK-i başdan tam
   müqavilə lüğətini əhatə etsin — SQLite-də CHECK genişləndirmək DROP tələb
