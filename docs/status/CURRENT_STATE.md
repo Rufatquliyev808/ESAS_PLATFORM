@@ -14,12 +14,21 @@
   köhnə backend cavabı üçün uyğunluq xəbərdarlığı qorunur.
 - Tam yoxlama: backend `243 passed` (yeni `fair_value_gap` modul testləri daxil);
   frontend production build və `9/9` test keçdi.
-- Frontend `eslint-plugin-react-hooks 7.x`-in yeni `react-hooks/immutability`
-  qaydası `dashboard-navigation.tsx`-də (`previousGroup` reassignment,
-  FVG işindən asılı olmayan, əvvəldən mövcud kod) bir xəta verir; bu FVG işinin
-  hissəsi deyil və ayrıca düzəliş kimi qeydə alınıb.
 - Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır.
-- Commit edilməyib; commit və push yalnız istifadəçi təsdiqi ilə ediləcək.
+- Commit `1aa85c8` ilə edildi və istifadəçi təsdiqi ilə `origin/main`-ə push edildi.
+
+## 2026-08-05 — Sidebar lint düzəlişi və CI yaşıl
+
+- `dashboard-navigation.tsx`-də `eslint-plugin-react-hooks 7.x`-in
+  `react-hooks/immutability` qaydasını pozan render-zamanı `previousGroup`
+  mutasiyası aradan qaldırıldı; menyu qrup başlığı indi render-dən əvvəl
+  modul səviyyəsində hesablanan sabit massivdən (`MENU_ENTRIES`) götürülür.
+- Bu düzəliş FVG detektorundan asılı deyildi, əvvəldən mövcud koddan qaynaqlanırdı.
+- Lokal `npm run lint`, `npm run test` (build + `9/9` test) təmiz keçdi.
+- Commit `7d49f97` ilə `origin/main`-ə push edildi.
+- GitHub Actions "Tests" iş axını (run `31011108501`) Backend və Frontend
+  (lint daxil) job-larının hər ikisində **uğurlu** nəticə verdi; `main` budağı
+  indi CI-də yaşıldır.
 
 ## 2026-08-05 — Causal retest 1.0.0 tamamlandı
 

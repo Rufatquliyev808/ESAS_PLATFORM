@@ -20,13 +20,23 @@ Son yenilənmə: 2026-08-05
   giriş, risk ölçüsü və order yaratmır.
 - Tam backend regressiyası: `243 passed`.
 - Frontend production build və `9/9` test keçdi.
-- `npm run lint`-də `dashboard-navigation.tsx` faylında FVG işindən asılı olmayan,
-  əvvəldən mövcud olan bir `react-hooks/immutability` xətası var (bax
-  `docs/status/NEXT_TASK.md`).
 - `git diff --check` xəta vermədi; yalnız sətir sonluğu xəbərdarlıqları mövcuddur.
 - Backend kodu bu sessiyaya başlamazdan əvvəl artıq commit edilməmiş şəkildə iş
   qovluğunda var idi (əvvəlki sessiyadan); bu sessiya onu yoxladı, tamamladı
-  (frontend əlavə etdi) və sənədləşdirdi. Hələ commit edilməyib.
+  (frontend əlavə etdi) və sənədləşdirdi.
+- Commit `1aa85c8` (FVG) istifadəçi təsdiqi ilə `origin/main`-ə push edildi.
+- İlk CI run (`31010235297`) `dashboard-navigation.tsx`-dəki əvvəldən mövcud
+  `react-hooks/immutability` lint xətasına görə uğursuz oldu (FVG kodu ilə
+  əlaqəsi yoxdur).
+- Bu lint xətası düzəldildi (render-zamanı `previousGroup` mutasiyası modul
+  səviyyəli sabit massivlə əvəz olundu), lokal lint/test/build təmiz keçdi,
+  commit `7d49f97` push edildi.
+- İkinci CI run (`31011108501`): Backend və Frontend (lint daxil) job-larının
+  hər ikisi **uğurlu**. `main` budağı hazırda CI-də yaşıldır.
+- Diqqət: istifadəçi eyni lint düzəlişini paralel bir fon sessiyasında da
+  (`task_b2a032b5`) başlatmışdı; həmin sessiya də `dashboard-navigation.tsx`-ə
+  toxunubsa, növbəti push cəhdində konflikt/non-fast-forward ehtimalı var —
+  yeni sessiya əvvəlcə `git status`/`git log` ilə yoxlamalıdır.
 
 ## Vizual yoxlama qeydi
 
@@ -36,9 +46,9 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-`Causal FVG detector 1.0.0` tamamlandı. Növbəti mərhələ hələ seçilməyib —
-namizədlər `docs/status/NEXT_TASK.md`-dədir və istifadəçinin ayrıca təsdiqini
-gözləyir.
+`Causal FVG detector 1.0.0` tamamlandı və CI-də yaşıldır. Növbəti mərhələ hələ
+seçilməyib — namizədlər `docs/status/NEXT_TASK.md`-dədir və istifadəçinin
+ayrıca təsdiqini gözləyir.
 
 ## Təhlükəsizlik
 
@@ -76,8 +86,9 @@ Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olm
   xəbərdarlığı əlavə edildi (`technical-analysis-panel.tsx`,
   `dashboard-navigation.tsx`, `page.tsx`, `replay-panel.tsx`).
 - Backend `243 passed`, frontend production build və `9/9` test keçdi.
-- `dashboard-navigation.tsx`-də FVG-dən asılı olmayan, əvvəldən mövcud
-  `react-hooks/immutability` lint xətası var; ayrıca düzəliş kimi qeydə alınıb.
-- Bu vahid üçün hələ commit edilməyib; commit yalnız istifadəçi təsdiqindən
-  sonra ediləcək, push isə ayrıca açıq istəklə.
+- Commit `1aa85c8` istifadəçi təsdiqi ilə `origin/main`-ə push edildi.
+- İlk CI run `dashboard-navigation.tsx`-dəki əvvəldən mövcud
+  `react-hooks/immutability` lint xətasına görə uğursuz oldu (FVG-dən asılı deyil);
+  düzəliş commit `7d49f97` ilə push edildi və ikinci CI run (`31011108501`)
+  Backend + Frontend (lint daxil) tam uğurla keçdi. `main` CI-də yaşıldır.
 - Növbəti mərhələ seçilməyib; namizədlər `docs/status/NEXT_TASK.md`-dədir.

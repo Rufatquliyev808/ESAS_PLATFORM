@@ -8,6 +8,13 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Sidebar render-time mutation (lint)
+
+- `dashboard-navigation.tsx`-də menyu qrup başlığını göstərmək üçün render
+  zamanı dəyişən mutasiya edilirdi; bu `eslint-plugin-react-hooks 7.x`-in
+  `react-hooks/immutability` qaydasını pozurdu və CI-ni bloklayırdı. Qrup
+  bayrağı indi render-dən əvvəl sabit massivdə hesablanır.
+
 ### Added — Causal Fair Value Gap detector
 
 - `fair_value_gap 1.0.0` üç ardıcıl bağlanmış bar arasında yaranan bullish/bearish
