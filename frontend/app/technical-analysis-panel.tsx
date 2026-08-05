@@ -25,6 +25,8 @@ type LiquidityObservation = { direction: "bullish" | "bearish"; state: string; p
 type LiquiditySweep = { version: string; pool_tolerance_bps: number; minimum_touches: number; minimum_sweep_bps: number; maximum_pool_age_bars: number; pools: LiquidityPool[]; bullish_observation: LiquidityObservation; bearish_observation: LiquidityObservation; fingerprint: string };
 type StructureBreakObservation = { direction: "bullish" | "bearish"; state: string; break_type: string | null; broken_pivot_kind: string | null; broken_pivot_classification: string | null; level: number | null; pivot_confirmed_at: string | null; observed_at: string | null; close_distance_bps: number | null };
 type BosChoch = { version: string; minimum_close_break_bps: number; maximum_pivot_age_bars: number; observations: StructureBreakObservation[]; bullish_observation: StructureBreakObservation; bearish_observation: StructureBreakObservation; fingerprint: string };
+type RetestObservation = { direction: "bullish" | "bearish"; state: string; break_type: string | null; level: number | null; break_observed_at: string | null; touched_at: string | null; observed_at: string | null; close_distance_bps: number | null };
+type Retest = { version: string; touch_tolerance_bps: number; confirmation_close_bps: number; invalidation_close_bps: number; maximum_retest_age_bars: number; observations: RetestObservation[]; bullish_observation: RetestObservation; bearish_observation: RetestObservation; fingerprint: string };
 type AnalysisResult = {
   session_id: string;
   symbol: string;
@@ -44,12 +46,15 @@ type AnalysisResult = {
     liquidity_sweep_fingerprint?: string;
     bos_choch_version?: string;
     bos_choch_fingerprint?: string;
+    retest_version?: string;
+    retest_fingerprint?: string;
   };
   bars: AnalysisBar[];
   indicators: { ema: IndicatorSeries; rsi: IndicatorSeries; atr: IndicatorSeries };
   market_structure?: MarketStructure;
   liquidity_sweep?: LiquiditySweep;
   bos_choch?: BosChoch;
+  retest?: Retest;
   interpretation: string;
   api_version: string;
 };
@@ -214,6 +219,30 @@ function BosChochPanel({ result }: { result: BosChoch }) {
   </article>;
 }
 
+function RetestPanel({ result }: { result: Retest }) {
+  const labels: Record<string, string> = {
+    confirmed_retest: "Retest təsdiqlənib",
+    unconfirmed_retest: "Toxunuş var, bağlanış təsdiqi yoxdur",
+    invalidated: "Səviyyə etibarsızlaşıb",
+    no_retest: "Retest müşahidə edilməyib",
+    insufficient_data: "Məlumat azdır",
+    conflicting: "Zidd retest müşahidəsi",
+  };
+  const observations = [result.bullish_observation, result.bearish_observation];
+  return <article className="analysis-card bos-choch-card">
+    <header><div><p className="eyebrow">Səbəbli retest · araşdırma müşahidəsi</p><h4>Qırılmış səviyyəyə geri dönüş</h4></div><span className="analysis-badge ready">Versiya {result.version}</span></header>
+    <p>Yalnız BOS/CHoCH qırılmasından sonra bağlanan barlar yoxlanılır. Gələcək məlumat hesablamaya daxil edilmir.</p>
+    <div className="liquidity-sides">{observations.map((item) => <section key={item.direction} className={`liquidity-side ${item.direction}`}>
+      <span>{item.direction === "bullish" ? "YÜKSƏLİŞ RETESTİ" : "ENİŞ RETESTİ"}</span>
+      <strong>{labels[item.state] ?? item.state}</strong>
+      <small>Səviyyə: {formatNumber(item.level, 5)} · Qırılma: {item.break_observed_at ? formatTime(item.break_observed_at) : "—"}</small>
+      <small>Toxunuş: {item.touched_at ? formatTime(item.touched_at) : "—"} · Bağlanış məsafəsi: {formatNumber(item.close_distance_bps, 2)} bps</small>
+    </section>)}</div>
+    <div className="bos-choch-meta">Toxunuş dözümlülüyü: {result.touch_tolerance_bps} bps · Etibarsızlaşma: {result.invalidation_close_bps} bps · Maksimum yaş: {result.maximum_retest_age_bars} bar</div>
+    <p className="liquidity-boundary">Bu nəticə strategiya, siqnal, giriş və ya əməliyyat əmri deyil.</p>
+  </article>;
+}
+
 export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [emaPeriod, setEmaPeriod] = useState(20);
@@ -282,8 +311,9 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Bağlanmış barlar hesablanır</strong><p>EMA, RSI və ATR eyni replay məlumatından hazırlanır.</p></div></div> : result && <>
         <PriceChart bars={result.bars} ema={result.indicators.ema} />
         {result.market_structure ? <StructurePanel structure={result.market_structure} /> : <CompatibilityNotice layer="Bazar strukturu" />}
-        {result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />}
-        {result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />}
+         {result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />}
+         {result.retest ? <RetestPanel result={result.retest} /> : <CompatibilityNotice layer="Retest analizi" />}
+         {result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />}
         <div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div>
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
@@ -297,6 +327,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
             <Fingerprint label="İndikator izi" value={result.lineage.indicator_fingerprint} />
             <Fingerprint label="Likvidlik izi" value={result.lineage.liquidity_sweep_fingerprint} />
             <Fingerprint label="BOS/CHoCH izi" value={result.lineage.bos_choch_fingerprint} />
+            <Fingerprint label="Retest izi" value={result.lineage.retest_fingerprint} />
           </dl>
         </details>
         <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu göstəricilər araşdırma üçündür. Platforma bu mərhələdə alış/satış siqnalı vermir və əməliyyat açmır.</p>

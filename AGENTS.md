@@ -1,86 +1,38 @@
-# ESAS Platform — Codex İş Qaydaları
+# ESAS Platform — Codex iş qaydaları
 
-## İşə başlama qaydası
+## Hər sessiyanın başlanğıcı
 
-Hər yeni iş sessiyasında əvvəlcə bu faylları oxu:
+Bu faylları ardıcıllıqla oxu: `AGENTS.md`, konstitusiya faylları, arxitektura, `PROJECT_ROADMAP.md`, `docs/status/CURRENT_STATE.md`, `docs/status/NEXT_TASK.md`, `docs/status/SESSION_HANDOFF.md`, `CHANGELOG.md`. Sonra Git statusu, branch və son commitləri yoxla. Cari vəziyyəti anlamadan kodu dəyişmə və əvvəlki işi təkrarlama.
 
-1. `AGENTS.md`
-2. `docs/constitution/PLATFORM_RULES.md`
-3. `docs/constitution/EVENT_CONTRACT.md`
-4. `docs/constitution/MODULE_LIFECYCLE.md`
-5. `docs/constitution/VERSION_POLICY.md`
-6. `docs/architecture/PLATFORM_ARCHITECTURE.md`
-7. `PROJECT_ROADMAP.md`
-8. `docs/status/CURRENT_STATE.md`
-9. `docs/status/NEXT_TASK.md`
-10. `CHANGELOG.md`
+## Əsas prinsiplər
 
-Sonra Git statusunu və son commit tarixçəsini yoxla. Cari vəziyyəti anlamadan kod dəyişdirmə.
-
-## Əsas məqsəd
-
-ESAS Platform bazarı qərəzsiz müşahidə edən, xam məlumat toplayan, statistik qanunauyğunluqları araşdıran və yalnız sübut edilmiş nəticələr əsasında qərar verən modul platformadır.
-
-Platforma əvvəlcədən seçilmiş strategiyanı sübut etməyə çalışmamalıdır. Strategiyalar məlumatdan və yoxlanmış nəticələrdən yaranmalıdır.
-
-## Məcburi prinsiplər
-
-- Məlumatın bütövlüyü performansdan üstündür.
-- Xam məlumat dəyişdirilməməli və səbəbsiz silinməməlidir.
-- Modullar bir-birinin daxili koduna müdaxilə etməməlidir.
-- Modullar yalnız standart interfeys və event-lərlə əlaqə saxlamalıdır.
-- Event-lər yaradıldıqdan sonra dəyişdirilməməlidir.
-- Event müqaviləsindəki dəyişikliklər versiyalandırılmalıdır.
-- Sübut edilməmiş modul real qərar və ticarətə təsir etməməlidir.
-- Hər yeni modul həyat dövrü qaydalarına uyğun inkişaf etdirilməlidir.
-- Frontend birbaşa verilənlər bazasına qoşulmamalıdır; backend API-dən istifadə etməlidir.
-- Frontend ticarət qərarı verməməlidir.
+- Məlumat bütövlüyü performansdan üstündür; xam məlumat dəyişdirilməməli və səbəbsiz silinməməlidir.
+- Modullar yalnız standart interfeys və versiyalanmış event müqavilələri ilə əlaqə saxlamalıdır.
+- Sübut edilməmiş modul real qərara və ticarətə təsir etməməlidir.
+- Frontend yalnız backend API istifadə etməli və ticarət qərarı verməməlidir.
+- Mövcud istifadəçi dəyişikliklərini icazəsiz silmə və üzərinə yazma.
+- Məxfi məlumatları, `.env`, parol, token və açarları Git-ə və sənədlərə əlavə etmə.
+- Real ticarəti yalnız açıq istifadəçi təsdiqi ilə aktivləşdir.
 
 ## Dəyişiklik qaydası
 
-Kod dəyişdirilməzdən əvvəl:
+Əvvəl məqsədi, təsir edilən faylları, konstitusiya uyğunluğunu, məlumat/geriyə uyğunluq riskini və testləri müəyyən et. Sonra kodu dəyiş, uyğun testləri və mümkün olduqda tam regressiyanı işlə, nəticəni yoxla, sənədləri yenilə və yalnız məqsədli faylları commit et. Push yalnız istifadəçi tapşırığı olduqda edilir.
 
-1. Tapşırığın məqsədini müəyyən et.
-2. Təsir edəcək faylları müəyyən et.
-3. Konstitusiya və arxitektura ilə uyğunluğu yoxla.
-4. Məlumat itkisi və geriyə uyğunluq risklərini qiymətləndir.
-5. Lazımi testləri müəyyən et.
+## Məcburi davamlılıq qeydiyyatı
 
-Kod dəyişdirildikdən sonra:
+Hər ayrıca iş tamamlanan kimi, növbəti işə keçməzdən əvvəl bunları yenilə:
 
-1. Müvafiq testləri icra et.
-2. Nəticəni yoxla.
-3. Sənədləri yenilə.
-4. `docs/status/CURRENT_STATE.md` faylını yenilə.
-5. `docs/status/NEXT_TASK.md` faylını növbəti işə uyğunlaşdır.
-6. Lazım olduqda `PROJECT_ROADMAP.md` və `CHANGELOG.md` fayllarını yenilə.
-7. Yalnız məqsədli faylları commit et.
+1. `docs/status/CURRENT_STATE.md` — bitən iş, dəyişən fayllar, test nəticələri, commit/push vəziyyəti və məlum problemlər.
+2. `docs/status/NEXT_TASK.md` — yalnız növbəti konkret mərhələ, sərhədlər, tamamlanma meyarları və təsdiq şərti.
+3. `CHANGELOG.md` — sistem davranışına təsir edən dəyişikliklər.
+4. `docs/status/SESSION_HANDOFF.md` — yeni söhbətin tarixçəsiz davam edə bilməsi üçün aktual xülasə.
 
-## Təhlükəsizlik
+Bu qeydiyyat edilməyibsə iş tamamlanmış sayılmır. Məxfi məlumatı handoff-a yazma. Yeni sessiya əvvəl real faylları, Git-i, testləri və verilənlər bazasını yoxlamalı; sənəddəki məlumatı kor-koranə qəbul etməməlidir.
 
-- `.env`, şifrələr, tokenlər, SSH açarları və digər məxfi məlumatları Git-ə əlavə etmə.
-- `.venv`, loglar, yaradılmış verilənlər bazaları və build fayllarını commit etmə.
-- İstifadəçinin mövcud dəyişikliklərini icazəsiz silmə və ya üzərinə yazma.
-- Məlumat bazasında dağıdıcı əməliyyatdan əvvəl ehtiyat nüsxə və bərpa yolunu müəyyən et.
-- Real ticarət funksiyasını açıq istifadəçi təsdiqi olmadan aktivləşdirmə.
+## Sessiya sonunda mütləq aydın olmalıdır
 
-## Phase 1 prioriteti
-
-Phase 1 tamamlanana qədər əsas prioritet etibarlı tick məlumatı axınıdır:
-
-`MT5 → Bridge → Event → HTTP → FastAPI → SQLite → Monitoring`
-
-AI, avtomatik qərar və real ticarət funksiyaları Phase 1 qəbul meyarları tamamlanmadan əsas prioritet olmamalıdır.
-
-## Sessiyanın tamamlanması
-
-Hər sessiyanın sonunda aşağıdakılar aydın olmalıdır:
-
-- nə edildi;
-- hansı fayllar dəyişdi;
-- hansı testlər keçirildi;
-- hansı problemlər qaldı;
+- nə edildi və hansı fayllar dəyişdi;
+- hansı testlər keçdi və hansı yoxlama bloklandı;
+- hansı problem və risk qaldı;
 - növbəti konkret tapşırıq nədir;
-- dəyişikliklər commit və push edilibmi.
-
-Yeni sessiya yalnız layihə sənədlərini və Git tarixçəsini oxumaqla qaldığı yerdən davam edə bilməlidir.
+- commit və push vəziyyəti nədir.

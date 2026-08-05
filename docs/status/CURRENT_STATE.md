@@ -1,5 +1,11 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Causal retest 1.0.0 tamamlandı
+
+- No-lookahead retest müşahidəsi backend və frontend-ə əlavə edildi.
+- Tam backend regressiyası: `239 passed`; frontend hədəf testi və lint keçdi.
+- Növbəti müstəqil mərhələ causal FVG detektorudur və ayrıca təsdiq tələb edir.
+
 ## Phase 4 causal BOS/CHoCH detektoru
 
 2026-08-05 tarixində `bos_choch 1.0.0` tamamlandı. Təsdiqlənmiş causal bazar strukturu

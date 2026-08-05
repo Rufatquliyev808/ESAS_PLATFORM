@@ -8,6 +8,14 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Causal retest detector
+
+- `retest 1.0.0` BOS/CHoCH qırılmasından sonra səviyyəyə geri dönüşü yalnız sonrakı bağlanmış barlarla müşahidə edir.
+- Bullish və bearish nəticələr ayrıdır; statuslar açıq, parametrlər versiyalanmış və nəticə deterministikdir.
+- Frontend iki istiqaməti sadə Azərbaycan dilində ayrıca göstərir.
+- Yoxlama: retest/API `13 passed`, tam backend `239 passed`, frontend hədəf testi və lint keçdi.
+- Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır.
+
 ### Added — Causal BOS/CHoCH detector
 
 - `bos_choch 1.0.0` əlavə edildi. Detektor yalnız əvvəlcədən təsdiqlənmiş causal pivotları
