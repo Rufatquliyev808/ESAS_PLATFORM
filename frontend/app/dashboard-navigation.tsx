@@ -34,8 +34,12 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "hypotheses", title: "Hipotezlər", description: "Sınaq üçün qaydalar reyestri", group: "Qiymətləndirmə" },
 ];
 
+const MENU_ENTRIES = MENU_ITEMS.map((item, index) => ({
+  item,
+  showGroup: index === 0 || item.group !== MENU_ITEMS[index - 1].group,
+}));
+
 export function DashboardSidebar({ active, onSelect }: { active: DashboardSection; onSelect: (section: DashboardSection) => void }) {
-  let previousGroup = "";
   return (
     <aside className="dashboard-sidebar" aria-label="Platforma bölmələri">
       <div className="sidebar-heading">
@@ -44,9 +48,7 @@ export function DashboardSidebar({ active, onSelect }: { active: DashboardSectio
         <p>İstədiyiniz nəticəni seçin. Mərkəzdə yalnız həmin bölmə açılacaq.</p>
       </div>
       <nav className="dashboard-menu">
-        {MENU_ITEMS.map((item) => {
-          const showGroup = item.group !== previousGroup;
-          previousGroup = item.group;
+        {MENU_ENTRIES.map(({ item, showGroup }) => {
           return (
             <div className="menu-entry" key={item.id}>
               {showGroup && <p className="menu-group">{item.group}</p>}
