@@ -65,7 +65,7 @@ export function DashboardSidebar({ active, onSelect }: { active: DashboardSectio
   );
 }
 
-export function SectionGuide({ title, metric, impact, evidence }: { title: string; metric: string; impact: string; evidence: string }) {
+export function SectionGuide({ title, metric, impact, evidence, steps }: { title: string; metric: string; impact: string; evidence: string; steps: string[] }) {
   return (
     <section className="section-guide" aria-label={`${title} izahı`}>
       <div>
@@ -84,6 +84,10 @@ export function SectionGuide({ title, metric, impact, evidence }: { title: strin
           <p>{evidence}</p>
         </details>
       </div>
+      <details className="guide-usage" open>
+        <summary>Bu bölmədən necə istifadə etməli?</summary>
+        <ol>{steps.map((step, index) => <li key={`${title}-${index}`}>{step}</li>)}</ol>
+      </details>
       <p className="guide-boundary">Bu izah araşdırma üçündür; təkbaşına alış və ya satış siqnalı deyil.</p>
     </section>
   );

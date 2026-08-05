@@ -511,6 +511,59 @@ export default function Home() {
     },
   };
 
+  const sectionSteps: Record<DashboardSection, string[]> = {
+    results: [
+      "Əvvəl ümumi vəziyyəti və xəbərdarlıqları yoxlayın.",
+      "Canlı məlumat sağlamdırsa nəticə bölmələrinə keçin.",
+      "Qırmızı xəbərdarlıq varsa analizdən əvvəl Canlı məlumat bölməsini açın.",
+    ],
+    live: [
+      "Son tick yaşını, Bridge vəziyyətini və disk növbəsini birlikdə yoxlayın.",
+      "Gecikmə və ya növbə artımı varsa analizi köhnə məlumat kimi qiymətləndirin.",
+      "Axın yenidən sağlam olduqdan sonra nəticələri yeniləyin.",
+    ],
+    replay: [
+      "Simvolu, başlanğıc və son vaxtı, sonra replay rejimini seçin.",
+      "Replay yaradın və tamamlanmasını gözləyin.",
+      "Tamamlanmış sessiyanı seçib digər analiz bölmələrinə keçin.",
+    ],
+    technical: [
+      "Tamamlanmış replay sessiyasının seçildiyini yoxlayın.",
+      "EMA, RSI və ATR dövrlərini seçib analizi hesablayın.",
+      "Rəqəmləri birlikdə şərh edin; heç biri təkbaşına siqnal deyil.",
+    ],
+    structure: [
+      "HH/HL və LH/LL ardıcıllığını müqayisə edin.",
+      "Təsdiqlənmiş pivotların vaxt və qiymətinə baxın.",
+      "Qarışıq strukturda istiqamət nəticəsi çıxarmayın.",
+    ],
+    liquidity: [
+      "Əvvəlki zirvə və dib ətrafındakı süpürülmələri tapın.",
+      "Səviyyənin bağlanışla geri alınıb-alınmadığını yoxlayın.",
+      "Nəticəni BOS/CHoCH və retest müşahidəsi ilə birləşdirin.",
+    ],
+    "bos-choch": [
+      "Qırılan səviyyəni və qırılmadan əvvəlki strukturu yoxlayın.",
+      "BOS-u davam, CHoCH-u mümkün dəyişiklik müşahidəsi kimi oxuyun.",
+      "Tək qırılmaya görə qərar verməyin; likvidlik və retest təsdiqi axtarın.",
+    ],
+    retest: [
+      "Qırılmış səviyyəyə sonrakı qayıdışı yoxlayın.",
+      "Bağlanışın səviyyəni saxlayıb-saxlamadığını müqayisə edin.",
+      "Uğursuz retesti əks risk, uğurlu retesti isə əlavə müşahidə kimi qəbul edin.",
+    ],
+    strategies: [
+      "Eyni replay sessiyasında strategiya versiyalarını müqayisə edin.",
+      "Hadisə sayı ilə yanaşı sabitlik və xərc ssenarilərinə baxın.",
+      "Çox siqnalı avtomatik olaraq daha yaxşı nəticə saymayın.",
+    ],
+    hypotheses: [
+      "Qaydanı ölçülə bilən və versiyalanmış hipotez kimi qeyd edin.",
+      "Hipotezi ayrıca replay məlumatında sınayın.",
+      "Yalnız təkrar yoxlamalarda sabit qalan müşahidəni növbəti mərhələyə keçirin.",
+    ],
+  };
+
   return (
     <main>
       <header className="app-header">
@@ -566,7 +619,7 @@ export default function Home() {
           <div className="dashboard-shell">
             <DashboardSidebar active={activeSection} onSelect={setActiveSection} />
             <div className="dashboard-workspace">
-              <SectionGuide {...sectionGuides[activeSection]} />
+              <SectionGuide {...sectionGuides[activeSection]} steps={sectionSteps[activeSection]} />
               {activeSection === "results" && (
                 <section className="panel results-overview" aria-labelledby="results-overview-title">
                   <div className="section-heading">
@@ -788,6 +841,7 @@ export default function Home() {
             view={activeSection}
             token={token}
             onUnauthorized={handleReplayUnauthorized}
+            onOpenReplay={() => setActiveSection("replay")}
           />
               )}
               {activeSection === "hypotheses" && (

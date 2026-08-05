@@ -47,3 +47,14 @@ test("dashboard layout has desktop and responsive navigation styles", () => {
   assert.match(styles, /\.dashboard-workspace/);
   assert.match(styles, /@media \(max-width: 980px\)/);
 });
+
+test("analysis workspace keeps replay controls focused and includes usage help", () => {
+  assert.match(replay, /view !== "replay"/);
+  assert.match(replay, /onOpenReplay/);
+  assert.match(replay, /analysis-context-grid/);
+  assert.doesNotMatch(replay, /PHASE 2/);
+  assert.match(navigation, /guide-usage/);
+  assert.match(page, /sectionSteps/);
+  assert.match(styles, /\.analysis-context-grid/);
+  assert.match(styles, /\.guide-usage/);
+});

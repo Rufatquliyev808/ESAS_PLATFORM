@@ -495,3 +495,17 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 - Frontend production build uğurludur.
 - Frontend testləri: `8/8 passed`.
+
+## 2026-08-05 — Frontend fokus və istifadə təlimatı
+
+### Changed
+
+- Tam replay idarəetməsi yalnız `Replay sessiyaları` menyusunda saxlanıldı.
+- Analiz bölmələri qısa replay konteksti, aid nəticə və `Sessiyanı dəyiş` keçidi ilə sadələşdirildi.
+- Hər bölməyə üç addımlı istifadə təlimatı əlavə edildi.
+- İstifadəçi görünüşündən texniki `Phase 2` başlığı çıxarıldı.
+
+### Validation
+
+- Frontend production build uğurludur.
+- Frontend testləri: `9/9 passed`.

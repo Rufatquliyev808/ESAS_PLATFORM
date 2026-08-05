@@ -43,7 +43,7 @@ function azTime(value: string | null) {
 
 type ReplayView = Exclude<DashboardSection, "results" | "live" | "hypotheses">;
 
-export function ReplayPanel({ token, onUnauthorized, view }: { token: string; onUnauthorized: () => void; view: ReplayView }) {
+export function ReplayPanel({ token, onUnauthorized, view, onOpenReplay }: { token: string; onUnauthorized: () => void; view: ReplayView; onOpenReplay: () => void }) {
   const now = new Date();
   const [symbol, setSymbol] = useState("GOLD");
   const [startAt, setStartAt] = useState(localInput(new Date(now.getTime() - 3600000)));
@@ -81,7 +81,10 @@ export function ReplayPanel({ token, onUnauthorized, view }: { token: string; on
       setSessions(result.data);
       setSelected((current) => {
         const id = preferredId ?? current?.session_id;
-        return result.data.find((item) => item.session_id === id) ?? result.data[0] ?? null;
+        return result.data.find((item) => item.session_id === id)
+          ?? (view === "replay" ? result.data[0] : result.data.find((item) => item.state === "completed"))
+          ?? result.data[0]
+          ?? null;
       });
       setError(null);
     } catch (failure) {
@@ -89,7 +92,7 @@ export function ReplayPanel({ token, onUnauthorized, view }: { token: string; on
     } finally {
       setLoading(false);
     }
-  }, [request]);
+  }, [request, view]);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadSessions(), 0);
@@ -168,22 +171,51 @@ export function ReplayPanel({ token, onUnauthorized, view }: { token: string; on
   const canStep = selected?.mode === "step" && selected?.state === "running";
   const canCancel = selected && !["completed", "cancelled", "failed"].includes(selected.state);
 
+  if (view !== "replay") {
+    return (
+      <>
+        <section className="panel analysis-context-panel" aria-labelledby="analysis-context-title">
+          <div className="section-heading">
+            <div><p className="eyebrow">Araşdırma konteksti</p><h2 id="analysis-context-title">Seçilmiş replay məlumatı</h2></div>
+            <button className="secondary-button" type="button" onClick={onOpenReplay}>Sessiyanı dəyiş</button>
+          </div>
+          <p className="replay-notice">Aşağıdakı analiz yalnız tamamlanmış tarixi sessiyaya əsaslanır. Ticarət əməliyyatı aparılmır.</p>
+          {error && <p className="replay-error" role="alert">{error}</p>}
+          {loading ? <p className="empty-state">Məlumat konteksti yüklənir...</p> : !selected ? <p className="empty-state">Analiz üçün əvvəlcə replay sessiyası yaradın.</p> : <>
+            <div className="analysis-context-grid">
+              <div><span>Simvol</span><strong>{selected.symbol}</strong></div>
+              <div><span>İnterval</span><strong>{azTime(selected.start_at)} — {azTime(selected.end_at)}</strong></div>
+              <div><span>Vəziyyət</span><strong>{selected.state}</strong></div>
+              <div><span>Rejim</span><strong>{selected.mode}</strong></div>
+              <div><span>İrəliləyiş</span><strong>{selected.processed_ticks} / {selected.dataset_tick_count}</strong></div>
+            </div>
+            {selected.state !== "completed" && <p className="replay-error">Bu analiz üçün tamamlanmış sessiya seçilməlidir. “Sessiyanı dəyiş” düyməsindən istifadə edin.</p>}
+          </>}
+        </section>
+        {selected?.state === "completed" && view === "strategies" &&
+          <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
+        {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest"].includes(view) &&
+          <TechnicalAnalysisPanel key={`technical-${selected.session_id}`} view={view as Exclude<ReplayView, "replay" | "strategies">} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
+      </>
+    );
+  }
+
   return (
     <section className="panel replay-panel" aria-labelledby="replay-title">
       <div className="section-heading">
-        <div><p className="eyebrow">Phase 2 · Texniki analiz infrastrukturu</p><h2 id="replay-title">Tarixi məlumatın replay idarəetməsi</h2></div>
+        <div><p className="eyebrow">Araşdırma məlumatı</p><h2 id="replay-title">Tarixi məlumatın replay idarəetməsi</h2></div>
         <button className="secondary-button" type="button" onClick={() => void loadSessions()} disabled={loading || busy}>Yenilə</button>
       </div>
       <p className="replay-notice">Bu bölmə yalnız məlumatı yenidən oynadır və analiz üçün hazırlayır. Ticarət əməliyyatı aparılmır.</p>
       {error && <p className="replay-error" role="alert">{error}</p>}
 
-      {view === "replay" && <form className="replay-form" onSubmit={createSession}>
+      <form className="replay-form" onSubmit={createSession}>
         <label>Simvol<input value={symbol} onChange={(e) => setSymbol(e.target.value)} required maxLength={32} /></label>
         <label>Başlanğıc<input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} required /></label>
         <label>Son<input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} required /></label>
         <label>Rejim<select value={mode} onChange={(e) => setMode(e.target.value as "step" | "max_speed")}><option value="step">Addım-addım</option><option value="max_speed">Maksimum sürət</option></select></label>
         <button type="submit" disabled={busy}>Replay yarat</button>
-      </form>}
+      </form>
 
       <div className="replay-layout">
         <div>
@@ -197,7 +229,7 @@ export function ReplayPanel({ token, onUnauthorized, view }: { token: string; on
           {!selected ? <p className="empty-state">Detalları görmək üçün sessiya seçin.</p> : <>
             <dl><div><dt>Vəziyyət</dt><dd>{selected.state}</dd></div><div><dt>Simvol</dt><dd>{selected.symbol}</dd></div><div><dt>İnterval</dt><dd>{azTime(selected.start_at)} — {azTime(selected.end_at)}</dd></div><div><dt>İrəliləyiş</dt><dd>{selected.processed_ticks} / {selected.dataset_tick_count}</dd></div></dl>
             <div className="replay-progress"><span style={{ width: `${progress}%` }} /></div>
-            {view === "replay" && <div className="replay-actions">
+            <div className="replay-actions">
               {canStart && <button disabled={busy} onClick={() => void command("start")}>Başlat</button>}
               {canStep && <><label>Addım<input type="number" min="1" max="10000" value={stepSize} onChange={(e) => setStepSize(Number(e.target.value))} /></label><button disabled={busy} onClick={() => void command("step")}>İrəlilə</button></>}
               {canPause && <button disabled={busy} onClick={() => void command("pause")}>Dayandır</button>}
@@ -205,16 +237,12 @@ export function ReplayPanel({ token, onUnauthorized, view }: { token: string; on
               {canCancel && <button className="danger-button" disabled={busy} onClick={() => void command("cancel")}>Ləğv et</button>}
               <button className="secondary-button" disabled={busy} onClick={() => void loadEvents(null)}>Eventləri göstər</button>
               {selected.state === "completed" && <button className="secondary-button" disabled={busy} onClick={() => void loadQuality()}>Keyfiyyət hesabatı</button>}
-            </div>}
+            </div>
             {events.length > 0 && <div className="replay-results"><h4>Event nümunələri</h4><div className="table-wrap"><table><thead><tr><th>Event</th><th>Vaxt</th><th>Bid</th><th>Ask</th></tr></thead><tbody>{events.map((item) => <tr key={item.event_id}><td>{item.event_id}</td><td>{azTime(item.timestamp)}</td><td>{item.bid}</td><td>{item.ask}</td></tr>)}</tbody></table></div>{eventCursor && <button className="secondary-button" disabled={busy} onClick={() => void loadEvents(eventCursor)}>Daha çox göstər</button>}</div>}
             {quality && <div className="quality-summary"><h4>Keyfiyyət nəticəsi</h4><strong>{quality.summary.status}</strong><p>{quality.summary.tick_count} tick · {quality.summary.finding_count} tapıntı</p><small>{quality.report_id}</small></div>}
           </>}
         </div>
       </div>
-      {selected?.state === "completed" && view === "strategies" &&
-        <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
-      {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest"].includes(view) &&
-        <TechnicalAnalysisPanel key={`technical-${selected.session_id}`} view={view as Exclude<ReplayView, "replay" | "strategies">} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
     </section>
   );
 }

@@ -45,3 +45,14 @@ Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olm
 - Frontend production build və bütün `8/8` test uğurla keçib.
 - Növbəti müstəqil mərhələ `Causal FVG detektoru 1.0.0`-dır və ayrıca istifadəçi təsdiqi tələb edir.
 - Bu vahid üçün GitHub push edilməyib. Push yalnız açıq istifadəçi istəyi ilə edilməlidir.
+
+## Ən son etibarlı vəziyyət — 2026-08-05 (frontend fokus düzəlişi)
+
+- Tam replay sessiya idarəetməsi yalnız `Replay sessiyaları` bölməsində görünür.
+- Digər analiz menyuları seçilmiş replay-in qısa kontekstini və yalnız aid analizi göstərir.
+- `Sessiyanı dəyiş` düyməsi istifadəçini replay seçiminə aparır.
+- Hər menyuda üç addımlı istifadə qaydası, GOLD-a mümkün təsir və açılan əsaslandırma var.
+- İstifadəçi görünüşündəki texniki `Phase 2` başlığı çıxarılıb.
+- Frontend production build və `9/9` test uğurla keçib.
+- GitHub push edilməyib. Növbəti müstəqil mərhələ ayrıca təsdiqlə
+  `Causal FVG detektoru 1.0.0`-dır.

@@ -874,3 +874,13 @@ versiyalanmış qeyri-müəyyənlik qatı əlavə edildi.
 - Masaüstü üçün sabit sol menyu, dar ekranlar üçün üfüqi və responsiv menyu əlavə edildi.
 - Təhlükəsizlik sərhədi saxlanılıb: ekranlar araşdırma/monitorinq üçündür, siqnal və ticarət əməliyyatı yaratmır.
 - Yoxlama: frontend production build və bütün `8/8` frontend testi uğurla keçdi.
+
+## 2026-08-05 — Frontend fokus və istifadə təlimatı düzəlişi
+
+- Replay sessiyalarının tam idarəetməsi yalnız `Replay sessiyaları` menyusunda göstərilir.
+- Digər analiz bölmələrində yalnız seçilmiş replay-in qısa konteksti, aid analiz və
+  `Sessiyanı dəyiş` keçidi göstərilir.
+- Hər bölməyə yeni istifadəçi üçün üç addımlı istifadə qaydası əlavə edildi.
+- Texniki `Phase 2` başlığı istifadəçi görünüşündən çıxarıldı.
+- Platforma araşdırma/monitorinq rejimindədir; bu görünüşlər ticarət siqnalı deyil.
+- Yoxlama: frontend production build və bütün `9/9` frontend testi uğurla keçdi.
