@@ -277,3 +277,61 @@ def test_backtest_enforces_ownership_and_missing_candidate(isolated_database: Pa
     assert forbidden_read.status_code == 403
     assert missing_run.status_code == 404
     assert missing_read.status_code == 404
+
+
+def test_classify_response_reports_multiple_testing_family_of_one(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    candidate = _register_structure_break(session.session_id)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        client.post(f"/api/v2/pattern-candidates/{candidate.candidate_id}/backtest", json={}, headers=headers)
+        current = client.get(f"/api/v2/pattern-candidates/{candidate.candidate_id}", headers=headers).json()["data"]
+        classified = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/classify",
+            json={"expected_state_version": current["state_version"]}, headers=headers,
+        )
+    multiple_testing = classified.json()["meta"]["multiple_testing"]
+    assert multiple_testing["family_trial_count"] == 1
+    assert multiple_testing["corrected_scenario"]["scenario"] == "normal"
+
+
+def test_family_trial_count_counts_every_backtest_run_on_the_same_session(isolated_database: Path) -> None:
+    """Every hypothesis variant backtested against the same replay session must
+    count toward the multiple-testing family, whether or not it is ever
+    classified -- otherwise the correction could be dodged by only
+    classifying the one favorable-looking run."""
+    session = _prepare(isolated_database)
+    structure = _register_structure_break(session.session_id)
+    market_structure = _register_market_structure(session.session_id)
+    sweep = register_pattern_candidate(
+        created_by="TEST-USER", actor_role="operator", replay_session_id=session.session_id,
+        candidate_id="liquidity_sweep_reclaim_long:api2", hypothesis_id="liquidity_sweep_reclaim_long",
+        hypothesis_version="1.0.0", family="liquidity_sweep", direction="long",
+        condition_state="candidate_confirmed", observed_at="2026-08-04T21:00:10+00:00",
+        evidence={}, pattern_candidate_version="1.0.0", hypothesis_registry_version="1.0.0",
+        source_fingerprint="sha256:pattern", timeframe="M1",
+        parameters={
+            "bar_limit": 10, "pivot_left": 2, "pivot_right": 2, "equality_tolerance_bps": 0.0,
+            "liquidity_pool_tolerance_bps": 10.0, "liquidity_minimum_touches": 2,
+            "liquidity_minimum_sweep_bps": 1.0, "liquidity_maximum_pool_age_bars": 250,
+            "bos_choch_minimum_close_break_bps": 1.0, "bos_choch_maximum_pivot_age_bars": 250,
+            "retest_touch_tolerance_bps": 5.0, "retest_confirmation_close_bps": 0.0,
+            "retest_invalidation_close_bps": 10.0, "retest_maximum_age_bars": 100,
+        },
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        # Two runs on the structure candidate before it is ever classified --
+        # both must be counted, not just the latest.
+        client.post(f"/api/v2/pattern-candidates/{structure.candidate_id}/backtest", json={"horizon_bars": 2}, headers=headers)
+        client.post(f"/api/v2/pattern-candidates/{structure.candidate_id}/backtest", json={"horizon_bars": 3}, headers=headers)
+        # A second and third candidate backtested but never classified.
+        client.post(f"/api/v2/pattern-candidates/{market_structure.candidate_id}/backtest", json={}, headers=headers)
+        client.post(f"/api/v2/pattern-candidates/{sweep.candidate_id}/backtest", json={}, headers=headers)
+
+        current = client.get(f"/api/v2/pattern-candidates/{structure.candidate_id}", headers=headers).json()["data"]
+        classified = client.post(
+            f"/api/v2/pattern-candidates/{structure.candidate_id}/classify",
+            json={"expected_state_version": current["state_version"]}, headers=headers,
+        )
+    assert classified.json()["meta"]["multiple_testing"]["family_trial_count"] == 4

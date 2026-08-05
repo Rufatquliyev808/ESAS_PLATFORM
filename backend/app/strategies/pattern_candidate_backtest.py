@@ -173,6 +173,47 @@ def classify_backtest_verdict(*, status: str, reason: str) -> str:
     return REJECTED
 
 
+def bonferroni_corrected_scenario(
+    scenario: dict[str, object], *, family_trial_count: int, family_wise_alpha: float = 0.05,
+) -> dict[str, object]:
+    """Recompute a cost scenario's verdict under a Bonferroni family-wise error
+    correction, without touching the original (uncorrected) stored backtest
+    artifact -- multiple-testing correction is a downstream classification
+    concern (Phase 3/4 contract: "multiple-testing qeydiyyatı olmadan namizəd
+    qəbul edilmir"), not something that silently rewrites a stored result.
+
+    Only a SUPPORTIVE scenario is recomputed: correction only ever narrows the
+    confidence interval, so a scenario that was already insufficient at the
+    flat 95% bar stays insufficient at the stricter corrected bar too.
+    """
+    if family_trial_count < 1:
+        raise ValueError("family_trial_count must be at least 1")
+    if not 0 < family_wise_alpha < 1:
+        raise ValueError("family_wise_alpha must be between 0 and 1")
+    if scenario["status"] != SUPPORTIVE:
+        return dict(scenario)
+    alpha_corrected = family_wise_alpha / family_trial_count
+    z_corrected = statistics.NormalDist().inv_cdf(1 - alpha_corrected / 2)
+    mean = scenario["net_mean_return_percent"]
+    deviation = scenario["sample_standard_deviation"]
+    count = scenario["effective_sample_size"]
+    margin = z_corrected * deviation / math.sqrt(count)
+    low, high = mean - margin, mean + margin
+    status = SUPPORTIVE if low > 0 else INSUFFICIENT
+    reason = (
+        "multiple_testing_correction_ci_still_above_zero_baseline" if status == SUPPORTIVE
+        else "multiple_testing_correction_ci_crosses_or_is_below_zero_baseline"
+    )
+    corrected = dict(scenario)
+    corrected.update({
+        "status": status, "reason": reason,
+        "confidence_interval_low_percent": low, "confidence_interval_high_percent": high,
+        "family_trial_count": family_trial_count, "family_wise_alpha": family_wise_alpha,
+        "alpha_corrected": alpha_corrected, "z_critical": z_corrected,
+    })
+    return corrected
+
+
 def run_pattern_candidate_backtest(
     *,
     candidate_id: str,

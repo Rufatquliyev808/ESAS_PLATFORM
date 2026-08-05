@@ -681,7 +681,7 @@ def pattern_candidate_classify(
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
-        candidate = classify_replay_pattern_candidate(
+        outcome = classify_replay_pattern_candidate(
             candidate_id=candidate_id, actor=user_code, actor_role="operator",
             expected_state_version=classify_request.expected_state_version,
         )
@@ -693,7 +693,16 @@ def pattern_candidate_classify(
         raise HTTPException(status_code=409, detail="Pattern candidate has no backtest yet") from error
     except PatternCandidateConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
-    return {"data": asdict(candidate), "meta": {"api_version": "2"}}
+    return {
+        "data": asdict(outcome.candidate),
+        "meta": {
+            "api_version": "2",
+            "multiple_testing": {
+                "family_trial_count": outcome.family_trial_count,
+                "corrected_scenario": outcome.corrected_scenario,
+            },
+        },
+    }
 
 
 @app.post("/api/v2/pattern-candidates/{candidate_id}/backtest-jobs", status_code=202)

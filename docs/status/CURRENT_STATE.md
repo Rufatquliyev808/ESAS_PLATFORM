@@ -1,5 +1,46 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Multiple-testing reyestri: nəticələndirmə artıq ailəvi xəta düzəlişi tətbiq edir
+
+- Phase 3/4 müqaviləsinin "Multiple-testing qeydiyyatı olmadan namizəd qəbul
+  edilmir" tələbi tətbiq edildi. Əvvəllər `evaluated → accepted_for_shadow`
+  qərarı yalnız tək backtest-in düz (heç bir düzəliş olmadan) 95% etibar
+  intervalından çıxarılırdı — eyni replay sessiyasında (eyni məlumatda) neçə
+  fərqli hipotez/parametr sınandığından asılı olmayaraq. Bu, statistik
+  cəhətdən səhv idi: çox sayda sınaqdan yalnız ən yaxşı görünəni
+  nəticələndirmək yanlış müsbət ehtimalını artırır.
+- `0008_multiple_testing_trials.sql`: append-only `multiple_testing_trials`
+  reyestri — `family_key` (= `replay_session_id`, "eyni məlumat"),
+  `family_sequence` (ailə daxilində artan sıra), `backtest_id` üzrə
+  `UNIQUE` (idempotent qeydiyyat).
+- `backend/app/database/multiple_testing_repository.py`: `register_trial`
+  (idempotent), `count_family_trials`, `list_family_trials`.
+- **Qeydiyyat nöqtəsi vacibdir:** `evaluate_replay_pattern_candidate_backtest`
+  HƏR backtest icrasını **şərtsiz** qeydə alır — sonradan nəticələndirilsin
+  ya yox. Əks halda istifadəçi 10 backtest işlədib yalnız ən yaxşısını
+  nəticələndirməklə düzəlişdən yayına bilərdi.
+- `pattern_candidate_backtest.py`-a `bonferroni_corrected_scenario()` əlavə
+  edildi: saxlanmış (düzəlişsiz) backtest artefaktına toxunmadan, yalnız
+  nəticələndirmə anında ailənin cari ümumi sınaq sayından (`m`) Bonferroni
+  düzəlişli `alpha=0.05/m` və dəqiq `z` (`statistics.NormalDist().inv_cdf`)
+  ilə CI-ni yenidən hesablayır. Yalnız `supportive_evidence` ssenarilər
+  yenidən hesablanır (düzəliş yalnız aralığı genişləndirə bilər, artıq
+  yetərsiz olanı "xilas edə" bilməz).
+- `classify_replay_pattern_candidate` indi düzəlişli statusdan qərar verir;
+  qaytardığı `PatternCandidateClassificationOutcome` `family_trial_count`
+  və `corrected_scenario`-nu daşıyır. API cavabında `meta.multiple_testing`
+  altında görünür (`data` sahəsi dəyişməyib, geriyə uyğundur).
+- Frontend toxunulmayıb — mövcud "Nəticələndir" düyməsi dəyişmədən işləyir,
+  yalnız serverdəki qərar məntiqi düzəldi.
+- Yoxlama: yeni `test_multiple_testing_repository.py` (`6` test),
+  `pattern_candidate_backtest.py`-a `5` yeni bonferroni testi,
+  `test_pattern_candidates_backtest_api.py`-a `2` inteqrasiya testi (ailə
+  sayının bir neçə namizəd/təkrar backtest üzrə düzgün toplandığını yoxlayır).
+  `test_migration_runner.py` sayğacları `0008`-ə uyğunlaşdırıldı. Tam backend
+  regressiyası: `333 passed`.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; düzəliş yalnız
+  `accepted_for_shadow` qərarının statistik ciddiliyini artırır.
+
 ## 2026-08-05 — Phase 2 worker/scheduler müqaviləsi hərfi tətbiq edildi (`pattern_candidate_backtest`)
 
 - İstifadəçinin iki dəfə açıq təsdiqi ilə (`Tam həcmdə tiklə` → `Tam
@@ -434,7 +475,7 @@ sxeminə keçirildi və real `GOLD` intervalı ilə qəbul sınağı tamamlandı
 - Audit xətası bütün əməliyyatı geri qaytarır və xam tick-lər dəyişmir.
 - Tam backend nəticəsi `125 passed`; frontend lint və production build keçdi.
 
-Son yenilənmə: 2026-08-05
+Son yenilənmə: 2026-08-06
 Cari mərhələ: Phase 4
 Status: PHASE 1 STABLE — PHASE 2 STABLE — PHASE 4 IN PROGRESS
 Əsas budaq: `main`

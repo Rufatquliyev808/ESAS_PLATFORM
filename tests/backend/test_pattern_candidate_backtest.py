@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -12,6 +13,7 @@ from backend.app.analysis.market_structure import (
 from backend.app.analysis.retest import RetestObservation, RetestResult
 from backend.app.strategies.pattern_candidate_backtest import (
     PatternCandidateBacktestUnsupportedError,
+    bonferroni_corrected_scenario,
     classify_backtest_verdict,
     run_pattern_candidate_backtest,
 )
@@ -179,5 +181,80 @@ def test_invalid_cost_and_horizon_parameters_are_rejected() -> None:
         _run(horizon_bars=0)
     with pytest.raises(ValueError):
         _run(spread_bps=-1)
+
+
+def _supportive_normal_scenario() -> dict[str, object]:
+    bars = tuple(_bar(i, 100.0 + i * 0.5) for i in range(200))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(0, 150, 3))
+    retest = _retest(observations)
+    result = _run(
+        bars=bars, retest=retest, horizon_bars=2,
+        spread_bps=0, commission_bps=0, slippage_bps=0, latency_bps=0,
+    )
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    assert normal.status == "supportive_evidence"
+    return asdict(normal)
+
+
+def test_bonferroni_correction_is_near_identity_at_family_trial_count_one() -> None:
+    scenario = _supportive_normal_scenario()
+    corrected = bonferroni_corrected_scenario(scenario, family_trial_count=1)
+    assert corrected["status"] == "supportive_evidence"
+    assert corrected["confidence_interval_low_percent"] == pytest.approx(
+        scenario["confidence_interval_low_percent"], abs=1e-3,
+    )
+    assert corrected["family_trial_count"] == 1
+    assert corrected["alpha_corrected"] == pytest.approx(0.05)
+
+
+def _borderline_supportive_scenario() -> dict[str, object]:
+    # mean=1.0, stdev=5.0, n=100 -> margin(z) = z * 0.5. At the flat (m=1)
+    # z~1.96 the CI barely clears zero (low ~= 0.02); by m=5 the corrected z
+    # (~2.576) pushes the margin past the mean and the CI crosses zero.
+    return {
+        "scenario": "normal", "status": "supportive_evidence", "reason": "ci_entirely_above_zero_baseline",
+        "effective_sample_size": 100, "net_mean_return_percent": 1.0,
+        "sample_standard_deviation": 5.0, "confidence_interval_low_percent": 0.02,
+        "confidence_interval_high_percent": 1.98,
+    }
+
+
+def test_bonferroni_correction_widens_ci_and_can_flip_verdict_as_family_grows() -> None:
+    scenario = _borderline_supportive_scenario()
+    previous_low = bonferroni_corrected_scenario(scenario, family_trial_count=1)["confidence_interval_low_percent"]
+    flipped_to_insufficient = False
+    for family_trial_count in (1, 5, 20, 100, 1_000):
+        corrected = bonferroni_corrected_scenario(scenario, family_trial_count=family_trial_count)
+        # The corrected interval only ever widens (lower bound moves down)
+        # as the family grows -- a stricter bar can never loosen evidence.
+        assert corrected["confidence_interval_low_percent"] <= previous_low + 1e-9
+        previous_low = corrected["confidence_interval_low_percent"]
+        if corrected["status"] == "insufficient_evidence":
+            flipped_to_insufficient = True
+            assert corrected["reason"] == "multiple_testing_correction_ci_crosses_or_is_below_zero_baseline"
+            assert classify_backtest_verdict(status=corrected["status"], reason=corrected["reason"]) == "rejected"
+    assert flipped_to_insufficient, "expected a large enough family to push the CI below zero"
+
+
+def test_bonferroni_correction_leaves_an_insufficient_scenario_unchanged() -> None:
+    scenario = {
+        "scenario": "normal", "status": "insufficient_evidence", "reason": "effective_sample_below_30",
+        "effective_sample_size": 5, "net_mean_return_percent": 0.1,
+        "sample_standard_deviation": None, "confidence_interval_low_percent": None,
+        "confidence_interval_high_percent": None,
+    }
+    corrected = bonferroni_corrected_scenario(scenario, family_trial_count=10)
+    assert corrected == scenario
+    assert corrected is not scenario
+
+
+def test_bonferroni_correction_rejects_invalid_inputs() -> None:
+    scenario = _supportive_normal_scenario()
+    with pytest.raises(ValueError):
+        bonferroni_corrected_scenario(scenario, family_trial_count=0)
+    with pytest.raises(ValueError):
+        bonferroni_corrected_scenario(scenario, family_trial_count=1, family_wise_alpha=0)
+    with pytest.raises(ValueError):
+        bonferroni_corrected_scenario(scenario, family_trial_count=1, family_wise_alpha=1)
     with pytest.raises(ValueError):
         _run(adverse_multiplier=3, stress_multiplier=2)

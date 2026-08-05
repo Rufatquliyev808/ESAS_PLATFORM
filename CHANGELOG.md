@@ -8,6 +8,47 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Multiple-testing registry with Bonferroni correction for classification
+
+- Implements the Phase 3/4 contract requirement "multiple-testing
+  qeydiyyatı olmadan namizəd qəbul edilmir" (a candidate cannot be
+  accepted without multiple-testing registration). Previously,
+  `evaluated -> accepted_for_shadow` was decided from a single backtest's
+  own uncorrected 95% confidence interval, regardless of how many other
+  hypothesis/parameter variants had been tried against the same replay
+  session -- a real family-wise error problem (running many backtests and
+  only classifying the best-looking one inflates the false-positive rate).
+- `0008_multiple_testing_trials.sql`: append-only `multiple_testing_trials`
+  registry, keyed by `family_key` (the replay session, i.e. "same data")
+  with a `UNIQUE(backtest_id)` idempotency guard.
+- `backend/app/database/multiple_testing_repository.py`: `register_trial`,
+  `count_family_trials`, `list_family_trials`.
+- Registration happens unconditionally on every backtest run
+  (`evaluate_replay_pattern_candidate_backtest`), whether or not the
+  candidate is ever classified -- otherwise the correction could be
+  dodged by simply not classifying unfavorable runs.
+- `pattern_candidate_backtest.py` gains `bonferroni_corrected_scenario()`:
+  recomputes a scenario's confidence interval at classification time using
+  `alpha = 0.05 / family_trial_count` (`statistics.NormalDist().inv_cdf`
+  for the exact critical value), without mutating the stored backtest
+  artifact. Only a `supportive_evidence` scenario is recomputed -- the
+  correction can only narrow the interval, never rescue an already
+  insufficient one.
+- `classify_replay_pattern_candidate` now decides from the corrected
+  status/reason; its result is exposed via the classify endpoint's
+  `meta.multiple_testing.{family_trial_count, corrected_scenario}` (the
+  `data` field is unchanged, fully backward compatible).
+- No frontend changes; the existing "Nəticələndir" button keeps working,
+  only the server-side decision logic changed.
+- Verification: new `test_multiple_testing_repository.py` (6 tests), 5 new
+  Bonferroni tests in `test_pattern_candidate_backtest.py`, 2 new
+  integration tests in `test_pattern_candidates_backtest_api.py`
+  (multi-candidate/multi-run family counting). `test_migration_runner.py`
+  counters updated for `0008`. Full backend regression: `333 passed`.
+- This layer creates no strategy, entry, risk sizing, or order; the
+  correction only makes the `accepted_for_shadow` decision statistically
+  stricter.
+
 ### Added — Phase 2 worker/scheduler contract, applied literally to `pattern_candidate_backtest`
 
 - Implements the full `PHASE_2_WORKER_SCHEDULER_CONTRACT.md` job-queue

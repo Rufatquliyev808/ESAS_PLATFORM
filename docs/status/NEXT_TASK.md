@@ -38,24 +38,27 @@ Mərhələ: Phase 4-ün qalan maddələri
   `GET .../backtest-jobs/{job_id}`, `POST .../backtest-jobs/{job_id}/cancel`,
   `GET /api/v2/analysis-jobs/metrics`. Yol ilə ikinci bir real bug tapılıb
   düzəldildi (idempotency key hash-i `created_by` daxil edirdi, ownership
-  qoruması işə düşmürdü). Backend `321 passed`. **Frontend toxunulmayıb.**
+  qoruması işə düşmürdü). Backend `321 passed`. **Frontend toxunulmayıb** —
+  istifadəçi qərarı: job-queue üçün ayrıca UI hələlik lazım deyil.
+- **Multiple-testing reyestri əlavə edildi.** `evaluated →
+  accepted_for_shadow` qərarı artıq eyni replay sessiyasında (eyni
+  məlumatda) sınanan bütün backtest-lərin sayına görə Bonferroni ailəvi
+  xəta düzəlişi tətbiq edir (`0008_multiple_testing_trials.sql`,
+  `multiple_testing_repository.py`, `bonferroni_corrected_scenario`).
+  Qeydiyyat hər backtest icrasında **şərtsiz** olur (nəticələndirilsin ya
+  yox) — əks halda düzəliş asanlıqla yayına bilərdi. Backend `333 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
-## Açıq qərar — job-queue frontend səthi
-
-Yeni async backtest-job endpoint-ləri üçün heç bir UI yoxdur. Mövcud
-"Backtest et" düyməsi sinxron endpoint-dən istifadəni davam etdirir (heç nə
-pozulmayıb). Növbəti addım seçilməzdən əvvəl istifadəçi ilə aydınlaşdırılmalı
-sual: async job UI əlavə edilsinmi, yoxsa job-queue mühərriki hələlik yalnız
-backend infrastrukturu (gələcək uzun-müddətli işlər üçün) olaraq qalsın?
-
 ## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
 
-- Job-queue-nun frontend səthi (yuxarıdakı açıq qərar).
-- Multiple-testing reyestri (eyni məlumatda çoxlu hipotez sınağının
-  qeydiyyatı — hələ yoxdur).
-- SHADOW mərhələsi üçün hazırlıq (Phase 9, Phase 1-8 qəbulundan asılıdır).
+- **SHADOW mərhələsi üçün hazırlıq (Phase 9)** — istifadəçi ilə razılaşdırılan
+  növbəti addım. Phase 1-8 qəbulundan asılıdır; hazırkı platformada Phase 1
+  (STABLE), Phase 2 (STABLE) qəbul edilib, Phase 3 (tədqiqat/statistik
+  validasiya) və Phase 4 (pattern/texniki analiz) isə hələ tam qəbul
+  mərhələsində deyil (Phase 4 IN PROGRESS). SHADOW-a başlamazdan əvvəl bu
+  asılılığı istifadəçi ilə aydınlaşdırmaq lazımdır — hərfi mənada Phase 9-a
+  keçidmi, yoxsa Phase 9 kontraktının dizayn/hazırlıq işlərindən başlanacaq.
 
 ## Vizual yoxlama qeydi
 
@@ -64,9 +67,9 @@ qeydiyyat → backtest → nəticələndirmə → arxivləşdirmə) ayrıca, bir
 test bazası ilə canlı brauzerdə uğurla yoxlanıldı; heç bir konsol xətası
 olmadı. Real bazaya toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
 
-Job-queue artımı (bu sessiya) yalnız backend testləri ilə yoxlanıldı;
-canlı brauzerdə ayrıca vizual sınaqdan keçirilməyib (frontend-də UI-si
-olmadığı üçün vizual sınaq mənasız olardı).
+Job-queue və multiple-testing artımları (bu sessiya) yalnız backend testləri
+ilə yoxlanıldı; frontend-ə toxunulmadığı üçün canlı brauzerdə ayrıca vizual
+sınaq mənasız olardı.
 
 ## Başlama şərti
 

@@ -1,6 +1,10 @@
 from dataclasses import asdict, dataclass
 
 from backend.app.analysis.replay_analysis import create_replay_analysis_context
+from backend.app.database.multiple_testing_repository import (
+    count_family_trials,
+    register_trial as register_multiple_testing_trial,
+)
 from backend.app.database.pattern_candidate_backtest_repository import (
     PersistedPatternCandidateBacktest,
     get_latest_pattern_candidate_backtest,
@@ -19,6 +23,7 @@ from backend.app.database.replay_session_repository import (
 )
 from backend.app.strategies.pattern_candidate import detect_pattern_candidates
 from backend.app.strategies.pattern_candidate_backtest import (
+    bonferroni_corrected_scenario,
     classify_backtest_verdict,
     run_pattern_candidate_backtest,
 )
@@ -193,23 +198,41 @@ def evaluate_replay_pattern_candidate_backtest(
         "slippage_bps": slippage_bps, "latency_bps": latency_bps,
         "adverse_multiplier": adverse_multiplier, "stress_multiplier": stress_multiplier,
     }
-    return store_pattern_candidate_backtest(
+    persisted = store_pattern_candidate_backtest(
         candidate_id=candidate.candidate_id, actor=actor, actor_role=actor_role,
         horizon_bars=horizon_bars, cost_parameters=cost_parameters,
         result=asdict(backtest), fingerprint=backtest.fingerprint,
     )
+    # Registered unconditionally, whether or not this candidate is ever
+    # classified: the multiple-testing budget must count every hypothesis
+    # variant tried against this dataset (Phase 3/4 contract), not just the
+    # ones a user later chooses to accept.
+    register_multiple_testing_trial(
+        family_key=candidate.replay_session_id, candidate_id=candidate.candidate_id,
+        backtest_id=persisted.backtest_id, hypothesis_id=candidate.hypothesis_id, actor=actor,
+    )
+    return persisted
+
+
+@dataclass(frozen=True)
+class PatternCandidateClassificationOutcome:
+    candidate: PersistedPatternCandidate
+    family_trial_count: int
+    corrected_scenario: dict[str, object]
 
 
 def classify_replay_pattern_candidate(
     *, candidate_id: str, actor: str, actor_role: str, expected_state_version: int,
-) -> PersistedPatternCandidate:
+) -> PatternCandidateClassificationOutcome:
     """Move an "evaluated" candidate to accepted_for_shadow/rejected/insufficient_evidence.
 
-    The verdict comes solely from the candidate's latest backtest "normal"
-    cost scenario -- deterministic, no new computation, no client input.
-    accepted_for_shadow records that predeclared evidence thresholds were
-    met; it does not authorize real trading (Phase 9 SHADOW does not exist
-    yet) or any order.
+    The verdict comes from the candidate's latest backtest "normal" cost
+    scenario, after a Bonferroni family-wise error correction across every
+    backtest trial registered against the same replay session (the
+    multiple-testing registry) -- deterministic, no client input.
+    accepted_for_shadow records that the corrected evidence still met the
+    predeclared bar; it does not authorize real trading (Phase 9 SHADOW does
+    not exist yet) or any order.
     """
     candidate = get_pattern_candidate(candidate_id)
     if candidate.created_by != actor:
@@ -218,10 +241,18 @@ def classify_replay_pattern_candidate(
     normal_scenario = next(
         item for item in backtest.result["scenarios"] if item["scenario"] == "normal"
     )
-    next_state = classify_backtest_verdict(
-        status=normal_scenario["status"], reason=normal_scenario["reason"],
+    family_trial_count = count_family_trials(candidate.replay_session_id)
+    corrected_scenario = bonferroni_corrected_scenario(
+        normal_scenario, family_trial_count=family_trial_count,
     )
-    return classify_pattern_candidate(
+    next_state = classify_backtest_verdict(
+        status=corrected_scenario["status"], reason=corrected_scenario["reason"],
+    )
+    classified = classify_pattern_candidate(
         candidate_id=candidate_id, actor=actor, actor_role=actor_role,
         expected_state_version=expected_state_version, next_lifecycle_state=next_state,
+    )
+    return PatternCandidateClassificationOutcome(
+        candidate=classified, family_trial_count=family_trial_count,
+        corrected_scenario=corrected_scenario,
     )
