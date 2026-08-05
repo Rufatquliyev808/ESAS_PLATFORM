@@ -1,5 +1,27 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Backtest v1 genişləndirilməsi və istiqamət bug-ı düzəldildi (Phase 4)
+
+- **Vacib düzəliş:** `run_pattern_candidate_backtest` səhvən `direction`
+  parametrini `"bullish"/"bearish"` gözləyirdi, amma real qeydə alınmış
+  namizədin `direction` sahəsi hipotez reyestrindən `"long"/"short"` gəlir.
+  Bu, real axında backtest-i həmişə `ValueError` ilə uğursuz edərdi (əvvəlki
+  testlərdə fixture-larda əl ilə "bullish" yazıldığı üçün gizlənmişdi).
+  Düzəliş: funksiya artıq `direction` parametrini qəbul etmir, istiqaməti
+  yalnız `hypothesis_id`-dən (`HYPOTHESIS_EVENT_DIRECTION` xəritəsi) təyin
+  edir.
+- `liquidity_sweep.py`-a `observations: tuple[...]` sahəsi əlavə edildi —
+  əvvəllər yalnız son süpürmə saxlanılırdı, indi hər hovuzun tarixi
+  süpürmə hadisəsi (varsa) qorunur. Geriyə uyğun, əlavəedici dəyişiklik.
+- Backtest v1 indi `liquidity_sweep_reclaim_long/short`-u da dəstəkləyir
+  (əvvəllər yalnız `structure_break_long/short`). `market_structure`
+  hələ kənarda qalır — o, davamlı rejim konsepsiyasıdır (diskret hadisə
+  deyil), tarixi hadisə semantikası üçün ayrıca dizayn qərarı tələb edir.
+- Yoxlama: backend `281 passed` (yeni liquidity_sweep tarixi hadisə testi,
+  yenilənmiş backtest testləri — istiqamət bug-ının reqressiya testi
+  daxil); frontend production build və `10/10` test, lint təmiz.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır.
+
 ## 2026-08-05 — Pattern namizədi backtest v1 (Phase 4)
 
 - Backtest v1 **yalnız** `structure_break_long`/`structure_break_short`

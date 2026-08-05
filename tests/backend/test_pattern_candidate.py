@@ -30,7 +30,7 @@ def _liquidity(bullish_state: str = "confirmed_sweep", bearish_state: str = "ins
         bullish_state == "confirmed_sweep",
     )
     bearish = LiquiditySweepObservation("bearish", bearish_state, "buy_side", None, 0, None, None, False)
-    return LiquiditySweepResult("1.0.0", 10.0, 2, 1.0, 250, (), bullish, bearish, "sha256:liquidity")
+    return LiquiditySweepResult("1.0.0", 10.0, 2, 1.0, 250, (), (), bullish, bearish, "sha256:liquidity")
 
 
 def _bos_choch() -> BosChochResult:

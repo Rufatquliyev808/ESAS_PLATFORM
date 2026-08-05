@@ -40,6 +40,7 @@ class LiquiditySweepResult:
     minimum_sweep_bps: float
     maximum_pool_age_bars: int
     pools: tuple[LiquidityPool, ...]
+    observations: tuple[LiquiditySweepObservation, ...]
     bullish_observation: LiquiditySweepObservation
     bearish_observation: LiquiditySweepObservation
     fingerprint: str
@@ -88,6 +89,7 @@ def detect_liquidity_sweeps(
         if not all(math.isfinite(value) for value in (bar.open, bar.high, bar.low, bar.close)):
             raise ValueError("bar prices must be finite")
     pools = _build_pools(pivots, pool_tolerance_bps, minimum_touches)
+    observations: list[LiquiditySweepObservation] = []
     bullish: LiquiditySweepObservation | None = None
     bearish: LiquiditySweepObservation | None = None
     for pool in pools:
@@ -97,6 +99,7 @@ def detect_liquidity_sweeps(
                 excursion = (bar.high - pool.level) / pool.level * 10_000
                 if excursion >= minimum_sweep_bps and bar.close <= pool.level:
                     candidate = LiquiditySweepObservation("bearish", "confirmed_sweep", pool.side, pool.level, pool.touch_count, bar.end_at, excursion, True)
+                    observations.append(candidate)
                     if bearish is None or candidate.observed_at > bearish.observed_at:
                         bearish = candidate
                     break
@@ -104,9 +107,11 @@ def detect_liquidity_sweeps(
                 excursion = (pool.level - bar.low) / pool.level * 10_000
                 if excursion >= minimum_sweep_bps and bar.close >= pool.level:
                     candidate = LiquiditySweepObservation("bullish", "confirmed_sweep", pool.side, pool.level, pool.touch_count, bar.end_at, excursion, True)
+                    observations.append(candidate)
                     if bullish is None or candidate.observed_at > bullish.observed_at:
                         bullish = candidate
                     break
+    observations.sort(key=lambda item: (item.observed_at or "", item.direction, item.pool_level or 0.0))
     pool_sides = {item.side for item in pools}
     bullish = bullish or _empty("bullish", "sell_side", "no_sweep" if "sell_side" in pool_sides else "insufficient_data")
     bearish = bearish or _empty("bearish", "buy_side", "no_sweep" if "buy_side" in pool_sides else "insufficient_data")
@@ -118,7 +123,8 @@ def detect_liquidity_sweeps(
         "structure_fingerprint": structure_fingerprint.strip(), "pool_tolerance_bps": pool_tolerance_bps,
         "minimum_touches": minimum_touches, "minimum_sweep_bps": minimum_sweep_bps,
         "maximum_pool_age_bars": maximum_pool_age_bars, "pools": [asdict(item) for item in pools],
+        "observations": [asdict(item) for item in observations],
         "bullish_observation": asdict(bullish), "bearish_observation": asdict(bearish),
     }
     digest = sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
-    return LiquiditySweepResult(LIQUIDITY_SWEEP_VERSION, pool_tolerance_bps, minimum_touches, minimum_sweep_bps, maximum_pool_age_bars, tuple(pools), bullish, bearish, f"sha256:{digest}")
+    return LiquiditySweepResult(LIQUIDITY_SWEEP_VERSION, pool_tolerance_bps, minimum_touches, minimum_sweep_bps, maximum_pool_age_bars, tuple(pools), tuple(observations), bullish, bearish, f"sha256:{digest}")

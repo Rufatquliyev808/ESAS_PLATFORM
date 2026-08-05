@@ -68,7 +68,7 @@ def _register_structure_break(session_id: str, created_by: str = "TEST-USER"):
     return register_pattern_candidate(
         created_by=created_by, actor_role="operator", replay_session_id=session_id,
         candidate_id="structure_break_long:api", hypothesis_id="structure_break_long",
-        hypothesis_version="1.0.0", family="bos_choch_retest", direction="bullish",
+        hypothesis_version="1.0.0", family="bos_choch_retest", direction="long",
         condition_state="candidate_confirmed", observed_at="2026-08-04T21:00:10+00:00",
         evidence={}, pattern_candidate_version="1.0.0", hypothesis_registry_version="1.0.0",
         source_fingerprint="sha256:pattern", timeframe="M1",
@@ -122,6 +122,34 @@ def test_backtest_run_and_read_round_trip_and_transitions_lifecycle(isolated_dat
     assert read.status_code == 200
     assert read.json()["data"]["backtest_id"] == run.json()["data"]["backtest_id"]
     assert detail.json()["data"]["lifecycle_state"] == "evaluated"
+
+
+def test_backtest_supports_liquidity_sweep_reclaim_hypothesis(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    candidate = register_pattern_candidate(
+        created_by="TEST-USER", actor_role="operator", replay_session_id=session.session_id,
+        candidate_id="liquidity_sweep_reclaim_long:api", hypothesis_id="liquidity_sweep_reclaim_long",
+        hypothesis_version="1.0.0", family="liquidity_sweep", direction="long",
+        condition_state="candidate_confirmed", observed_at="2026-08-04T21:00:10+00:00",
+        evidence={}, pattern_candidate_version="1.0.0", hypothesis_registry_version="1.0.0",
+        source_fingerprint="sha256:pattern", timeframe="M1",
+        parameters={
+            "bar_limit": 10, "pivot_left": 2, "pivot_right": 2, "equality_tolerance_bps": 0.0,
+            "liquidity_pool_tolerance_bps": 10.0, "liquidity_minimum_touches": 2,
+            "liquidity_minimum_sweep_bps": 1.0, "liquidity_maximum_pool_age_bars": 250,
+            "bos_choch_minimum_close_break_bps": 1.0, "bos_choch_maximum_pivot_age_bars": 250,
+            "retest_touch_tolerance_bps": 5.0, "retest_confirmation_close_bps": 0.0,
+            "retest_invalidation_close_bps": 10.0, "retest_maximum_age_bars": 100,
+        },
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        response = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/backtest",
+            json={}, headers=headers,
+        )
+    assert response.status_code == 200
+    assert response.json()["data"]["result"]["hypothesis_id"] == "liquidity_sweep_reclaim_long"
 
 
 def test_backtest_rejects_unsupported_hypothesis(isolated_database: Path) -> None:

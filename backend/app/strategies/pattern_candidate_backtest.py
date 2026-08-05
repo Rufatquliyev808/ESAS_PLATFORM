@@ -5,10 +5,11 @@ import math
 import statistics
 
 from backend.app.analysis.bars import MarketBar
+from backend.app.analysis.liquidity_sweep import LiquiditySweepResult
 from backend.app.analysis.retest import RetestResult
 
 
-BACKTEST_VERSION = "1.0.0"
+BACKTEST_VERSION = "1.1.0"
 MIN_EFFECTIVE_SAMPLE = 30
 Z_95 = 1.96
 SUPPORTIVE = "supportive_evidence"
@@ -17,11 +18,19 @@ MATURED = "matured"
 IMMATURE = "immature"
 
 # v1 only backtests hypotheses whose upstream detector already exposes every
-# historical confirmation (bos_choch.observations / retest.observations), not
-# just the latest one. market_structure and liquidity_sweep currently only
-# expose the latest confirmed state, which is too small a sample to backtest
-# honestly; extending them is separate, future work.
-SUPPORTED_HYPOTHESES = frozenset({"structure_break_long", "structure_break_short"})
+# historical confirmation, not just the latest one: bos_choch/retest and
+# liquidity_sweep now both keep a full observations history. market_structure
+# still only exposes the latest confirmed regime state (a continuous-regime
+# concept, not a discrete event), so it stays out of scope until that has its
+# own well-defined historical-event semantics.
+HYPOTHESIS_EVENT_DIRECTION = {
+    "structure_break_long": "bullish",
+    "structure_break_short": "bearish",
+    "liquidity_sweep_reclaim_long": "bullish",
+    "liquidity_sweep_reclaim_short": "bearish",
+}
+SUPPORTED_HYPOTHESES = frozenset(HYPOTHESIS_EVENT_DIRECTION)
+STRUCTURE_BREAK_HYPOTHESES = frozenset({"structure_break_long", "structure_break_short"})
 
 MAX_COST_COMPONENT_BPS = 1_000.0
 MAX_COST_MULTIPLIER = 10.0
@@ -33,7 +42,7 @@ class PatternCandidateBacktestUnsupportedError(ValueError):
 
 @dataclass(frozen=True)
 class BacktestTrade:
-    break_observed_at: str
+    trigger_observed_at: str
     entry_bar_end_at: str
     entry_price: float
     exit_bar_end_at: str | None
@@ -115,13 +124,30 @@ def _scenario_result(name: str, total_cost_bps: float, matured_raw: tuple[float,
     return BacktestCostScenario(name, total_cost_bps, count, mean, hit_rate, mean / deviation, deviation, low, high, status, reason)
 
 
+def _historical_events(
+    hypothesis_id: str, event_direction: str, retest: RetestResult, liquidity_sweep: LiquiditySweepResult,
+) -> tuple[tuple[str, str], ...]:
+    """Return (trigger_observed_at, entry_reference_at) pairs for every historical confirmation."""
+    if hypothesis_id in STRUCTURE_BREAK_HYPOTHESES:
+        return tuple(
+            (item.break_observed_at or item.observed_at, item.observed_at)
+            for item in retest.observations
+            if item.direction == event_direction and item.state == "confirmed_retest" and item.observed_at is not None
+        )
+    return tuple(
+        (item.observed_at, item.observed_at)
+        for item in liquidity_sweep.observations
+        if item.direction == event_direction and item.state == "confirmed_sweep" and item.observed_at is not None
+    )
+
+
 def run_pattern_candidate_backtest(
     *,
     candidate_id: str,
     hypothesis_id: str,
-    direction: str,
     bars: tuple[MarketBar, ...],
     retest: RetestResult,
+    liquidity_sweep: LiquiditySweepResult,
     horizon_bars: int = 3,
     spread_bps: float = 2.0,
     commission_bps: float = 1.0,
@@ -130,24 +156,26 @@ def run_pattern_candidate_backtest(
     adverse_multiplier: float = 1.5,
     stress_multiplier: float = 2.5,
 ) -> PatternCandidateBacktest:
-    """Simulate every historical confirmation of a structure-break hypothesis.
+    """Simulate every historical confirmation of a supported hypothesis.
 
-    Entry is the confirming bar's own close (the bar on which the retest
-    became known), matching the existing forward_closed_bar_outcome
-    convention used elsewhere in this codebase, not a separate next-bar
-    open -- this is a deliberate v1 simplification, not bid/ask-aware
-    execution. Exit is the close horizon_bars later. This does not place
-    orders; it only produces a deterministic historical simulation.
+    Entry is the confirming bar's own close (matching the existing
+    forward_closed_bar_outcome convention used elsewhere in this codebase),
+    not a separate next-bar open -- this is a deliberate v1 simplification,
+    not bid/ask-aware execution. Exit is the close horizon_bars later. This
+    does not place orders; it only produces a deterministic simulation.
+
+    hypothesis_id fully determines the causal (bullish/bearish) direction --
+    the hypothesis registry's own "long"/"short" vocabulary is never used to
+    filter upstream detector observations, which use "bullish"/"bearish".
     """
     if hypothesis_id not in SUPPORTED_HYPOTHESES:
         raise PatternCandidateBacktestUnsupportedError(
-            "backtest v1 only supports structure_break_long and structure_break_short"
+            "backtest v1 only supports structure_break_long/short and "
+            "liquidity_sweep_reclaim_long/short"
         )
     if horizon_bars < 1:
         raise ValueError("horizon_bars must be at least 1")
-    normalized_direction = direction.strip().lower()
-    if normalized_direction not in {"bullish", "bearish"}:
-        raise ValueError("direction must be bullish or bearish")
+    event_direction = HYPOTHESIS_EVENT_DIRECTION[hypothesis_id]
 
     spread = _cost_component("spread", spread_bps)
     commission = _cost_component("commission", commission_bps)
@@ -160,16 +188,11 @@ def run_pattern_candidate_backtest(
     base_cost_bps = math.fsum((spread, commission, slippage, latency))
 
     index_by_end = {bar.end_at: index for index, bar in enumerate(bars)}
-    events = tuple(
-        item for item in retest.observations
-        if item.direction == normalized_direction and item.state == "confirmed_retest"
-    )
+    events = _historical_events(hypothesis_id, event_direction, retest, liquidity_sweep)
 
     trades: list[BacktestTrade] = []
-    for event in events:
-        if event.observed_at is None:
-            continue
-        entry_index = index_by_end.get(event.observed_at)
+    for trigger_observed_at, entry_reference_at in events:
+        entry_index = index_by_end.get(entry_reference_at)
         if entry_index is None:
             continue
         entry_bar = bars[entry_index]
@@ -178,15 +201,15 @@ def run_pattern_candidate_backtest(
         exit_index = entry_index + horizon_bars
         if exit_index >= len(bars):
             trades.append(BacktestTrade(
-                event.break_observed_at or "", entry_bar.end_at, entry_bar.close,
+                trigger_observed_at, entry_bar.end_at, entry_bar.close,
                 None, None, None, IMMATURE,
             ))
             continue
         exit_bar = bars[exit_index]
         raw_change = (exit_bar.close - entry_bar.close) / entry_bar.close * 100.0
-        raw_return = raw_change if normalized_direction == "bullish" else -raw_change
+        raw_return = raw_change if event_direction == "bullish" else -raw_change
         trades.append(BacktestTrade(
-            event.break_observed_at or "", entry_bar.end_at, entry_bar.close,
+            trigger_observed_at, entry_bar.end_at, entry_bar.close,
             exit_bar.end_at, exit_bar.close, raw_return, MATURED,
         ))
 
@@ -199,14 +222,14 @@ def run_pattern_candidate_backtest(
 
     payload = {
         "version": BACKTEST_VERSION, "candidate_id": candidate_id, "hypothesis_id": hypothesis_id,
-        "direction": normalized_direction, "horizon_bars": horizon_bars,
-        "retest_fingerprint": retest.fingerprint,
+        "direction": event_direction, "horizon_bars": horizon_bars,
+        "retest_fingerprint": retest.fingerprint, "liquidity_sweep_fingerprint": liquidity_sweep.fingerprint,
         "trades": [asdict(item) for item in trades],
         "scenarios": [asdict(item) for item in scenarios],
     }
     return PatternCandidateBacktest(
         version=BACKTEST_VERSION, candidate_id=candidate_id, hypothesis_id=hypothesis_id,
-        direction=normalized_direction, horizon_bars=horizon_bars, total_events=len(trades),
+        direction=event_direction, horizon_bars=horizon_bars, total_events=len(trades),
         matured_events=sum(item.status == MATURED for item in trades),
         immature_events=sum(item.status == IMMATURE for item in trades),
         trades=tuple(trades), scenarios=scenarios, fingerprint=_fingerprint(payload),

@@ -81,7 +81,10 @@ type PersistedPatternCandidateBacktest = {
 type Envelope<T> = { data: T };
 type Page<T> = Envelope<T[]>;
 
-const BACKTESTABLE_HYPOTHESES = new Set(["structure_break_long", "structure_break_short"]);
+const BACKTESTABLE_HYPOTHESES = new Set([
+  "structure_break_long", "structure_break_short",
+  "liquidity_sweep_reclaim_long", "liquidity_sweep_reclaim_short",
+]);
 const BACKTEST_STATUS_LABELS: Record<string, string> = {
   supportive_evidence: "Sübut yetərlidir",
   insufficient_evidence: "Sübut yetərli deyil",
@@ -370,7 +373,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 yalnız &ldquo;Struktur qırılması + retest&rdquo; hipotezlərini dəstəkləyir (bazar strukturu və likvidlik hipotezləri hələ yalnız son müşahidəni saxlayır, tarixi nümunə üçün kifayət etmir). Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
+        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 &ldquo;Struktur qırılması + retest&rdquo; və &ldquo;Likvidlik süpürməsi&rdquo; hipotezlərini dəstəkləyir. Bazar strukturu hələ dəstəklənmir — o hipotez hazırda yalnız son müşahidəni saxlayır, tarixi nümunə üçün kifayət etmir. Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
       </section>
     </section>
   );

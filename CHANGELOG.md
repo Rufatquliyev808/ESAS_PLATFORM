@@ -8,6 +8,27 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Pattern candidate backtest direction bug, and liquidity sweep backtest coverage
+
+- **Bug fix:** `run_pattern_candidate_backtest` incorrectly accepted a
+  `direction` parameter expected to be `"bullish"/"bearish"`, but a
+  registered candidate's stored `direction` field actually comes from the
+  hypothesis registry's `"long"/"short"` vocabulary. This would have made
+  every real backtest run fail with a `ValueError` in production; it went
+  unnoticed in v1's own tests because those fixtures hand-wrote `"bullish"`
+  directly. The function no longer accepts a `direction` parameter at all
+  -- it derives the causal direction solely from `hypothesis_id`.
+- `liquidity_sweep.py` gains an `observations` field recording every
+  historical pool-sweep-and-reclaim event (previously only the latest
+  confirmed sweep per direction was kept). Additive, backward compatible.
+- Backtest v1 now also supports `liquidity_sweep_reclaim_long/short`, in
+  addition to `structure_break_long/short`. `market_structure` remains out
+  of scope -- it is a continuous regime concept, not a discrete event, and
+  needs its own historical-event design before it can be backtested
+  honestly.
+- Verification: backend `281 passed`, frontend production build and
+  `10/10` tests passed, lint clean.
+
 ### Added — Pattern candidate backtest v1 (Phase 4, partial)
 
 - `run_pattern_candidate_backtest` scans every historical `confirmed_retest`

@@ -1,3 +1,5 @@
+import pytest
+
 from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.liquidity_sweep import detect_liquidity_sweeps
 from backend.app.analysis.market_structure import StructurePivot
@@ -69,3 +71,28 @@ def test_same_closed_bar_sweeping_both_sides_is_explicitly_conflicting() -> None
     )
     assert result.bullish_observation.state == "conflicting"
     assert result.bearish_observation.state == "conflicting"
+
+
+def test_observations_capture_every_pool_sweep_not_only_the_latest() -> None:
+    bars = tuple(_bar(index) for index in range(16))
+    bars = (
+        bars[:4]
+        + (_bar(4, high=103, low=99, close=100),)
+        + bars[5:14]
+        + (_bar(14, high=111, low=99, close=100),)
+        + bars[15:]
+    )
+    pivots = (
+        _pivot("high", 102, 0, 1), _pivot("high", 102.02, 2, 3),
+        _pivot("high", 110, 10, 11), _pivot("high", 110.02, 12, 13),
+    )
+    result = detect_liquidity_sweeps(
+        bars, pivots, bar_fingerprint="sha256:bars", structure_fingerprint="sha256:structure",
+        pool_tolerance_bps=10, minimum_sweep_bps=1,
+    )
+    bearish_events = [item for item in result.observations if item.direction == "bearish"]
+    assert len(bearish_events) == 2
+    assert bearish_events[0].observed_at < bearish_events[1].observed_at
+    assert bearish_events[0].pool_level == pytest.approx(102.01, abs=0.01)
+    assert bearish_events[1].pool_level == pytest.approx(110.01, abs=0.01)
+    assert result.bearish_observation.observed_at == bars[14].end_at
