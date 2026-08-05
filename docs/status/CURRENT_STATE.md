@@ -1,5 +1,26 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Causal Fair Value Gap 1.0.0 tamamlandı
+
+- `fair_value_gap 1.0.0` üç ardıcıl bağlanmış bar arasında yaranan bullish/bearish
+  qiymət boşluğunu yalnız bağlanmış barlarla izləyir; boşluq yalnız yaranandan
+  sonrakı barlarla `open`, `partially_filled`, `filled` və ya `invalidated`
+  vəziyyətinə keçir, gələcək bar boşluğun yaranmasına təsir etmir.
+- Minimum boşluq (bps) konfiqurasiya olunur; `insufficient_data` və `no_gap`
+  halları açıq göstərilir. Nəticə bar fingerprint-inə bağlı deterministik
+  SHA-256 izi daşıyır və `replay_analysis` cavabına (`ANALYSIS_API_VERSION 1.5.0`)
+  əlavə edilib.
+- Frontend-də ayrıca "Fair Value Gap" menyusu və tədqiqat kartı əlavə edildi;
+  köhnə backend cavabı üçün uyğunluq xəbərdarlığı qorunur.
+- Tam yoxlama: backend `243 passed` (yeni `fair_value_gap` modul testləri daxil);
+  frontend production build və `9/9` test keçdi.
+- Frontend `eslint-plugin-react-hooks 7.x`-in yeni `react-hooks/immutability`
+  qaydası `dashboard-navigation.tsx`-də (`previousGroup` reassignment,
+  FVG işindən asılı olmayan, əvvəldən mövcud kod) bir xəta verir; bu FVG işinin
+  hissəsi deyil və ayrıca düzəliş kimi qeydə alınıb.
+- Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır.
+- Commit edilməyib; commit və push yalnız istifadəçi təsdiqi ilə ediləcək.
+
 ## 2026-08-05 — Causal retest 1.0.0 tamamlandı
 
 - No-lookahead retest müşahidəsi backend və frontend-ə əlavə edildi.

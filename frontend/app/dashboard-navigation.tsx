@@ -9,6 +9,7 @@ export type DashboardSection =
   | "liquidity"
   | "bos-choch"
   | "retest"
+  | "fvg"
   | "strategies"
   | "hypotheses";
 
@@ -28,6 +29,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "liquidity", title: "Likvidlik", description: "Süpürülmə və geri alınma", group: "Qiymət davranışı" },
   { id: "bos-choch", title: "BOS / CHoCH", description: "Qırılma və istiqamət dəyişikliyi", group: "Qiymət davranışı" },
   { id: "retest", title: "Retest", description: "Qırılmış səviyyənin yoxlanması", group: "Qiymət davranışı" },
+  { id: "fvg", title: "Fair Value Gap", description: "Qiymət boşluğu və doldurulması", group: "Qiymət davranışı" },
   { id: "strategies", title: "Strategiya müqayisəsi", description: "Ayrı yanaşmaların nəticələri", group: "Qiymətləndirmə" },
   { id: "hypotheses", title: "Hipotezlər", description: "Sınaq üçün qaydalar reyestri", group: "Qiymətləndirmə" },
 ];

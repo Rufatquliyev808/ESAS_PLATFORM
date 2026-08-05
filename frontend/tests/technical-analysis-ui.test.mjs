@@ -31,6 +31,12 @@ test("technical analysis UI keeps indicators separate and research-only", async 
   assert.match(source, /Təsdiqlənmiş süpürmə/);
   assert.match(source, /Bu nəticə siqnal, giriş və ya əməliyyat əmri deyil/);
   assert.match(source, /warm-up nöqtəsi/);
+  assert.match(source, /FvgPanel/);
+  assert.match(source, /Qiymət boşluğu və doldurulması/);
+  assert.match(source, /YÜKSƏLİŞ BOŞLUĞU/);
+  assert.match(source, /ENİŞ BOŞLUĞU/);
+  assert.match(source, /Boşluq yalnız üç ardıcıl bağlanmış bar arasında yaranır/);
+  assert.match(source, /Fair Value Gap izi/);
   assert.match(source, /Məlumat mənbəyi və hesablamanın izi/);
   assert.match(source, /alış\/satış siqnalı vermir və əməliyyat açmır/);
 });

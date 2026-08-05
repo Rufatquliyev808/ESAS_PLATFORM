@@ -296,6 +296,7 @@ def replay_technical_analysis(
     retest_confirmation_close_bps: float = Query(default=0.0, ge=0, le=500),
     retest_invalidation_close_bps: float = Query(default=10.0, ge=0, le=500),
     retest_maximum_age_bars: int = Query(default=100, ge=1, le=5_000),
+    fvg_minimum_gap_bps: float = Query(default=1.0, ge=0, le=500),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -331,6 +332,7 @@ def replay_technical_analysis(
               retest_confirmation_close_bps=retest_confirmation_close_bps,
               retest_invalidation_close_bps=retest_invalidation_close_bps,
               retest_maximum_age_bars=retest_maximum_age_bars,
+              fvg_minimum_gap_bps=fvg_minimum_gap_bps,
           )
     except ReplayTransitionConflictError as error:
         raise HTTPException(

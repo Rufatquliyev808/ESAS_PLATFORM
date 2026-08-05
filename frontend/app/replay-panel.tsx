@@ -194,7 +194,7 @@ export function ReplayPanel({ token, onUnauthorized, view, onOpenReplay }: { tok
         </section>
         {selected?.state === "completed" && view === "strategies" &&
           <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
-        {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest"].includes(view) &&
+        {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest", "fvg"].includes(view) &&
           <TechnicalAnalysisPanel key={`technical-${selected.session_id}`} view={view as Exclude<ReplayView, "replay" | "strategies">} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
       </>
     );

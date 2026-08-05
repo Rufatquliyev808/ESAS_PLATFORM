@@ -1,34 +1,29 @@
 # ESAS Platform — Növbəti tapşırıq
 
-Status: READY — ayrıca istifadəçi təsdiqi gözləyir
-Prioritet: HIGH
-Mərhələ: Causal FVG detektoru 1.0.0
+Status: BLOCKED — növbəti mərhələ seçilməyib, istifadəçi təsdiqi tələb olunur
+Prioritet: —
+Mərhələ: Phase 4-ün qalan maddələri
 
-## Məqsəd
+## Tamamlanan
 
-Bağlanmış barlardan yaranan bullish və bearish fair value gap sahələrini yalnız məlum olduqları andan sonra izləmək. Doldurulma, qismən doldurulma, etibarsızlaşma və yetərsiz məlumat halları ayrıca göstərilməlidir.
+`Causal FVG detektoru 1.0.0` tamamlandı (backend + frontend, `243` backend testi,
+frontend build və `9/9` test). Ətraflı: `docs/status/CURRENT_STATE.md`.
 
-## Sərhədlər
+## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
 
-- Yalnız tamamlanmış replay və bağlanmış barlar.
-- Bullish və bearish nəticələr ayrıdır.
-- No-lookahead və deterministik fingerprint məcburidir.
-- Frontend sadə Azərbaycan dilində ayrıca kartlar göstərir.
-- Order-block birləşməsi, strategiya, siqnal, giriş, stop, hədəf, risk ölçüsü və avtomatik order daxil deyil.
+- Pattern namizədlərinin yaradılması
+- Backtesting
+- Uğursuz eksperimentlərin arxivləşdirilməsi
+- SHADOW mərhələsi üçün hazırlıq
+
+## Ayrıca (FVG-dən asılı olmayan, kiçik) düzəliş namizədi
+
+`frontend/app/dashboard-navigation.tsx`-də `eslint-plugin-react-hooks 7.x`-in
+yeni `react-hooks/immutability` qaydası `previousGroup` reassignment-ə görə
+lint xətası verir (əvvəldən mövcud kod, FVG işi ilə əlaqəsi yoxdur). CI-də
+`npm run lint` bunu bloklayır.
 
 ## Başlama şərti
 
-Bu yeni mərhələ istifadəçinin ayrıca təsdiqindən sonra başlanacaq.
-
-## 2026-08-05 frontend mərhələsinin vəziyyəti
-
-Sol menyulu, bölmə əsaslı frontend iş sahəsi tamamlanıb və `8/8` frontend testi ilə yoxlanıb.
-Aktiv növbəti müstəqil iş yuxarıda göstərilən `Causal FVG detektoru 1.0.0` mərhələsidir.
-Bu mərhələ yalnız istifadəçinin ayrıca təsdiqindən sonra başlanmalıdır.
-
-## 2026-08-05 frontend fokus düzəlişi
-
-Replay idarəetməsi yalnız öz menyusunda saxlanılıb. Digər analiz bölmələri qısa replay
-konteksti, aid nəticə, `Sessiyanı dəyiş` keçidi və üç addımlı istifadə təlimatı göstərir.
-Frontend production build və `9/9` test uğurla keçib. Növbəti müstəqil iş dəyişməyib:
-`Causal FVG detektoru 1.0.0`; başlamazdan əvvəl ayrıca istifadəçi təsdiqi tələb olunur.
+Yuxarıdakı namizədlərdən hansının növbəti mərhələ olacağı istifadəçinin ayrıca
+təsdiqindən sonra müəyyənləşdiriləcək.

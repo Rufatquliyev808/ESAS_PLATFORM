@@ -27,6 +27,8 @@ type StructureBreakObservation = { direction: "bullish" | "bearish"; state: stri
 type BosChoch = { version: string; minimum_close_break_bps: number; maximum_pivot_age_bars: number; observations: StructureBreakObservation[]; bullish_observation: StructureBreakObservation; bearish_observation: StructureBreakObservation; fingerprint: string };
 type RetestObservation = { direction: "bullish" | "bearish"; state: string; break_type: string | null; level: number | null; break_observed_at: string | null; touched_at: string | null; observed_at: string | null; close_distance_bps: number | null };
 type Retest = { version: string; touch_tolerance_bps: number; confirmation_close_bps: number; invalidation_close_bps: number; maximum_retest_age_bars: number; observations: RetestObservation[]; bullish_observation: RetestObservation; bearish_observation: RetestObservation; fingerprint: string };
+type FvgObservation = { direction: "bullish" | "bearish"; state: string; lower_bound: number | null; upper_bound: number | null; gap_bps: number | null; formed_at: string | null; first_touched_at: string | null; observed_at: string | null; fill_percent: number };
+type FairValueGap = { version: string; minimum_gap_bps: number; observations: FvgObservation[]; bullish_observation: FvgObservation; bearish_observation: FvgObservation; fingerprint: string };
 type AnalysisResult = {
   session_id: string;
   symbol: string;
@@ -48,6 +50,8 @@ type AnalysisResult = {
     bos_choch_fingerprint?: string;
     retest_version?: string;
     retest_fingerprint?: string;
+    fair_value_gap_version?: string;
+    fair_value_gap_fingerprint?: string;
   };
   bars: AnalysisBar[];
   indicators: { ema: IndicatorSeries; rsi: IndicatorSeries; atr: IndicatorSeries };
@@ -55,6 +59,7 @@ type AnalysisResult = {
   liquidity_sweep?: LiquiditySweep;
   bos_choch?: BosChoch;
   retest?: Retest;
+  fair_value_gap?: FairValueGap;
   interpretation: string;
   api_version: string;
 };
@@ -243,7 +248,31 @@ function RetestPanel({ result }: { result: Retest }) {
   </article>;
 }
 
-type AnalysisView = "technical" | "structure" | "liquidity" | "bos-choch" | "retest";
+function FvgPanel({ result }: { result: FairValueGap }) {
+  const labels: Record<string, string> = {
+    open: "Boşluq açıqdır",
+    partially_filled: "Qismən doldurulub",
+    filled: "Tamamilə doldurulub",
+    invalidated: "Boşluq etibarsızlaşıb",
+    no_gap: "Boşluq müşahidə edilməyib",
+    insufficient_data: "Məlumat azdır",
+  };
+  const observations = [result.bullish_observation, result.bearish_observation];
+  return <article className="analysis-card bos-choch-card">
+    <header><div><p className="eyebrow">Fair Value Gap · araşdırma müşahidəsi</p><h4>Qiymət boşluğu və doldurulması</h4></div><span className="analysis-badge ready">Versiya {result.version}</span></header>
+    <p>Boşluq yalnız üç ardıcıl bağlanmış bar arasında yaranır. Doldurulma vəziyyəti yalnız sonrakı bağlanmış barlarla yenilənir; gələcək məlumat boşluğun yaranmasına təsir etmir.</p>
+    <div className="liquidity-sides">{observations.map((item) => <section key={item.direction} className={`liquidity-side ${item.direction}`}>
+      <span>{item.direction === "bullish" ? "YÜKSƏLİŞ BOŞLUĞU" : "ENİŞ BOŞLUĞU"}</span>
+      <strong>{labels[item.state] ?? item.state}</strong>
+      <small>Aralıq: {formatNumber(item.lower_bound, 5)} — {formatNumber(item.upper_bound, 5)} · {formatNumber(item.gap_bps, 2)} bps</small>
+      <small>Doldurulma: {formatNumber(item.fill_percent, 1)}% · {item.observed_at ? formatTime(item.observed_at) : "vaxt yoxdur"}</small>
+    </section>)}</div>
+    <div className="bos-choch-meta">Təsdiqlənmiş müşahidələr: {result.observations.length} · Minimum boşluq: {result.minimum_gap_bps} bps</div>
+    <p className="liquidity-boundary">Bu nəticə strategiya, siqnal, giriş və ya əməliyyat əmri deyil.</p>
+  </article>;
+}
+
+type AnalysisView = "technical" | "structure" | "liquidity" | "bos-choch" | "retest" | "fvg";
 
 export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized, view }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void; view: AnalysisView }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
@@ -315,6 +344,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
         {view === "structure" && (result.market_structure ? <StructurePanel structure={result.market_structure} /> : <CompatibilityNotice layer="Bazar strukturu" />)}
         {view === "bos-choch" && (result.bos_choch ? <BosChochPanel result={result.bos_choch} /> : <CompatibilityNotice layer="BOS/CHoCH" />)}
         {view === "retest" && (result.retest ? <RetestPanel result={result.retest} /> : <CompatibilityNotice layer="Retest analizi" />)}
+        {view === "fvg" && (result.fair_value_gap ? <FvgPanel result={result.fair_value_gap} /> : <CompatibilityNotice layer="Fair Value Gap analizi" />)}
         {view === "liquidity" && (result.liquidity_sweep ? <LiquidityPanel liquidity={result.liquidity_sweep} /> : <CompatibilityNotice layer="Likvidlik analizi" />)}
         <details className="analysis-lineage">
           <summary>Məlumat mənbəyi və hesablamanın izi</summary>
@@ -329,6 +359,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
             <Fingerprint label="Likvidlik izi" value={result.lineage.liquidity_sweep_fingerprint} />
             <Fingerprint label="BOS/CHoCH izi" value={result.lineage.bos_choch_fingerprint} />
             <Fingerprint label="Retest izi" value={result.lineage.retest_fingerprint} />
+            <Fingerprint label="Fair Value Gap izi" value={result.lineage.fair_value_gap_fingerprint} />
           </dl>
         </details>
         <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu göstəricilər araşdırma üçündür. Platforma bu mərhələdə alış/satış siqnalı vermir və əməliyyat açmır.</p>

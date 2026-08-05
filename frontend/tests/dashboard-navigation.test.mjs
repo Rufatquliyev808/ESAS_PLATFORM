@@ -39,6 +39,7 @@ test("large analysis areas render independently", () => {
   assert.match(analysis, /view === "liquidity"/);
   assert.match(analysis, /view === "bos-choch"/);
   assert.match(analysis, /view === "retest"/);
+  assert.match(analysis, /view === "fvg"/);
 });
 
 test("dashboard layout has desktop and responsive navigation styles", () => {

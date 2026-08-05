@@ -11,13 +11,22 @@ Son yenilənmə: 2026-08-05
 
 ## Son tamamlanan iş
 
-- Köhnə backend cavabında `market_structure.pivots` olmadıqda frontend çökməsi düzəldildi.
-- `retest 1.0.0` causal/no-lookahead qatı backend və frontend-ə əlavə edildi.
-- Bullish və bearish nəticələr ayrıdır; bu qat strategiya, siqnal və order deyil.
-- Retest/API yoxlamaları: `13 passed`.
-- Tam backend regressiyası: `239 passed`.
-- Frontend lint, production build və 4 UI müqavilə testi keçdi.
+- `fair_value_gap 1.0.0` causal/no-lookahead Fair Value Gap detektoru backend
+  (`backend/app/analysis/fair_value_gap.py`, `replay_analysis.py`, `main.py`)
+  və frontend-ə (`technical-analysis-panel.tsx`, `dashboard-navigation.tsx`,
+  `page.tsx`, `replay-panel.tsx`) əlavə edildi.
+- Bullish və bearish boşluqlar ayrıdır; `open/partially_filled/filled/invalidated/
+  no_gap/insufficient_data` halları açıq göstərilir. Bu qat strategiya, siqnal,
+  giriş, risk ölçüsü və order yaratmır.
+- Tam backend regressiyası: `243 passed`.
+- Frontend production build və `9/9` test keçdi.
+- `npm run lint`-də `dashboard-navigation.tsx` faylında FVG işindən asılı olmayan,
+  əvvəldən mövcud olan bir `react-hooks/immutability` xətası var (bax
+  `docs/status/NEXT_TASK.md`).
 - `git diff --check` xəta vermədi; yalnız sətir sonluğu xəbərdarlıqları mövcuddur.
+- Backend kodu bu sessiyaya başlamazdan əvvəl artıq commit edilməmiş şəkildə iş
+  qovluğunda var idi (əvvəlki sessiyadan); bu sessiya onu yoxladı, tamamladı
+  (frontend əlavə etdi) və sənədləşdirdi. Hələ commit edilməyib.
 
 ## Vizual yoxlama qeydi
 
@@ -27,7 +36,9 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-`Causal FVG detector 1.0.0` növbəti müstəqil mərhələdir və ayrıca istifadəçi təsdiqi tələb edir. Order-block, strategiya, siqnal, giriş, stop, risk ölçüsü və avtomatik order bu mərhələyə daxil deyil.
+`Causal FVG detector 1.0.0` tamamlandı. Növbəti mərhələ hələ seçilməyib —
+namizədlər `docs/status/NEXT_TASK.md`-dədir və istifadəçinin ayrıca təsdiqini
+gözləyir.
 
 ## Təhlükəsizlik
 
@@ -56,3 +67,17 @@ Platforma araşdırma/monitorinq rejimindədir. Açıq istifadəçi təsdiqi olm
 - Frontend production build və `9/9` test uğurla keçib.
 - GitHub push edilməyib. Növbəti müstəqil mərhələ ayrıca təsdiqlə
   `Causal FVG detektoru 1.0.0`-dır.
+
+## Ən son etibarlı vəziyyət — 2026-08-05 (Causal FVG detektoru)
+
+- `fair_value_gap 1.0.0` backend modulu (`backend/app/analysis/fair_value_gap.py`)
+  `replay_analysis.py` (`ANALYSIS_API_VERSION 1.5.0`) və `main.py`-a calanıb.
+- Frontend-ə "Fair Value Gap" menyu bölməsi, `FvgPanel` kartı və uyğunluq
+  xəbərdarlığı əlavə edildi (`technical-analysis-panel.tsx`,
+  `dashboard-navigation.tsx`, `page.tsx`, `replay-panel.tsx`).
+- Backend `243 passed`, frontend production build və `9/9` test keçdi.
+- `dashboard-navigation.tsx`-də FVG-dən asılı olmayan, əvvəldən mövcud
+  `react-hooks/immutability` lint xətası var; ayrıca düzəliş kimi qeydə alınıb.
+- Bu vahid üçün hələ commit edilməyib; commit yalnız istifadəçi təsdiqindən
+  sonra ediləcək, push isə ayrıca açıq istəklə.
+- Növbəti mərhələ seçilməyib; namizədlər `docs/status/NEXT_TASK.md`-dədir.

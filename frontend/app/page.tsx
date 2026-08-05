@@ -497,6 +497,12 @@ export default function Home() {
       impact: "Qırılmış səviyyənin yenidən yoxlanıb saxlanması hərəkətin davam etmə ehtimalını izah edə bilər; uğursuz retest əks riski artırır.",
       evidence: "BOS/CHoCH səviyyəsinə sonrakı toxunuş, barın reaksiyası və bağlanışın səviyyənin hansı tərəfində qalması ölçülür.",
     },
+    fvg: {
+      title: "Fair Value Gap müşahidəsi",
+      metric: "Qiymət boşluğu",
+      impact: "Bağlanmış barlar arasında yaranan doldurulmamış boşluq GOLD-un geri qayıdıb həmin qiyməti test etmə ehtimalını izah edə bilər.",
+      evidence: "Üç ardıcıl bağlanmış bar arasındakı boşluq və onun sonrakı barlarla doldurulma/etibarsızlaşma vəziyyəti ölçülür.",
+    },
     strategies: {
       title: "Strategiya müqayisəsi",
       metric: "Ayrı qaydalar",
@@ -551,6 +557,11 @@ export default function Home() {
       "Qırılmış səviyyəyə sonrakı qayıdışı yoxlayın.",
       "Bağlanışın səviyyəni saxlayıb-saxlamadığını müqayisə edin.",
       "Uğursuz retesti əks risk, uğurlu retesti isə əlavə müşahidə kimi qəbul edin.",
+    ],
+    fvg: [
+      "Bağlanmış barlar arasında yaranan boşluğun istiqamətinə baxın.",
+      "Doldurulma faizini və sonuncu vəziyyəti (açıq, qismən, tam, etibarsız) yoxlayın.",
+      "Boşluğu təkbaşına deyil, struktur və likvidlik müşahidəsi ilə birlikdə qiymətləndirin.",
     ],
     strategies: [
       "Eyni replay sessiyasında strategiya versiyalarını müqayisə edin.",
@@ -836,7 +847,7 @@ export default function Home() {
           </section>
                 </>
               )}
-              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "strategies"] as DashboardSection[]).includes(activeSection) && (
+              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies"] as DashboardSection[]).includes(activeSection) && (
           <ReplayPanel
             view={activeSection}
             token={token}

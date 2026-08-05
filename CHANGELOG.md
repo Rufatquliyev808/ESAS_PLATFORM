@@ -8,6 +8,18 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Causal Fair Value Gap detector
+
+- `fair_value_gap 1.0.0` üç ardıcıl bağlanmış bar arasında yaranan bullish/bearish
+  qiymət boşluğunu izləyir; boşluq yalnız yaranandan sonrakı bağlanmış barlarla
+  `open`, `partially_filled`, `filled` və ya `invalidated` vəziyyətinə keçir.
+- `no_gap` və `insufficient_data` halları açıq göstərilir; minimum boşluq (bps)
+  konfiqurasiya olunur, nəticə deterministik SHA-256 izi daşıyır.
+- Frontend "Fair Value Gap" menyusunda bullish/bearish kartları, doldurulma
+  faizini və köhnə backend cavabı üçün uyğunluq xəbərdarlığını göstərir.
+- Yoxlama: backend `243 passed`, frontend production build və `9/9` test keçdi.
+- Bu qat strategiya, siqnal, giriş, risk ölçüsü və order yaratmır.
+
 ### Added — Causal retest detector
 
 - `retest 1.0.0` BOS/CHoCH qırılmasından sonra səviyyəyə geri dönüşü yalnız sonrakı bağlanmış barlarla müşahidə edir.
