@@ -76,9 +76,16 @@ Son yenilənmə: 2026-08-05
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
   qovluq göstərmək lazımdır (məs. scratchpad daxilində).
 - Frontend: `npm run lint` və `npm run test` (build + testlər) təmiz.
-- Canlı brauzerdə vizual yoxlama edilməyib (bu maşındakı naməlum xarici
-  mühit məhdudiyyətinə görə, əvvəlki sessiyalardan bəri davam edir). Bütün
-  frontend işi yalnız avtomatlaşdırılmış test/build ilə təsdiqlənib.
+- **Canlı brauzerdə vizual yoxlama tamamlandı** (əvvəlki sessiyalardakı
+  "naməlum xarici mühit məhdudiyyəti" səbəbi bu dəfə aradan qalxdı —
+  problem sadəcə brauzer sekmesinin "hidden" `visibilityState`-də olması
+  idi, "Yenilə" düyməsinə əl ilə klikləməklə aradan qalxdı). Ayrıca,
+  birdəfəlik test bazası (port `8001`/`5173`, real `database/
+  ESAS_PLATFORM.sqlite`-a toxunulmadan) ilə Pattern namizədləri
+  bölməsinin tam dövrü (draft → qeydiyyat → backtest → nəticələndirmə →
+  arxivləşdirmə) və "Bazar strukturu" bölməsi sınandı; brauzer konsolunda
+  heç bir xəta olmadı. Bütün müvəqqəti proseslər və fayllar (`.env.local`
+  daxil) təmizləndi.
 
 ## Növbəti mərhələ
 

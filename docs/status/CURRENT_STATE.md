@@ -1,5 +1,28 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Pattern namizədi UI-si canlı brauzerdə vizual təsdiqləndi
+
+- Real `database/ESAS_PLATFORM.sqlite`-a **toxunulmadı**. Ayrıca, birdəfəlik
+  test bazası (`.venv` ilə yeni SQLite fayl, `0001-0006` migrasiyaları
+  tətbiq edilmiş) yaradıldı, sintetik GOLD tick zigzag-ı (67 tick) əlavə
+  edildi və tam bir replay sessiyası (`max_speed`, `completed`) quruldu.
+- Backend `127.0.0.1:8001`-də, frontend `127.0.0.1:5173`-də (hər ikisi
+  müvəqqəti, yalnız bu yoxlama üçün) işə salındı; CORS artıq `5173`-ə
+  icazə verdiyi üçün əlavə konfiqurasiya lazım olmadı.
+- Brauzerdə tam giriş edildi və **Pattern namizədləri** bölməsinin bütün
+  dövrü uğurla yoxlanıldı: draft hesablama (M1 vaxt çərçivəsində
+  `market_structure_short` real olaraq `candidate_confirmed` göstərdi,
+  Python-da əvvəlcədən yoxlanmış nəticə ilə tam üst-üstə düşdü) → "Draft
+  kimi qeydə al" → "Backtest et" (n=1, 3 ssenari, "Sübut yetərli deyil") →
+  "Nəticələndir" (→ `insufficient_evidence`) → "Arxivləşdir" (→
+  `Arxivləşdirilib`). Bütün addımlarda UI mətnləri gözlənilən nəticələri
+  göstərdi, brauzer konsolunda **heç bir xəta olmadı**.
+- "Bazar strukturu" bölməsi də ayrıca yoxlanıldı — düzgün render olundu.
+- Yoxlamadan sonra bütün müvəqqəti proseslər dayandırıldı, `frontend/.env.local`
+  silindi, test bazası scratchpad-də qaldı (layihəyə heç nə commit edilmədi).
+- Bu, sessiya boyu qeyd edilən "canlı brauzerdə yoxlanmayıb" qeydini
+  bağlayır.
+
 ## 2026-08-05 — Backtest verdiktindən avtomatik nəticələndirmə (Phase 4)
 
 - Vəziyyət maşınının növbəti addımı: `evaluated → accepted_for_shadow |

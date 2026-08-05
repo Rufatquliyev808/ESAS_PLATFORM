@@ -27,6 +27,9 @@ Mərhələ: Phase 4-ün qalan maddələri
   `POST .../{id}/classify`). `archive_pattern_candidate` bütün
   arxivləşdirilə bilən vəziyyətlərdən icazə verəcək şəkildə genişləndirildi.
   Backend `293 passed`, frontend build və `10/10` test.
+- Pattern namizədi bölməsinin tam dövrü canlı brauzerdə, ayrıca birdəfəlik
+  test bazası ilə vizual təsdiqləndi (real bazaya toxunulmadı, heç bir
+  konsol xətası olmadı).
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -44,10 +47,10 @@ Mərhələ: Phase 4-ün qalan maddələri
 
 ## Vizual yoxlama qeydi
 
-Pattern namizədi bölməsi (draft, qeydiyyat, arxivləşdirmə, backtest daxil)
-canlı brauzerdə açılıb baxılmayıb (yalnız avtomatlaşdırılmış test/build).
-Növbəti sessiya imkan olduqda bunu real replay sessiyası ilə vizual
-təsdiqləməlidir.
+Tamamlandı (2026-08-05): Pattern namizədi bölməsinin tam dövrü (draft →
+qeydiyyat → backtest → nəticələndirmə → arxivləşdirmə) ayrıca, birdəfəlik
+test bazası ilə canlı brauzerdə uğurla yoxlanıldı; heç bir konsol xətası
+olmadı. Real bazaya toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Başlama şərti
 
