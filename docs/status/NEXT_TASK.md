@@ -30,17 +30,29 @@ Mərhələ: Phase 4-ün qalan maddələri
 - Pattern namizədi bölməsinin tam dövrü canlı brauzerdə, ayrıca birdəfəlik
   test bazası ilə vizual təsdiqləndi (real bazaya toxunulmadı, heç bir
   konsol xətası olmadı).
+- **Phase 2 worker/scheduler müqaviləsi `pattern_candidate_backtest` üçün
+  hərfi tətbiq edildi** (istifadəçinin iki dəfə açıq təsdiqi ilə): tam
+  claim/lease/fencing/retry/audit/state-machine (`0007_analysis_jobs.sql`,
+  `analysis_job_repository.py`, `workers/analysis_job_worker.py`), icra
+  sürücüsü FastAPI `BackgroundTasks`. Yeni API: `POST .../backtest-jobs`,
+  `GET .../backtest-jobs/{job_id}`, `POST .../backtest-jobs/{job_id}/cancel`,
+  `GET /api/v2/analysis-jobs/metrics`. Yol ilə ikinci bir real bug tapılıb
+  düzəldildi (idempotency key hash-i `created_by` daxil edirdi, ownership
+  qoruması işə düşmürdü). Backend `321 passed`. **Frontend toxunulmayıb.**
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
+## Açıq qərar — job-queue frontend səthi
+
+Yeni async backtest-job endpoint-ləri üçün heç bir UI yoxdur. Mövcud
+"Backtest et" düyməsi sinxron endpoint-dən istifadəni davam etdirir (heç nə
+pozulmayıb). Növbəti addım seçilməzdən əvvəl istifadəçi ilə aydınlaşdırılmalı
+sual: async job UI əlavə edilsinmi, yoxsa job-queue mühərriki hələlik yalnız
+backend infrastrukturu (gələcək uzun-müddətli işlər üçün) olaraq qalsın?
+
 ## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
 
-- **Vəziyyət maşınının qalan hissəsi** — `running` (async/job-based icra,
-  hazırda backtest sinxron olaraq birbaşa `evaluated`-ə keçir),
-  `blocked_by_data_quality`, `invalid_leakage`, `failed`, `cancelled`.
-  Bunların hamısı CHECK constraint-də icazəlidir (`0005` migrasiyası), amma
-  tətbiq məntiqi yoxdur və hazırkı sinxron backtest üçün əsaslı ehtiyac
-  görünmür (job-növbəsi tələb edən uzun əməliyyat yoxdur).
+- Job-queue-nun frontend səthi (yuxarıdakı açıq qərar).
 - Multiple-testing reyestri (eyni məlumatda çoxlu hipotez sınağının
   qeydiyyatı — hələ yoxdur).
 - SHADOW mərhələsi üçün hazırlıq (Phase 9, Phase 1-8 qəbulundan asılıdır).
@@ -51,6 +63,10 @@ Tamamlandı (2026-08-05): Pattern namizədi bölməsinin tam dövrü (draft →
 qeydiyyat → backtest → nəticələndirmə → arxivləşdirmə) ayrıca, birdəfəlik
 test bazası ilə canlı brauzerdə uğurla yoxlanıldı; heç bir konsol xətası
 olmadı. Real bazaya toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
+
+Job-queue artımı (bu sessiya) yalnız backend testləri ilə yoxlanıldı;
+canlı brauzerdə ayrıca vizual sınaqdan keçirilməyib (frontend-də UI-si
+olmadığı üçün vizual sınaq mənasız olardı).
 
 ## Başlama şərti
 

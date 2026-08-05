@@ -1,5 +1,59 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Phase 2 worker/scheduler müqaviləsi hərfi tətbiq edildi (`pattern_candidate_backtest`)
+
+- İstifadəçinin iki dəfə açıq təsdiqi ilə (`Tam həcmdə tiklə` → `Tam
+  müqaviləni hərfi tiklə`) `PHASE_2_WORKER_SCHEDULER_CONTRACT.md`-dəki tam
+  claim/lease/fencing/retry/audit/state-machine/observability modeli
+  tətbiq edildi — yalnız `pattern_candidate_backtest` iş növü üçün (müqavilədə
+  adı çəkilən 5 iş növünə bu, 6-cı olaraq əlavə edildi; digər 5-i hələ
+  yoxdur, real ehtiyac yalnız backtest üçündür).
+- Ayrıca worker prosesi qurulmadı — icra sürücüsü FastAPI `BackgroundTasks`-dır;
+  claim/lease/fencing DB məntiqi isə düzgün və gələcək real worker tərəfindən
+  təkrar istifadə edilə bilər şəkildə yazılıb.
+- `0007_analysis_jobs.sql`: `analysis_jobs` (tam vəziyyət maşını —
+  `queued/claimed/running/pausing/paused/retry_wait/completed/cancelled/
+  interrupted/failed`, monoton `fencing_token`, lease, `state_version`
+  optimistic lock, idempotency) + append-only `analysis_job_audit`.
+- `backend/app/database/analysis_job_repository.py`: `enqueue_job`
+  (idempotent, istifadəçi başına maksimum `3` aktiv iş), `claim_next_job`
+  (prioritet+yaranma vaxtı üzrə, vaxtı keçmiş lease-ləri əvvəlcə `interrupted`
+  kimi bərpa edir və fencing token-i artırır), `send_heartbeat`,
+  `complete_job` (işləyərkən `cancel_requested` görsə `cancelled`-ə keçir,
+  nəticəni saxlamır), `fail_job` (yalnız `retryable=True` olanlar exponential
+  backoff+jitter ilə `max_attempts`-a qədər təkrarlanır), `request_cancel`
+  (queued/retry_wait dərhal, running yalnız kooperativ — tək batch sərhədində
+  `complete_job` tərəfindən icra olunur), `queue_metrics`.
+- **Real bug tapıldı və düzəldildi:** `enqueue_job`-da idempotency key hash-i
+  `created_by` ilə birlikdə hesablanırdı, ona görə fərqli istifadəçilər eyni
+  key ilə heç vaxt DB sətrində toqquşmurdu — nəzəri `AnalysisJobOwnershipError`
+  qoruması faktiki heç vaxt işə düşə bilməzdi (dead code). Düzəliş: hash indi
+  yalnız `job_type:key` üzrədir, ownership yoxlanışı tapılan sətirdə real
+  aparılır. Reqressiya testi: `test_enqueue_rejects_key_reused_by_another_user`.
+- `backend/app/workers/analysis_job_worker.py`: `run_worker_once` (bir işi
+  claim edib tam icra edir — uğur/retry/fail bütün yolları), `drain_queue`
+  (bir çağırışda ən çox `max_jobs` iş, sonsuz dövr riski yoxdur). Xəta
+  təsnifatı: bilinən domain xətaları (`PatternCandidateNotFoundError` və s.)
+  → `retryable=False`; `sqlite3.OperationalError` → `retryable=True`; digər
+  gözlənilməz xətalar → `retryable=False` (worker sərhədində şüurlu geniş
+  `except`, iş növbəsini bir pis işin çökdürməməsi üçün).
+- Yeni API-lər: `POST .../pattern-candidates/{id}/backtest-jobs` (202,
+  enqueue + arxa planda dərhal icra), `GET .../backtest-jobs/{job_id}`,
+  `POST .../backtest-jobs/{job_id}/cancel`, `GET
+  /api/v2/analysis-jobs/metrics`. Mövcud sinxron `POST .../backtest`
+  endpoint-i dəyişməz saxlanıldı — job-əsaslı yol əlavədir, əvəzləmə deyil.
+- **Frontend hələ toxunulmayıb** — yeni async job endpoint-ləri üçün UI
+  yoxdur, mövcud "Backtest et" düyməsi sinxron endpoint-dən istifadə etməyə
+  davam edir. Bu, istifadəçi ilə ayrıca müzakirə tələb edən açıq qərardır.
+- Yoxlama: yeni `test_analysis_job_repository.py` (`17` test),
+  `test_analysis_job_worker.py` (`4` test, real replay session + tick
+  data ilə tam uğurlu backtest icrası daxil), `test_analysis_jobs_api.py`
+  (`7` test). `test_migration_runner.py` sayğacları `0007`-ə uyğunlaşdırıldı.
+  Tam backend regressiyası: `321 passed`. Frontend toxunulmadığı üçün
+  ayrıca frontend sınağı aparılmadı.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; iş növbəsi yalnız
+  mövcud sinxron backtest hesablamasını asinxron şəkildə işə salır.
+
 ## 2026-08-05 — Pattern namizədi UI-si canlı brauzerdə vizual təsdiqləndi
 
 - Real `database/ESAS_PLATFORM.sqlite`-a **toxunulmadı**. Ayrıca, birdəfəlik

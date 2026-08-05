@@ -32,18 +32,52 @@ Son yenilənmə: 2026-08-05
      (`pattern_candidate_backtest.py`, migration `0006`,
      `POST/GET .../{id}/backtest`). Uğurlu ilk backtest `registered →
      evaluated` keçirir.
-- **Düzəldilmiş bug:** backtest funksiyası əvvəlcə səhvən `direction`
+- **Düzəldilmiş bug (1):** backtest funksiyası əvvəlcə səhvən `direction`
   parametrini `"bullish"/"bearish"` gözləyirdi, real namizədin `direction`
   sahəsi isə hipotez reyestrindən `"long"/"short"` gəlir — bu, real axında
   backtest-i həmişə uğursuz edərdi. İndi istiqamət yalnız `hypothesis_id`-dən
   təyin olunur.
-- Vəziyyət maşınının qalanı (`running` async icra, `accepted_for_shadow`,
+- Vəziyyət maşınının qalan hissəsindən (`running`, `accepted_for_shadow`,
   `rejected`, `blocked_by_data_quality`, `invalid_leakage`,
-  `insufficient_evidence`, `failed`, `cancelled`) DB CHECK-də icazəlidir
-  (əvvəlcədən genişləndirilib), amma tətbiq məntiqi hələ yoxdur.
+  `insufficient_evidence`, `failed`, `cancelled`) İNDİ `running`/`failed`/
+  `cancelled` **iş növbəsi (job-queue) vasitəsilə tətbiq edilib** — bax
+  aşağıdakı bölmə. Qalanlar (`blocked_by_data_quality`, `invalid_leakage`)
+  hələ tətbiq edilməyib.
+- **Yeni: Phase 2 worker/scheduler müqaviləsi `pattern_candidate_backtest`
+  üçün hərfi tətbiq edildi** (istifadəçinin iki dəfə açıq təsdiqi ilə —
+  "Tam həcmdə tiklə", sonra "Tam müqaviləni hərfi tiklə"):
+  - `0007_analysis_jobs.sql`: `analysis_jobs` tam vəziyyət maşını
+    (`queued/claimed/running/pausing/paused/retry_wait/completed/cancelled/
+    interrupted/failed`), monoton `fencing_token`, lease, `state_version`
+    optimistic lock + append-only `analysis_job_audit`.
+  - `analysis_job_repository.py`: `enqueue_job` (idempotent, istifadəçi
+    başına maks `3` aktiv iş), `claim_next_job` (vaxtı keçmiş lease-ləri
+    əvvəlcə bərpa edir, fencing token artırır), `send_heartbeat`,
+    `complete_job` (kooperativ cancel — işləyən işi yalnız öz tək batch
+    sərhədində, bitəndə `cancelled`-ə çevirir), `fail_job` (yalnız
+    `retryable=True` exponential backoff+jitter ilə təkrarlanır),
+    `request_cancel`, `queue_metrics`.
+  - **Düzəldilmiş bug (2):** `enqueue_job`-da idempotency key hash-i
+    `created_by` ilə birlikdə hesablanırdı — fərqli istifadəçilər eyni key
+    ilə heç vaxt toqquşmurdu, ownership qoruması faktiki dead code idi.
+    Düzəldildi: hash indi yalnız `job_type:key`, ownership tapılan sətirdə
+    real yoxlanır.
+  - `workers/analysis_job_worker.py`: icra sürücüsü ayrıca worker prosesi
+    DEYİL, FastAPI `BackgroundTasks` — DB claim/lease/fencing məntiqi düzgün
+    olduğu üçün gələcək real worker prosesi tərəfindən dəyişmədən istifadə
+    edilə bilər.
+  - Yeni API: `POST .../pattern-candidates/{id}/backtest-jobs` (202),
+    `GET .../backtest-jobs/{job_id}`, `POST .../backtest-jobs/{job_id}/cancel`,
+    `GET /api/v2/analysis-jobs/metrics`. Mövcud sinxron `POST .../backtest`
+    dəyişməz qalıb (əvəzləmə deyil, əlavədir).
+  - **Frontend hələ toxunulmayıb** — bu, istifadəçi ilə açıq qərar tələb
+    edən qeyd-açıq məsələdir (bax `docs/status/NEXT_TASK.md`).
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
-  bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) var.
-- Backend `293 passed`, frontend production build və `10/10` test, lint təmiz.
+  bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) var
+  (sinxron endpoint-dən istifadə edir, job-queue-ya hələ bağlanmayıb).
+- Backend `321 passed` (job-queue artımı daxil). Frontend bu artımda
+  toxunulmadığı üçün ayrıca sınaqdan keçirilməyib (əvvəlki artımda `293
+  passed`, production build və `10/10` test, lint təmiz idi).
 - `evaluated → accepted_for_shadow | rejected | insufficient_evidence`
   keçidi əlavə edildi — verdikt yalnız son backtest-in "normal" ssenari
   statusundan deterministik hesablanır. `archive_pattern_candidate` bütün
@@ -53,13 +87,16 @@ Son yenilənmə: 2026-08-05
 
 ## Commit/push vəziyyəti
 
-- **Hər şey commit və push edilib, `main` origin ilə sinxrondur.** Sessiya
-  ərzində 9 commit ardıcıl push edildi və hər biri ayrıca CI-də (Backend +
-  Frontend) yaşıl nəticə aldı: `1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b`
-  → `14345fd` → `73bf580` → `90133ac` → `4fcaff6` → `1b891db` (sonuncu).
-  Son CI run: Backend + Frontend `success`.
-  İşçi qovluqda yalnız `.tmp/` (əvvəlki sessiyanın pytest qalıqları,
-  untracked, əhəmiyyətsiz) qalıb.
+- `main` origin ilə sinxrondur `1b891db`-yə qədər. Sessiya ərzində 9 commit
+  ardıcıl push edildi və hər biri ayrıca CI-də (Backend + Frontend) yaşıl
+  nəticə aldı: `1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` →
+  `73bf580` → `90133ac` → `4fcaff6` → `1b891db` (sonuncu push edilmiş).
+- **Yeni: job-queue artımı (bu bölmədəki "Phase 2 worker/scheduler"
+  dəyişiklikləri) hələ commit edilməyib** — kod yazılıb, `321 passed` ilə
+  yoxlanılıb, sənədlər yenilənib, amma AGENTS.md qaydasına görə commit/push
+  istifadəçinin ayrıca açıq təsdiqini gözləyir.
+  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
+  əhəmiyyətsiz) da qalıb.
 - Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
   sessiyasında da (`task_b2a032b5`) başlatmışdı; nəticəsi bu sessiyaya
   gəlməyib. Növbəti sessiya `git fetch`/`git log origin/main` ilə
@@ -89,13 +126,11 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-Seçilməyib. Pattern namizədi dövrü indi tamdır: draft → qeydiyyat →
-backtest (6/6 hipotez) → nəticələndirmə (accepted_for_shadow/rejected/
-insufficient_evidence) → arxivləşdirmə. Namizədlər (`docs/status/NEXT_TASK.md`):
-`running`/`blocked_by_data_quality`/`invalid_leakage`/`failed`/`cancelled`
-vəziyyətləri (async iş növbəsi tələb edir, hazırkı sinxron backtest üçün
-zəruri deyil), multiple-testing reyestri, SHADOW hazırlığı. İstifadəçinin
-ayrıca təsdiqi tələb olunur.
+Seçilməyib. Job-queue mühərriki (`pattern_candidate_backtest` üçün
+`running`/`failed`/`cancelled`) hazırdır, amma commit/push və frontend
+səthi açıq qalır. Namizədlər (`docs/status/NEXT_TASK.md`): job-queue
+frontend UI-si (əlavə edilsinmi?), multiple-testing reyestri, SHADOW
+hazırlığı. İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

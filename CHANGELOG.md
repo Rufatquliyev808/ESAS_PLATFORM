@@ -8,6 +8,47 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 2 worker/scheduler contract, applied literally to `pattern_candidate_backtest`
+
+- Implements the full `PHASE_2_WORKER_SCHEDULER_CONTRACT.md` job-queue
+  model — claim/lease/fencing-token single-executor guarantee, heartbeat
+  lease renewal, exponential-backoff-with-jitter retry (capped, up to
+  `max_attempts`), cooperative pause/cancel honored at the single batch
+  boundary, expired-lease reclaim for crash/restart recovery, per-user
+  active-job cap, and append-only audit trail — scoped to the
+  `pattern_candidate_backtest` job type (added as a 6th type; the contract
+  names 5 others that do not exist yet).
+- `0007_analysis_jobs.sql`: `analysis_jobs` (full state machine) +
+  append-only `analysis_job_audit`.
+- `backend/app/database/analysis_job_repository.py`: `enqueue_job`,
+  `claim_next_job`, `send_heartbeat`, `complete_job`, `fail_job`,
+  `request_cancel`, `queue_metrics`.
+- `backend/app/workers/analysis_job_worker.py`: `run_worker_once`,
+  `drain_queue`. The execution driver is FastAPI `BackgroundTasks`, not a
+  standalone worker process — the claim/lease/fencing DB logic is correct
+  and reusable by a real future worker regardless.
+- New endpoints: `POST /api/v2/pattern-candidates/{id}/backtest-jobs`
+  (202), `GET .../backtest-jobs/{job_id}`, `POST
+  .../backtest-jobs/{job_id}/cancel`, `GET /api/v2/analysis-jobs/metrics`.
+  The existing synchronous `POST .../backtest` endpoint is unchanged.
+- **Bug found and fixed:** `enqueue_job`'s idempotency key hash included
+  `created_by`, so two different users could never collide on the same key
+  in the first place — the `AnalysisJobOwnershipError` cross-user
+  protection was dead code. Fixed by hashing only `job_type:key`, with
+  ownership checked against the row actually found. Regression test:
+  `test_enqueue_rejects_key_reused_by_another_user`.
+- No standalone frontend surface was added for the new async endpoints in
+  this change; the existing pattern-candidates panel keeps using the
+  synchronous backtest endpoint.
+- Verification: new `test_analysis_job_repository.py` (17 tests),
+  `test_analysis_job_worker.py` (4 tests), `test_analysis_jobs_api.py` (7
+  tests); `test_migration_runner.py` counters updated for `0007`. Full
+  backend regression: `321 passed`. Frontend untouched, so no frontend
+  suite was re-run this increment.
+- This layer creates no strategy, entry, risk sizing, or order; the job
+  queue only runs the existing synchronous backtest computation
+  asynchronously.
+
 ### Added — Automatic backtest-driven classification (evaluated -> outcome)
 
 - New `evaluated -> accepted_for_shadow | rejected | insufficient_evidence`

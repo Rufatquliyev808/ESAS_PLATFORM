@@ -4,7 +4,7 @@ from datetime import datetime
 import sqlite3
 from dataclasses import asdict
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.database.tick_repository import save_tick_event
@@ -29,6 +29,7 @@ from backend.app.models.replay_session import ReplaySessionCreateRequest
 from backend.app.models.replay_command import ReplayCommandRequest
 from backend.app.models.pattern_candidate import (
     PatternCandidateArchiveRequest,
+    PatternCandidateBacktestJobRequest,
     PatternCandidateBacktestRequest,
     PatternCandidateClassifyRequest,
     PatternCandidateRegisterRequest,
@@ -82,6 +83,17 @@ from backend.app.database.pattern_candidate_backtest_repository import (
     PatternCandidateBacktestNotFoundError,
     get_latest_pattern_candidate_backtest,
 )
+from backend.app.database.analysis_job_repository import (
+    AnalysisJobConflictError,
+    AnalysisJobNotFoundError,
+    AnalysisJobOwnershipError,
+    AnalysisJobQueueFullError,
+    enqueue_job,
+    get_job,
+    queue_metrics,
+    request_cancel,
+)
+from backend.app.workers.analysis_job_worker import drain_queue
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
@@ -682,6 +694,85 @@ def pattern_candidate_classify(
     except PatternCandidateConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     return {"data": asdict(candidate), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/pattern-candidates/{candidate_id}/backtest-jobs", status_code=202)
+def pattern_candidate_backtest_job_create(
+    candidate_id: str,
+    job_request: PatternCandidateBacktestJobRequest,
+    background_tasks: BackgroundTasks,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        candidate = get_pattern_candidate(candidate_id)
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    if candidate.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Pattern candidate belongs to another user")
+    try:
+        job = enqueue_job(
+            job_type="pattern_candidate_backtest", created_by=user_code,
+            payload={
+                "candidate_id": candidate_id, "horizon_bars": job_request.horizon_bars,
+                "spread_bps": job_request.spread_bps, "commission_bps": job_request.commission_bps,
+                "slippage_bps": job_request.slippage_bps, "latency_bps": job_request.latency_bps,
+                "adverse_multiplier": job_request.adverse_multiplier,
+                "stress_multiplier": job_request.stress_multiplier,
+            },
+            related_resource_id=candidate_id, idempotency_key=job_request.idempotency_key,
+            priority=job_request.priority,
+        )
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobQueueFullError as error:
+        raise HTTPException(status_code=429, detail=str(error)) from error
+    background_tasks.add_task(drain_queue, worker_id=f"bg-{job.job_id}", job_type="pattern_candidate_backtest")
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/pattern-candidates/{candidate_id}/backtest-jobs/{job_id}")
+def pattern_candidate_backtest_job_detail(
+    candidate_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != candidate_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    if job.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Analysis job belongs to another user")
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/pattern-candidates/{candidate_id}/backtest-jobs/{job_id}/cancel")
+def pattern_candidate_backtest_job_cancel(
+    candidate_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != candidate_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    try:
+        cancelled = request_cancel(job_id=job_id, actor=user_code)
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(cancelled), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/analysis-jobs/metrics")
+def analysis_jobs_metrics(
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    return {"data": queue_metrics("pattern_candidate_backtest"), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

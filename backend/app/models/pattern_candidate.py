@@ -45,3 +45,17 @@ class PatternCandidateBacktestRequest(BaseModel):
     latency_bps: float = Field(default=0.5, ge=0, le=1_000)
     adverse_multiplier: float = Field(default=1.5, ge=1, le=10)
     stress_multiplier: float = Field(default=2.5, ge=1, le=10)
+
+
+class PatternCandidateBacktestJobRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    priority: int = Field(default=3, ge=1, le=5)
+    horizon_bars: int = Field(default=3, ge=1, le=100)
+    spread_bps: float = Field(default=2.0, ge=0, le=1_000)
+    commission_bps: float = Field(default=1.0, ge=0, le=1_000)
+    slippage_bps: float = Field(default=1.0, ge=0, le=1_000)
+    latency_bps: float = Field(default=0.5, ge=0, le=1_000)
+    adverse_multiplier: float = Field(default=1.5, ge=1, le=10)
+    stress_multiplier: float = Field(default=2.5, ge=1, le=10)
