@@ -192,6 +192,54 @@ def test_backtest_rejects_unsupported_hypothesis(isolated_database: Path) -> Non
     assert response.status_code == 422
 
 
+def test_classify_after_backtest_reaches_a_valid_terminal_outcome(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    candidate = _register_structure_break(session.session_id)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        premature = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/classify",
+            json={"expected_state_version": candidate.state_version}, headers=headers,
+        )
+        client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/backtest",
+            json={}, headers=headers,
+        )
+        evaluated_version = client.get(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}", headers=headers,
+        ).json()["data"]["state_version"]
+        classified = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/classify",
+            json={"expected_state_version": evaluated_version}, headers=headers,
+        )
+        detail = client.get(f"/api/v2/pattern-candidates/{candidate.candidate_id}", headers=headers)
+    assert premature.status_code == 409
+    assert classified.status_code == 200
+    assert classified.json()["data"]["lifecycle_state"] in (
+        "accepted_for_shadow", "rejected", "insufficient_evidence",
+    )
+    assert detail.json()["data"]["lifecycle_state"] == classified.json()["data"]["lifecycle_state"]
+
+
+def test_classify_enforces_ownership_and_missing_candidate(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    candidate = _register_structure_break(session.session_id)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        client.post(f"/api/v2/pattern-candidates/{candidate.candidate_id}/backtest", json={}, headers=headers)
+        current = client.get(f"/api/v2/pattern-candidates/{candidate.candidate_id}", headers=headers).json()["data"]
+        unauthorized = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/classify",
+            json={"expected_state_version": current["state_version"]},
+        )
+        missing = client.post(
+            "/api/v2/pattern-candidates/missing/classify",
+            json={"expected_state_version": 0}, headers=headers,
+        )
+    assert unauthorized.status_code == 401
+    assert missing.status_code == 404
+
+
 def test_backtest_enforces_ownership_and_missing_candidate(isolated_database: Path) -> None:
     session = _prepare(isolated_database, owner="TEST-USER")
     session_theirs = create_replay_session(

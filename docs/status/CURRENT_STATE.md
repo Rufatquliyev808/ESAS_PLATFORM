@@ -1,5 +1,30 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Backtest verdiktindən avtomatik nəticələndirmə (Phase 4)
+
+- Vəziyyət maşınının növbəti addımı: `evaluated → accepted_for_shadow |
+  rejected | insufficient_evidence` keçidi əlavə edildi
+  (`classify_backtest_verdict`, `POST /api/v2/pattern-candidates/{id}/classify`).
+- Verdikt yalnız son backtest-in **"normal" xərc ssenarisindən** deterministik
+  hesablanır, yeni statistika yoxdur:
+  - `supportive_evidence` → `accepted_for_shadow` (Phase 9 SHADOW hələ
+    yoxdur — bu, real ticarət icazəsi vermir, yalnız tarixi sübutun
+    əvvəlcədən müəyyən edilmiş həddi keçdiyini qeyd edir);
+  - `insufficient_evidence` + səbəb `effective_sample_below_30` →
+    `insufficient_evidence` (bəlkə də sadəcə daha çox məlumat lazımdır);
+  - `insufficient_evidence` + digər səbəb (kifayət qədər nümunə var, amma
+    etibar intervalı sıfırı keçir) → `rejected` (bu, əskik məlumat deyil,
+    əksinə sübut).
+- `archive_pattern_candidate` genişləndirildi: əvvəllər yalnız `registered`
+  vəziyyətindən arxivləşdirmək mümkün idi, indi `evaluated`,
+  `accepted_for_shadow`, `rejected`, `insufficient_evidence`-dən də mümkündür.
+- Frontend: "Nəticələndir" düyməsi və LIFECYCLE_LABELS ilə aydın vəziyyət
+  mətnləri, "real ticarət icazəsi deyil" xəbərdarlığı.
+- Yoxlama: backend `293 passed`; frontend production build və `10/10`
+  test, lint təmiz.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; `accepted_for_shadow`
+  real ticarət icazəsi deyil.
+
 ## 2026-08-05 — Backtest v1 bütün 6 hipotezi əhatə edir (Phase 4)
 
 - `market_structure.py`-a tarixi `observations` sahəsi əlavə edildi.

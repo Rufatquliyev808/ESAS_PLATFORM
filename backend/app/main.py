@@ -30,6 +30,7 @@ from backend.app.models.replay_command import ReplayCommandRequest
 from backend.app.models.pattern_candidate import (
     PatternCandidateArchiveRequest,
     PatternCandidateBacktestRequest,
+    PatternCandidateClassifyRequest,
     PatternCandidateRegisterRequest,
 )
 from backend.app.auth import (
@@ -60,6 +61,7 @@ from backend.app.strategies.replay_strategy import create_replay_strategy_analys
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.strategies.replay_pattern_candidates import (
     PatternCandidateNotConfirmedError,
+    classify_replay_pattern_candidate,
     create_replay_pattern_candidates,
     evaluate_replay_pattern_candidate_backtest,
     register_replay_pattern_candidate,
@@ -658,6 +660,28 @@ def pattern_candidate_backtest_detail(
     except PatternCandidateBacktestNotFoundError as error:
         raise HTTPException(status_code=404, detail="Pattern candidate has no backtest yet") from error
     return {"data": asdict(backtest), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/pattern-candidates/{candidate_id}/classify")
+def pattern_candidate_classify(
+    candidate_id: str,
+    classify_request: PatternCandidateClassifyRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        candidate = classify_replay_pattern_candidate(
+            candidate_id=candidate_id, actor=user_code, actor_role="operator",
+            expected_state_version=classify_request.expected_state_version,
+        )
+    except PatternCandidateNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Pattern candidate was not found") from error
+    except PatternCandidateOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except PatternCandidateBacktestNotFoundError as error:
+        raise HTTPException(status_code=409, detail="Pattern candidate has no backtest yet") from error
+    except PatternCandidateConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(candidate), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

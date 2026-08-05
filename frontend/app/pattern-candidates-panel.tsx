@@ -49,7 +49,7 @@ type PersistedPatternCandidate = {
   source_fingerprint: string;
   timeframe: string;
   parameters: Record<string, unknown>;
-  lifecycle_state: "registered" | "evaluated" | "archived";
+  lifecycle_state: "registered" | "evaluated" | "accepted_for_shadow" | "rejected" | "insufficient_evidence" | "archived";
   state_version: number;
   created_at: string;
   updated_at: string;
@@ -89,6 +89,15 @@ const BACKTESTABLE_HYPOTHESES = new Set([
 const BACKTEST_STATUS_LABELS: Record<string, string> = {
   supportive_evidence: "Sübut yetərlidir",
   insufficient_evidence: "Sübut yetərli deyil",
+};
+
+const LIFECYCLE_LABELS: Record<string, string> = {
+  registered: "Qeydə alınıb (draft)",
+  evaluated: "Backtest edilib",
+  accepted_for_shadow: "SHADOW namizədi (sübut yetərlidir)",
+  rejected: "Rədd edilib (sübut dəstəkləmir)",
+  insufficient_evidence: "Nəticələndirilib — sübut yetərsizdir",
+  archived: "Arxivləşdirilib",
 };
 
 const HYPOTHESIS_TITLES: Record<string, string> = {
@@ -166,6 +175,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
   const [archivingCandidateId, setArchivingCandidateId] = useState<string | null>(null);
   const [backtests, setBacktests] = useState<Record<string, PersistedPatternCandidateBacktest>>({});
   const [backtestingId, setBacktestingId] = useState<string | null>(null);
+  const [classifyingId, setClassifyingId] = useState<string | null>(null);
 
   const loadRegistered = useCallback(async () => {
     try {
@@ -243,6 +253,25 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
     } catch (failure) {
       setRegisteredError(failure instanceof Error ? failure.message : "Backtest icra edilə bilmədi.");
     } finally { setBacktestingId(null); }
+  }, [loadRegistered, onUnauthorized, token]);
+
+  const classifyCandidate = useCallback(async (candidate: PersistedPatternCandidate) => {
+    setClassifyingId(candidate.candidate_id);
+    setRegisteredError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/pattern-candidates/${candidate.candidate_id}/classify`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ expected_state_version: candidate.state_version }),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 409) throw new Error("Namizədin backtest-i yoxdur və ya vəziyyəti dəyişib; siyahını yeniləyin.");
+      if (!response.ok) throw new Error(`Namizəd nəticələndirilə bilmədi (HTTP ${response.status}).`);
+      await loadRegistered();
+    } catch (failure) {
+      setRegisteredError(failure instanceof Error ? failure.message : "Namizəd nəticələndirilə bilmədi.");
+    } finally { setClassifyingId(null); }
   }, [loadRegistered, onUnauthorized, token]);
 
   useEffect(() => {
@@ -338,7 +367,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
                     <tr key={candidate.candidate_id}>
                       <td>{HYPOTHESIS_TITLES[candidate.hypothesis_id] ?? candidate.hypothesis_id}</td>
                       <td>{candidate.replay_session_id.slice(0, 16)}…</td>
-                      <td>{candidate.lifecycle_state === "archived" ? "Arxivləşdirilib" : candidate.lifecycle_state === "evaluated" ? "Backtest edilib" : "Qeydə alınıb (draft)"}</td>
+                      <td>{LIFECYCLE_LABELS[candidate.lifecycle_state] ?? candidate.lifecycle_state}</td>
                       <td>{formatTime(candidate.created_at)}</td>
                       <td>
                         {!supported ? <span className="pattern-candidate-time">v1-də dəstəklənmir</span> : candidate.lifecycle_state === "archived" ? "—" : (
@@ -357,6 +386,11 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
                                 ))}
                               </ul>
                             )}
+                            {candidate.lifecycle_state === "evaluated" && (
+                              <button type="button" className="secondary-button" disabled={classifyingId === candidate.candidate_id} onClick={() => void classifyCandidate(candidate)}>
+                                {classifyingId === candidate.candidate_id ? "Nəticələndirilir…" : "Nəticələndir"}
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
@@ -374,7 +408,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 bütün 6 hipotezi dəstəkləyir. Bazar strukturunda hər namizəd yalnız rejim təsdiqləndiyi anda (davam edən eyni rejim təkrar sayılmır) bir hadisə kimi hesablanır. Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
+        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 bütün 6 hipotezi dəstəkləyir. Bazar strukturunda hər namizəd yalnız rejim təsdiqləndiyi anda (davam edən eyni rejim təkrar sayılmır) bir hadisə kimi hesablanır. &ldquo;Nəticələndir&rdquo; düyməsi son backtest-in &ldquo;normal&rdquo; ssenarisinə əsasən namizədi SHADOW namizədi / rədd edilib / sübut yetərsizdir kimi işarələyir — bu, real ticarət icazəsi deyil (Phase 9 SHADOW sistemi hələ yoxdur), sadəcə tarixi sübutun əvvəlcədən müəyyən edilmiş həddi keçib-keçmədiyini göstərir. Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
       </section>
     </section>
   );

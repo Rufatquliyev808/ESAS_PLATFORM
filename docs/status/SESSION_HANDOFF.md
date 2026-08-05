@@ -43,14 +43,20 @@ Son yenilənmə: 2026-08-05
   (əvvəlcədən genişləndirilib), amma tətbiq məntiqi hələ yoxdur.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) var.
-- Backend `286 passed`, frontend production build və `10/10` test, lint təmiz.
+- Backend `293 passed`, frontend production build və `10/10` test, lint təmiz.
+- `evaluated → accepted_for_shadow | rejected | insufficient_evidence`
+  keçidi əlavə edildi — verdikt yalnız son backtest-in "normal" ssenari
+  statusundan deterministik hesablanır. `archive_pattern_candidate` bütün
+  arxivləşdirilə bilən vəziyyətlərdən (`registered/evaluated/
+  accepted_for_shadow/rejected/insufficient_evidence`) icazə verəcək
+  şəkildə genişləndirildi (əvvəllər yalnız `registered`-dən mümkün idi).
 
 ## Commit/push vəziyyəti
 
-- Bu sənədin yazıldığı anda son artım (market_structure tarixi hadisələri,
-  backtest 6/6 hipotez) hələ commit/push edilməyib — əvvəlki 6 addım
-  (`1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` → `73bf580` →
-  `90133ac`) artıq push edilib və CI-də yaşıl idi.
+- Bu sənədin yazıldığı anda son artım (`classify` endpoint-i, arxivləşdirmə
+  genişlənməsi) hələ commit/push edilməyib — əvvəlki 7 addım (`1aa85c8` →
+  `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` → `73bf580` → `90133ac` →
+  `4fcaff6`) artıq push edilib və CI-də yaşıl idi.
 - Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
   sessiyasında da (`task_b2a032b5`) başlatmışdı. Növbəti sessiya `git fetch`/
   `git log origin/main` ilə gözlənilməz commit olub-olmadığını yoxlamalıdır.
@@ -72,10 +78,13 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-Seçilməyib. Backtest v1 bütün 6 hipotezi əhatə edir, hazır. Namizədlər
-(`docs/status/NEXT_TASK.md`): vəziyyət maşınının qalanı (`running`,
-`accepted_for_shadow`, `rejected` və s.), multiple-testing reyestri, SHADOW
-hazırlığı. İstifadəçinin ayrıca təsdiqi tələb olunur.
+Seçilməyib. Pattern namizədi dövrü indi tamdır: draft → qeydiyyat →
+backtest (6/6 hipotez) → nəticələndirmə (accepted_for_shadow/rejected/
+insufficient_evidence) → arxivləşdirmə. Namizədlər (`docs/status/NEXT_TASK.md`):
+`running`/`blocked_by_data_quality`/`invalid_leakage`/`failed`/`cancelled`
+vəziyyətləri (async iş növbəsi tələb edir, hazırkı sinxron backtest üçün
+zəruri deyil), multiple-testing reyestri, SHADOW hazırlığı. İstifadəçinin
+ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

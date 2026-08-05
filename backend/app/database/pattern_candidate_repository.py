@@ -17,6 +17,11 @@ class PatternCandidateConflictError(RuntimeError):
     pass
 
 
+ARCHIVABLE_STATES = frozenset({
+    "registered", "evaluated", "accepted_for_shadow", "rejected", "insufficient_evidence",
+})
+
+
 @dataclass(frozen=True)
 class PersistedPatternCandidate:
     candidate_id: str
@@ -257,7 +262,7 @@ def archive_pattern_candidate(
             raise PatternCandidateConflictError(
                 "pattern candidate changed since it was loaded"
             )
-        if row["lifecycle_state"] != "registered":
+        if row["lifecycle_state"] not in ARCHIVABLE_STATES:
             raise PatternCandidateConflictError(
                 f"cannot archive from state {row['lifecycle_state']}"
             )
@@ -282,9 +287,86 @@ def archive_pattern_candidate(
             """
             INSERT INTO pattern_candidate_audit
             (candidate_id, actor, actor_role, action, previous_state, next_state, occurred_at)
-            VALUES (?, ?, ?, 'archive', 'registered', 'archived', ?);
+            VALUES (?, ?, ?, 'archive', ?, 'archived', ?);
             """,
-            (normalized_candidate_id, normalized_actor, normalized_role, now),
+            (normalized_candidate_id, normalized_actor, normalized_role, row["lifecycle_state"], now),
+        )
+        result_row = connection.execute(
+            "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",
+            (normalized_candidate_id,),
+        ).fetchone()
+    return _row_to_candidate(result_row)
+
+
+CLASSIFICATION_OUTCOMES = frozenset({"accepted_for_shadow", "rejected", "insufficient_evidence"})
+
+
+def classify_pattern_candidate(
+    *,
+    candidate_id: str,
+    actor: str,
+    actor_role: str,
+    expected_state_version: int,
+    next_lifecycle_state: str,
+) -> PersistedPatternCandidate:
+    """Move an "evaluated" candidate to its backtest-driven terminal outcome.
+
+    The verdict (accepted_for_shadow / rejected / insufficient_evidence) is
+    computed by the caller from the candidate's latest backtest -- this
+    function only enforces that the transition is legal and atomic. None of
+    these outcomes authorizes real trading; accepted_for_shadow only means
+    the historical evidence met the predeclared statistical bar.
+    """
+    normalized_candidate_id = _required_text(candidate_id, "candidate_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+    if next_lifecycle_state not in CLASSIFICATION_OUTCOMES:
+        raise ValueError("next_lifecycle_state must be a valid classification outcome")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        row = connection.execute(
+            "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",
+            (normalized_candidate_id,),
+        ).fetchone()
+        if row is None:
+            raise PatternCandidateNotFoundError("pattern candidate was not found")
+        if row["created_by"] != normalized_actor:
+            raise PatternCandidateOwnershipError(
+                "pattern candidate belongs to another user"
+            )
+        if row["state_version"] != expected_state_version:
+            raise PatternCandidateConflictError(
+                "pattern candidate changed since it was loaded"
+            )
+        if row["lifecycle_state"] != "evaluated":
+            raise PatternCandidateConflictError(
+                f"cannot classify from state {row['lifecycle_state']}"
+            )
+
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        updated = connection.execute(
+            """
+            UPDATE pattern_candidates
+            SET lifecycle_state = ?,
+                state_version = state_version + 1,
+                updated_at = ?
+            WHERE candidate_id = ? AND state_version = ?;
+            """,
+            (next_lifecycle_state, now, normalized_candidate_id, expected_state_version),
+        )
+        if updated.rowcount != 1:
+            raise PatternCandidateConflictError(
+                "pattern candidate changed during transition"
+            )
+
+        connection.execute(
+            """
+            INSERT INTO pattern_candidate_audit
+            (candidate_id, actor, actor_role, action, previous_state, next_state, occurred_at)
+            VALUES (?, ?, ?, 'classify', 'evaluated', ?, ?);
+            """,
+            (normalized_candidate_id, normalized_actor, normalized_role, next_lifecycle_state, now),
         )
         result_row = connection.execute(
             "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",

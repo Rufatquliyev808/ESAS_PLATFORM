@@ -152,6 +152,27 @@ def _historical_events(
     )
 
 
+ACCEPTED_FOR_SHADOW = "accepted_for_shadow"
+REJECTED = "rejected"
+
+def classify_backtest_verdict(*, status: str, reason: str) -> str:
+    """Map the "normal" cost scenario's verdict to a candidate lifecycle outcome.
+
+    supportive_evidence -> accepted_for_shadow (not a live-trading decision;
+    Phase 9 SHADOW does not exist yet, this only records that the historical
+    evidence met the predeclared bar). insufficient_evidence is split by
+    reason: too few samples to conclude anything ("effective_sample_below_30")
+    stays insufficient_evidence (may simply need a longer replay interval),
+    while a large-enough sample whose confidence interval does not clear the
+    zero baseline is rejected -- that is refuting evidence, not missing data.
+    """
+    if status == SUPPORTIVE:
+        return ACCEPTED_FOR_SHADOW
+    if reason == "effective_sample_below_30":
+        return INSUFFICIENT
+    return REJECTED
+
+
 def run_pattern_candidate_backtest(
     *,
     candidate_id: str,

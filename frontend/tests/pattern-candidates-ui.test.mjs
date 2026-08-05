@@ -34,4 +34,8 @@ test("pattern candidates UI stays draft-only, research-only and covers all six h
   assert.match(source, /Sübut yetərlidir/);
   assert.match(source, /Sübut yetərli deyil/);
   assert.match(source, /Nəticə tarixi simulyasiyadır/);
+  assert.match(source, /Nəticələndir/);
+  assert.match(source, /pattern-candidates\/\$\{candidate\.candidate_id\}\/classify/);
+  assert.match(source, /accepted_for_shadow: "SHADOW namizədi/);
+  assert.match(source, /real ticarət icazəsi deyil/);
 });

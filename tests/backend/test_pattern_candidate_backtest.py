@@ -12,6 +12,7 @@ from backend.app.analysis.market_structure import (
 from backend.app.analysis.retest import RetestObservation, RetestResult
 from backend.app.strategies.pattern_candidate_backtest import (
     PatternCandidateBacktestUnsupportedError,
+    classify_backtest_verdict,
     run_pattern_candidate_backtest,
 )
 
@@ -163,6 +164,14 @@ def test_result_is_deterministic() -> None:
     second = _run(bars=bars, retest=retest)
     assert first.fingerprint == second.fingerprint
     assert first == second
+
+
+def test_classify_backtest_verdict_maps_status_and_reason() -> None:
+    assert classify_backtest_verdict(status="supportive_evidence", reason="ci_entirely_above_zero_baseline") == "accepted_for_shadow"
+    assert classify_backtest_verdict(status="insufficient_evidence", reason="effective_sample_below_30") == "insufficient_evidence"
+    assert classify_backtest_verdict(status="insufficient_evidence", reason="ci_crosses_or_is_below_zero_baseline") == "rejected"
+    assert classify_backtest_verdict(status="insufficient_evidence", reason="no_matured_trades") == "rejected"
+    assert classify_backtest_verdict(status="insufficient_evidence", reason="zero_sample_variance") == "rejected"
 
 
 def test_invalid_cost_and_horizon_parameters_are_rejected() -> None:

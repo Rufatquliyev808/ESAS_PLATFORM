@@ -8,6 +8,32 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Automatic backtest-driven classification (evaluated -> outcome)
+
+- New `evaluated -> accepted_for_shadow | rejected | insufficient_evidence`
+  transition (`classify_backtest_verdict`,
+  `POST /api/v2/pattern-candidates/{id}/classify`). The verdict is derived
+  solely from the candidate's latest backtest "normal" cost scenario, with
+  no new computation: `supportive_evidence` -> `accepted_for_shadow`
+  (Phase 9 SHADOW does not exist yet, so this records only that the
+  historical evidence met the predeclared statistical bar, not a trading
+  authorization); `insufficient_evidence` with reason
+  `effective_sample_below_30` stays `insufficient_evidence` (may just need
+  a longer replay interval); any other `insufficient_evidence` reason
+  (large-enough sample whose confidence interval does not clear the zero
+  baseline) becomes `rejected`, since that is refuting evidence rather than
+  missing data.
+- `archive_pattern_candidate` now accepts any archivable state
+  (`registered`, `evaluated`, `accepted_for_shadow`, `rejected`,
+  `insufficient_evidence`), not only `registered`.
+- Frontend adds a "Nəticələndir" action once a candidate is `evaluated`,
+  with clear lifecycle labels and an explicit "not a trading authorization"
+  disclaimer.
+- Verification: backend `293 passed`, frontend production build and
+  `10/10` tests passed, lint clean.
+- This layer creates no strategy, entry, risk sizing, or order.
+  `accepted_for_shadow` is a classification, not a live-trading decision.
+
 ### Added — Market structure historical events complete backtest v1 coverage
 
 - `market_structure.py` gains an `observations` field recording every

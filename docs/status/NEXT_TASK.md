@@ -22,19 +22,25 @@ Mərhələ: Phase 4-ün qalan maddələri
   yalnız `confirmed_structure`-a keçid anı, davam edən rejim təkrarı yox).
   Backtest indi bütün 6 hipotezi əhatə edir. Backend `286 passed`, frontend
   build və `10/10` test.
+- `evaluated → accepted_for_shadow | rejected | insufficient_evidence`
+  keçidi əlavə edildi (`classify_backtest_verdict`,
+  `POST .../{id}/classify`). `archive_pattern_candidate` bütün
+  arxivləşdirilə bilən vəziyyətlərdən icazə verəcək şəkildə genişləndirildi.
+  Backend `293 passed`, frontend build və `10/10` test.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
 
-- **Vəziyyət maşınının qalanı** — `running` (async/job-based icra, hazırda
-  sinxron `evaluated`-ə birbaşa keçir), `accepted_for_shadow`, `rejected`,
-  `blocked_by_data_quality`, `invalid_leakage`, `insufficient_evidence`,
-  `failed`, `cancelled`. CHECK constraint artıq bunları icazə verir
-  (`0005` migrasiyası), yalnız tətbiq məntiqi yoxdur.
+- **Vəziyyət maşınının qalan hissəsi** — `running` (async/job-based icra,
+  hazırda backtest sinxron olaraq birbaşa `evaluated`-ə keçir),
+  `blocked_by_data_quality`, `invalid_leakage`, `failed`, `cancelled`.
+  Bunların hamısı CHECK constraint-də icazəlidir (`0005` migrasiyası), amma
+  tətbiq məntiqi yoxdur və hazırkı sinxron backtest üçün əsaslı ehtiyac
+  görünmür (job-növbəsi tələb edən uzun əməliyyat yoxdur).
 - Multiple-testing reyestri (eyni məlumatda çoxlu hipotez sınağının
   qeydiyyatı — hələ yoxdur).
-- SHADOW mərhələsi üçün hazırlıq.
+- SHADOW mərhələsi üçün hazırlıq (Phase 9, Phase 1-8 qəbulundan asılıdır).
 
 ## Vizual yoxlama qeydi
 

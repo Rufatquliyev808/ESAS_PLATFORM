@@ -10,6 +10,7 @@ from backend.app.database.pattern_candidate_repository import (
     PatternCandidateNotFoundError,
     PatternCandidateOwnershipError,
     archive_pattern_candidate,
+    classify_pattern_candidate,
     get_pattern_candidate,
     list_pattern_candidates,
     register_pattern_candidate,
@@ -156,4 +157,85 @@ def test_archive_enforces_ownership(isolated_database: Path) -> None:
         archive_pattern_candidate(
             candidate_id=candidate.candidate_id, actor="OTHER-USER", actor_role="operator",
             expected_state_version=candidate.state_version,
+        )
+
+
+def test_archive_is_allowed_from_evaluated_state(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE pattern_candidates SET lifecycle_state = 'evaluated', state_version = state_version + 1 WHERE candidate_id = ?;",
+            (candidate.candidate_id,),
+        )
+    evaluated = get_pattern_candidate(candidate.candidate_id)
+    archived = archive_pattern_candidate(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=evaluated.state_version,
+    )
+    assert archived.lifecycle_state == "archived"
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT previous_state, next_state FROM pattern_candidate_audit WHERE candidate_id = ? ORDER BY audit_id;",
+            (candidate.candidate_id,),
+        ).fetchall()
+    assert tuple(audit[-1]) == ("evaluated", "archived")
+
+
+def _mark_evaluated(candidate_id: str) -> None:
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE pattern_candidates SET lifecycle_state = 'evaluated', state_version = state_version + 1 WHERE candidate_id = ?;",
+            (candidate_id,),
+        )
+
+
+def test_classify_transitions_evaluated_candidate_to_a_valid_outcome(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    _mark_evaluated(candidate.candidate_id)
+    evaluated = get_pattern_candidate(candidate.candidate_id)
+    classified = classify_pattern_candidate(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=evaluated.state_version, next_lifecycle_state="accepted_for_shadow",
+    )
+    assert classified.lifecycle_state == "accepted_for_shadow"
+    assert classified.state_version == evaluated.state_version + 1
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM pattern_candidate_audit WHERE candidate_id = ? ORDER BY audit_id;",
+            (candidate.candidate_id,),
+        ).fetchall()
+    assert [tuple(row) for row in audit][-1] == ("classify", "evaluated", "accepted_for_shadow")
+
+
+def test_classify_rejects_invalid_outcome_and_wrong_source_state(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    with pytest.raises(ValueError):
+        classify_pattern_candidate(
+            candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=candidate.state_version, next_lifecycle_state="archived",
+        )
+    with pytest.raises(PatternCandidateConflictError):
+        classify_pattern_candidate(
+            candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=candidate.state_version, next_lifecycle_state="rejected",
+        )
+
+
+def test_classify_enforces_ownership_and_optimistic_lock(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    _mark_evaluated(candidate.candidate_id)
+    evaluated = get_pattern_candidate(candidate.candidate_id)
+    with pytest.raises(PatternCandidateOwnershipError):
+        classify_pattern_candidate(
+            candidate_id=candidate.candidate_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=evaluated.state_version, next_lifecycle_state="rejected",
+        )
+    with pytest.raises(PatternCandidateConflictError):
+        classify_pattern_candidate(
+            candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=evaluated.state_version + 1, next_lifecycle_state="rejected",
         )

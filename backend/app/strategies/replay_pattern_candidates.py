@@ -3,11 +3,13 @@ from dataclasses import asdict, dataclass
 from backend.app.analysis.replay_analysis import create_replay_analysis_context
 from backend.app.database.pattern_candidate_backtest_repository import (
     PersistedPatternCandidateBacktest,
+    get_latest_pattern_candidate_backtest,
     store_pattern_candidate_backtest,
 )
 from backend.app.database.pattern_candidate_repository import (
     PatternCandidateOwnershipError,
     PersistedPatternCandidate,
+    classify_pattern_candidate,
     get_pattern_candidate,
     register_pattern_candidate,
 )
@@ -17,6 +19,7 @@ from backend.app.database.replay_session_repository import (
 )
 from backend.app.strategies.pattern_candidate import detect_pattern_candidates
 from backend.app.strategies.pattern_candidate_backtest import (
+    classify_backtest_verdict,
     run_pattern_candidate_backtest,
 )
 
@@ -194,4 +197,31 @@ def evaluate_replay_pattern_candidate_backtest(
         candidate_id=candidate.candidate_id, actor=actor, actor_role=actor_role,
         horizon_bars=horizon_bars, cost_parameters=cost_parameters,
         result=asdict(backtest), fingerprint=backtest.fingerprint,
+    )
+
+
+def classify_replay_pattern_candidate(
+    *, candidate_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedPatternCandidate:
+    """Move an "evaluated" candidate to accepted_for_shadow/rejected/insufficient_evidence.
+
+    The verdict comes solely from the candidate's latest backtest "normal"
+    cost scenario -- deterministic, no new computation, no client input.
+    accepted_for_shadow records that predeclared evidence thresholds were
+    met; it does not authorize real trading (Phase 9 SHADOW does not exist
+    yet) or any order.
+    """
+    candidate = get_pattern_candidate(candidate_id)
+    if candidate.created_by != actor:
+        raise PatternCandidateOwnershipError("pattern candidate belongs to another user")
+    backtest = get_latest_pattern_candidate_backtest(candidate_id)
+    normal_scenario = next(
+        item for item in backtest.result["scenarios"] if item["scenario"] == "normal"
+    )
+    next_state = classify_backtest_verdict(
+        status=normal_scenario["status"], reason=normal_scenario["reason"],
+    )
+    return classify_pattern_candidate(
+        candidate_id=candidate_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version, next_lifecycle_state=next_state,
     )

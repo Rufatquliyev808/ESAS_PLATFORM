@@ -29,6 +29,12 @@ class PatternCandidateArchiveRequest(BaseModel):
     expected_state_version: int = Field(ge=0)
 
 
+class PatternCandidateClassifyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    expected_state_version: int = Field(ge=0)
+
+
 class PatternCandidateBacktestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
