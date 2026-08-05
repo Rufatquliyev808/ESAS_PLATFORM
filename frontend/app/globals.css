@@ -488,3 +488,11 @@ footer p { margin: 0; }
 .liquidity-pools small { color: var(--muted); }
 .liquidity-boundary { margin: 16px 0 0; border-left: 4px solid var(--amber); padding: 10px 13px; background: #fff8ea; }
 @media (max-width: 800px) { .liquidity-sides, .liquidity-pools { grid-template-columns: 1fr; } }
+
+.bos-choch-card > p, .bos-choch-meta { color: var(--muted); }
+.bos-choch-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.bos-choch-side { display: grid; gap: 7px; border: 1px solid var(--line); border-left: 4px solid #16805f; border-radius: 12px; padding: 16px; background: linear-gradient(145deg, #f7fcf9, #fff); }
+.bos-choch-side.bearish { border-left-color: #bd3328; }
+.bos-choch-side > span, .bos-choch-side small { color: var(--muted); font-size: 12px; }
+.bos-choch-side strong { font-size: 20px; }
+@media (max-width: 800px) { .bos-choch-sides { grid-template-columns: 1fr; } }

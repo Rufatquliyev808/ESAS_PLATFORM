@@ -23,6 +23,8 @@ type MarketStructure = { version: string; pivot_left: number; pivot_right: numbe
 type LiquidityPool = { side: "buy_side" | "sell_side"; level: number; touch_count: number; available_at: string };
 type LiquidityObservation = { direction: "bullish" | "bearish"; state: string; pool_side: string; pool_level: number | null; pool_touch_count: number; observed_at: string | null; excursion_bps: number | null; close_back_confirmed: boolean };
 type LiquiditySweep = { version: string; pool_tolerance_bps: number; minimum_touches: number; minimum_sweep_bps: number; maximum_pool_age_bars: number; pools: LiquidityPool[]; bullish_observation: LiquidityObservation; bearish_observation: LiquidityObservation; fingerprint: string };
+type StructureBreakObservation = { direction: "bullish" | "bearish"; state: string; break_type: string | null; broken_pivot_kind: string | null; broken_pivot_classification: string | null; level: number | null; pivot_confirmed_at: string | null; observed_at: string | null; close_distance_bps: number | null };
+type BosChoch = { version: string; minimum_close_break_bps: number; maximum_pivot_age_bars: number; observations: StructureBreakObservation[]; bullish_observation: StructureBreakObservation; bearish_observation: StructureBreakObservation; fingerprint: string };
 type AnalysisResult = {
   session_id: string;
   symbol: string;
@@ -40,11 +42,14 @@ type AnalysisResult = {
     indicator_fingerprint: string;
     liquidity_sweep_version: string;
     liquidity_sweep_fingerprint: string;
+    bos_choch_version: string;
+    bos_choch_fingerprint: string;
   };
   bars: AnalysisBar[];
   indicators: { ema: IndicatorSeries; rsi: IndicatorSeries; atr: IndicatorSeries };
   market_structure: MarketStructure;
   liquidity_sweep: LiquiditySweep;
+  bos_choch: BosChoch;
   interpretation: string;
   api_version: string;
 };
@@ -179,6 +184,29 @@ function LiquidityPanel({ liquidity }: { liquidity: LiquiditySweep }) {
   </article>;
 }
 
+function BosChochPanel({ result }: { result: BosChoch }) {
+  const labels: Record<string, string> = {
+    confirmed_bos: "BOS təsdiqlənib",
+    confirmed_choch: "CHoCH təsdiqlənib",
+    unclassified_break: "Struktur rejimi qeyri-müəyyəndir",
+    no_break: "Qırılma yoxdur",
+    insufficient_data: "Məlumat azdır",
+    conflicting: "Eyni barda zidd qırılma",
+  };
+  return <article className="analysis-card bos-choch-card">
+    <header><div><p className="eyebrow">Struktur qırılması · araşdırma müşahidəsi</p><h4>BOS və CHoCH detektoru</h4></div><span className="analysis-badge ready">Versiya {result.version}</span></header>
+    <p>BOS mövcud strukturun davamını, CHoCH isə mümkün istiqamət dəyişikliyini təsvir edir. Qırılma yalnız pivot təsdiqləndikdən sonra bağlanmış barın qiyməti ilə qeydə alınır.</p>
+    <div className="bos-choch-sides">{[result.bullish_observation, result.bearish_observation].map((item) => <section key={item.direction} className={`bos-choch-side ${item.direction}`}>
+      <span>{item.direction === "bullish" ? "YÜKSƏLİŞ QIRILMASI" : "ENİŞ QIRILMASI"}</span>
+      <strong>{labels[item.state] ?? item.state}</strong>
+      <small>Növ: {item.break_type ?? "—"} · Səviyyə: {formatNumber(item.level, 5)}</small>
+      <small>Bağlanış məsafəsi: {formatNumber(item.close_distance_bps, 2)} bps · {item.observed_at ? formatTime(item.observed_at) : "vaxt yoxdur"}</small>
+    </section>)}</div>
+    <div className="bos-choch-meta">Təsdiqlənmiş müşahidələr: {result.observations.length} · Minimum bağlanış məsafəsi: {result.minimum_close_break_bps} bps · Pivot ömrü: {result.maximum_pivot_age_bars} bar</div>
+    <p className="liquidity-boundary">Bu nəticə siqnal, giriş, risk qərarı və ya əməliyyat əmri deyil.</p>
+  </article>;
+}
+
 export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [emaPeriod, setEmaPeriod] = useState(20);
@@ -247,6 +275,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
       {loading && !result ? <div className="analysis-loading"><span className="loading-ring" /><div><strong>Bağlanmış barlar hesablanır</strong><p>EMA, RSI və ATR eyni replay məlumatından hazırlanır.</p></div></div> : result && <>
         <PriceChart bars={result.bars} ema={result.indicators.ema} />
         <StructurePanel structure={result.market_structure} />
+        <BosChochPanel result={result.bos_choch} />
         <LiquidityPanel liquidity={result.liquidity_sweep} />
         <div className="indicator-grid"><RsiChart series={result.indicators.rsi} /><AtrChart series={result.indicators.atr} /></div>
         <details className="analysis-lineage">
@@ -260,6 +289,7 @@ export function TechnicalAnalysisPanel({ sessionId, symbol, token, onUnauthorize
             <Fingerprint label="Bar izi" value={result.lineage.bar_fingerprint} />
             <Fingerprint label="İndikator izi" value={result.lineage.indicator_fingerprint} />
             <Fingerprint label="Likvidlik izi" value={result.lineage.liquidity_sweep_fingerprint} />
+            <Fingerprint label="BOS/CHoCH izi" value={result.lineage.bos_choch_fingerprint} />
           </dl>
         </details>
         <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu göstəricilər araşdırma üçündür. Platforma bu mərhələdə alış/satış siqnalı vermir və əməliyyat açmır.</p>

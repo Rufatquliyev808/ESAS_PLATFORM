@@ -109,6 +109,8 @@ def test_analysis_api_is_protected_deterministic_and_read_only(
     assert data["lineage"]["market_structure_fingerprint"].startswith("sha256:")
     assert data["lineage"]["liquidity_sweep_version"] == "1.0.0"
     assert data["lineage"]["liquidity_sweep_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["bos_choch_version"] == "1.0.0"
+    assert data["lineage"]["bos_choch_fingerprint"].startswith("sha256:")
     structure = data["market_structure"]
     assert structure["version"] == "1.0.0"
     assert structure["interpretation"] == "research_observation_not_trading_signal"
@@ -120,6 +122,11 @@ def test_analysis_api_is_protected_deterministic_and_read_only(
     assert liquidity["bullish_observation"]["direction"] == "bullish"
     assert liquidity["bearish_observation"]["direction"] == "bearish"
     assert liquidity["interpretation"] == "research_observation_not_trading_signal"
+    structure_break = data["bos_choch"]
+    assert structure_break["version"] == "1.0.0"
+    assert structure_break["bullish_observation"]["direction"] == "bullish"
+    assert structure_break["bearish_observation"]["direction"] == "bearish"
+    assert structure_break["interpretation"] == "research_observation_not_trading_signal"
     assert data["indicators"]["ema"]["points"][0]["status"] == "insufficient_data"
     with get_connection() as connection:
         after = connection.execute(

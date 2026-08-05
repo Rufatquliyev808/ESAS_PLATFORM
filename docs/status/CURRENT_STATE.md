@@ -1,5 +1,17 @@
 # ESAS Platform — Cari Vəziyyət
 
+## Phase 4 causal BOS/CHoCH detektoru
+
+2026-08-05 tarixində `bos_choch 1.0.0` tamamlandı. Təsdiqlənmiş causal bazar strukturu
+pivotları yalnız təsdiq barından sonra gələn bağlanmış barların close qiyməti ilə yoxlanır.
+Mövcud struktur rejimi ilə eyni istiqamətli qırılma BOS, əks istiqamətli qırılma CHoCH kimi
+müşahidə olunur; rejim məlum deyilsə nəticə ayrıca `unclassified_break` qalır. Bullish və bearish
+nəticələr, yetərsiz, qırılma olmayan və eyni barda iki istiqamətin qırıldığı ziddiyyətli hallar
+ayrıdır. Parametrlər, upstream izlər və nəticə deterministik fingerprint ilə saxlanır. Frontend
+nəticələri sadə Azərbaycan dilində ayrı kartlarda göstərir. Bu qat yalnız tarixi tədqiqatdır;
+siqnal, giriş, risk ölçüsü və order yaratmır. Tam yoxlama: backend `236 passed`; frontend `4`
+test, lint və production build keçdi.
+
 ## Phase 4 causal likvidlik süpürməsi detektoru
 
 2026-08-05 tarixində `liquidity_sweep 1.0.0` tamamlandı. Təsdiqlənmiş causal pivotlardan

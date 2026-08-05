@@ -8,6 +8,18 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Causal BOS/CHoCH detector
+
+- `bos_choch 1.0.0` əlavə edildi. Detektor yalnız əvvəlcədən təsdiqlənmiş causal pivotları
+  sonrakı bağlanmış barların close qiyməti ilə yoxlayır; pivot təsdiqindən əvvəlki qırılmalar nəzərə alınmır.
+- Bullish və bearish BOS/CHoCH müşahidələri ayrıdır; `insufficient_data`, `no_break`,
+  `unclassified_break` və `conflicting` halları açıq göstərilir.
+- Minimum close məsafəsi, pivotun köhnəlmə limiti, upstream konfiqurasiyası və deterministik
+  SHA-256 izi nəticəyə daxil edilir.
+- Frontend-də iki istiqamət ayrı Azərbaycan dilli tədqiqat kartlarında göstərilir.
+- Tam yoxlama: backend `236 passed`; frontend `4` test, lint və production build keçdi.
+- Bu qat siqnal, giriş, risk ölçüsü və order yaratmır; retest, FVG və order-block daxil deyil.
+
 ### Added — Causal liquidity sweep detector
 
 - `liquidity_sweep 1.0.0` əlavə edildi. Detektor yalnız əvvəlcədən təsdiqlənmiş causal

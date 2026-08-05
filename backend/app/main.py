@@ -290,6 +290,8 @@ def replay_technical_analysis(
     liquidity_minimum_touches: int = Query(default=2, ge=2, le=20),
     liquidity_minimum_sweep_bps: float = Query(default=1.0, ge=0, le=500),
     liquidity_maximum_pool_age_bars: int = Query(default=250, ge=1, le=5_000),
+    bos_choch_minimum_close_break_bps: float = Query(default=1.0, ge=0, le=500),
+    bos_choch_maximum_pivot_age_bars: int = Query(default=250, ge=1, le=5_000),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -319,6 +321,8 @@ def replay_technical_analysis(
             liquidity_minimum_touches=liquidity_minimum_touches,
             liquidity_minimum_sweep_bps=liquidity_minimum_sweep_bps,
             liquidity_maximum_pool_age_bars=liquidity_maximum_pool_age_bars,
+            bos_choch_minimum_close_break_bps=bos_choch_minimum_close_break_bps,
+            bos_choch_maximum_pivot_age_bars=bos_choch_maximum_pivot_age_bars,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(
