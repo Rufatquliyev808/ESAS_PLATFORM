@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 4-ün qalan maddələri
+Mərhələ: Phase 4-ün qalan maddələri + Phase 9 skeleti
 
 ## Tamamlanan (bu sessiya)
 
@@ -11,65 +11,55 @@ Mərhələ: Phase 4-ün qalan maddələri
 - Draft pattern namizədi generatoru — 6 hipotez (commit `0a0f2d2`).
 - Faza 2 rəsmi olaraq `STABLE` elan edildi (`docs/releases/PHASE_2_STABLE.md`).
 - Pattern namizədi persistence/`registered` qatı (commit `14345fd`).
-- Pattern namizədi backtest v1 — əvvəlcə yalnız `structure_break_long/short`.
-- Backtest v1 genişləndirildi: `liquidity_sweep.py`-a tarixi `observations`
-  əlavə edildi, `liquidity_sweep_reclaim_long/short` də backtest-ə qoşuldu.
-  Yol ilə **vacib istiqamət bug-ı** düzəldildi (backtest real qeydə alınmış
-  namizədlərdə həmişə uğursuz olurdu — bax `docs/status/CURRENT_STATE.md`).
-  Backend `281 passed`, frontend build və `10/10` test.
-- Backtest v1 **tamamlandı**: `market_structure.py`-a tarixi
-  `observations` əlavə edildi (rejim transition-based hadisə semantikası —
-  yalnız `confirmed_structure`-a keçid anı, davam edən rejim təkrarı yox).
-  Backtest indi bütün 6 hipotezi əhatə edir. Backend `286 passed`, frontend
-  build və `10/10` test.
+- Pattern namizədi backtest v1 — indi bütün 6 hipotezi əhatə edir.
 - `evaluated → accepted_for_shadow | rejected | insufficient_evidence`
-  keçidi əlavə edildi (`classify_backtest_verdict`,
-  `POST .../{id}/classify`). `archive_pattern_candidate` bütün
-  arxivləşdirilə bilən vəziyyətlərdən icazə verəcək şəkildə genişləndirildi.
-  Backend `293 passed`, frontend build və `10/10` test.
-- Pattern namizədi bölməsinin tam dövrü canlı brauzerdə, ayrıca birdəfəlik
-  test bazası ilə vizual təsdiqləndi (real bazaya toxunulmadı, heç bir
-  konsol xətası olmadı).
+  keçidi əlavə edildi.
+- Pattern namizədi bölməsinin tam dövrü canlı brauzerdə vizual təsdiqləndi.
 - **Phase 2 worker/scheduler müqaviləsi `pattern_candidate_backtest` üçün
-  hərfi tətbiq edildi** (istifadəçinin iki dəfə açıq təsdiqi ilə): tam
-  claim/lease/fencing/retry/audit/state-machine (`0007_analysis_jobs.sql`,
-  `analysis_job_repository.py`, `workers/analysis_job_worker.py`), icra
-  sürücüsü FastAPI `BackgroundTasks`. Yeni API: `POST .../backtest-jobs`,
-  `GET .../backtest-jobs/{job_id}`, `POST .../backtest-jobs/{job_id}/cancel`,
-  `GET /api/v2/analysis-jobs/metrics`. Yol ilə ikinci bir real bug tapılıb
-  düzəldildi (idempotency key hash-i `created_by` daxil edirdi, ownership
-  qoruması işə düşmürdü). Backend `321 passed`. **Frontend toxunulmayıb** —
-  istifadəçi qərarı: job-queue üçün ayrıca UI hələlik lazım deyil.
-- **Multiple-testing reyestri əlavə edildi.** `evaluated →
-  accepted_for_shadow` qərarı artıq eyni replay sessiyasında (eyni
-  məlumatda) sınanan bütün backtest-lərin sayına görə Bonferroni ailəvi
-  xəta düzəlişi tətbiq edir (`0008_multiple_testing_trials.sql`,
-  `multiple_testing_repository.py`, `bonferroni_corrected_scenario`).
-  Qeydiyyat hər backtest icrasında **şərtsiz** olur (nəticələndirilsin ya
-  yox) — əks halda düzəliş asanlıqla yayına bilərdi. Backend `333 passed`.
+  hərfi tətbiq edildi** (commit `4739854`, push edilib, CI yaşıl): tam
+  claim/lease/fencing/retry/audit/state-machine, icra sürücüsü FastAPI
+  `BackgroundTasks`. Yeni API: `POST/GET/POST-cancel .../backtest-jobs`,
+  `GET /api/v2/analysis-jobs/metrics`. Frontend toxunulmayıb (istifadəçi
+  qərarı: hələlik lazım deyil).
+- **Multiple-testing reyestri əlavə edildi** (commit `76e2e13`, push
+  edilib, CI yaşıl): `evaluated → accepted_for_shadow` qərarı artıq eyni
+  replay sessiyasında sınanan bütün backtest-lərin sayına görə Bonferroni
+  ailəvi xəta düzəlişi tətbiq edir. Qeydiyyat hər backtest icrasında
+  şərtsizdir.
+- **Phase 9 SHADOW: run manifest + append-only event reyestri skeleti**
+  (hələ commit edilməyib) — `0009_shadow_runs.sql`,
+  `shadow_run_repository.py`, `shadow_event_repository.py`. **Bu, canlı
+  SHADOW sistemi DEYİL** — Phase 5-8 (real qərar generatoru) hələ yoxdur,
+  ona görə bu cədvəllərə hələ heç bir istehsalat kodu yazmır. Yalnız
+  müqavilənin 3/9-cu bölmələrindəki persistence sxemi + iki DB-səviyyəli
+  struktur invariantı (`execution_allowed` həmişə `0`, manifest
+  `INSERT`-dən sonra dəyişməz) tikilib və test edilib. API endpoint-i
+  şüurlu şəkildə əlavə edilmədi (real çağıran yoxdur). Backend `352 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
-## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
+## Açıq sual — Phase 9-un davamı
 
-- **SHADOW mərhələsi üçün hazırlıq (Phase 9)** — istifadəçi ilə razılaşdırılan
-  növbəti addım. Phase 1-8 qəbulundan asılıdır; hazırkı platformada Phase 1
-  (STABLE), Phase 2 (STABLE) qəbul edilib, Phase 3 (tədqiqat/statistik
-  validasiya) və Phase 4 (pattern/texniki analiz) isə hələ tam qəbul
-  mərhələsində deyil (Phase 4 IN PROGRESS). SHADOW-a başlamazdan əvvəl bu
-  asılılığı istifadəçi ilə aydınlaşdırmaq lazımdır — hərfi mənada Phase 9-a
-  keçidmi, yoxsa Phase 9 kontraktının dizayn/hazırlıq işlərindən başlanacaq.
+SHADOW skeleti (manifest + event reyestri) hazırdır, amma **real işləyən
+heç nə yoxdur**: heç bir kod bu cədvəllərə yazmır, çünki Phase 5-8 (Visual
+AI, xəbər/fundamental, Knowledge Base, Decision/Risk) hələ yalnız dizayn
+sənədləridir. Növbəti addım seçilməzdən əvvəl istifadəçi ilə aydınlaşdırıla
+bilər:
+- daha çox Phase 9 sxemi (məs. nəzəri portfolio/risk müqaviləsi, section 6)
+  eyni "skelet" formatında tikilsin, yoxsa;
+- fokus geriyə, Phase 3/4-ün qalan, real istifadə olunan işlərinə
+  qaytarılsın (Phase 4 hələ formal olaraq IN PROGRESS, tam qəbul
+  edilməyib).
 
 ## Vizual yoxlama qeydi
 
-Tamamlandı (2026-08-05): Pattern namizədi bölməsinin tam dövrü (draft →
-qeydiyyat → backtest → nəticələndirmə → arxivləşdirmə) ayrıca, birdəfəlik
-test bazası ilə canlı brauzerdə uğurla yoxlanıldı; heç bir konsol xətası
-olmadı. Real bazaya toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
+Tamamlandı (2026-08-05): Pattern namizədi bölməsinin tam dövrü canlı
+brauzerdə uğurla yoxlanıldı; heç bir konsol xətası olmadı. Real bazaya
+toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
 
-Job-queue və multiple-testing artımları (bu sessiya) yalnız backend testləri
-ilə yoxlanıldı; frontend-ə toxunulmadığı üçün canlı brauzerdə ayrıca vizual
-sınaq mənasız olardı.
+Job-queue, multiple-testing və Phase 9 skeleti artımları (bu sessiya)
+yalnız backend testləri ilə yoxlanıldı; frontend-ə toxunulmadığı üçün canlı
+brauzerdə ayrıca vizual sınaq mənasız olardı.
 
 ## Başlama şərti
 

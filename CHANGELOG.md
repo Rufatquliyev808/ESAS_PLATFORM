@@ -8,6 +8,52 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 9 SHADOW run manifest + append-only event registry (persistence skeleton only)
+
+- **This is not a live SHADOW system.** `PHASE_9_SHADOW_VALIDATION_CONTRACT.md`
+  remains "DESIGN READY — NOT IMPLEMENTED" and depends on Phase 1-8
+  acceptance; Phase 5-8 (Visual AI, news/fundamental analysis, Knowledge
+  Base, Decision/Risk) are still design-only, so there is no real decision
+  feed. This change implements only the contract's section 3 (run manifest
+  pre-registration) and section 9 (append-only event families) persistence
+  layer -- nothing in production writes to these tables yet.
+- `0009_shadow_runs.sql`: `shadow_runs` (immutable manifest -- planned end
+  time, code commit, config hash, feature/claim versions, symbol/timeframe/
+  session/regime scope, minimum observation duration/sample size, primary/
+  secondary metrics, failure rules, theoretical fill model, risk budget,
+  data-quality policy, approver, rollback plan), `shadow_run_participants`
+  (champion/challenger roles, append-only), `shadow_events` (the 9 event
+  families from the contract, append-only).
+- Two structural invariants enforced at the database level, not just in
+  application code:
+  - `execution_allowed` has `CHECK (execution_allowed = 0)` -- no future
+    code change can ever flip it to true.
+  - `shadow_events.event_type`'s CHECK constraint is the entire allow-list
+    of the 9 `SHADOW_*` types; no `ORDER_*` event type can exist. A
+    `prevent_shadow_run_manifest_mutation` trigger freezes every
+    substantive manifest field after insert (only `state`/`state_version`/
+    `halt_reason`/`updated_at` may change afterward), matching "Run
+    başladıqdan sonra hədəf, metrik və hədlər dəyişdirilmir."
+- `backend/app/database/shadow_run_repository.py`: `register_shadow_run`
+  (requires exactly one champion participant plus any number of
+  challengers), `get_shadow_run`, `start_shadow_run`, `complete_shadow_run`,
+  `halt_shadow_run` (reachable from any non-terminal state, for the
+  contract's "any order-adapter call halts the run immediately" rule).
+- `backend/app/database/shadow_event_repository.py`: `record_shadow_event`
+  (also rejects payloads containing reserved broker/order key names as a
+  second guard beyond the event-type allow-list), `list_shadow_run_events`.
+- No API endpoints were added -- there is no real caller yet (Phase 5-8
+  don't exist), so exposing an unused API surface was deliberately skipped.
+- Verification: new `test_shadow_run_repository.py` (13 tests) and
+  `test_shadow_event_repository.py` (6 tests) cover manifest immutability,
+  the `execution_allowed` DB-level lock, append-only triggers, lifecycle
+  transitions, ownership/optimistic-locking, and forbidden payload keys.
+  `test_migration_runner.py` counters updated for `0009`. Full backend
+  regression: `352 passed`.
+- This layer creates no market observation, decision, theoretical position,
+  or order; it is purely a structurally-safe storage foundation for a
+  future Phase 9 implementation.
+
 ### Added — Multiple-testing registry with Bonferroni correction for classification
 
 - Implements the Phase 3/4 contract requirement "multiple-testing

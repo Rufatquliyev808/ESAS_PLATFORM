@@ -1,5 +1,60 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 9 SHADOW: run manifest + append-only event reyestri skeleti
+
+- **Diqqət — bu, CANLI SHADOW SİSTEMİ DEYİL.** `PHASE_9_SHADOW_VALIDATION_CONTRACT.md`
+  hələ də "DESIGN READY — NOT IMPLEMENTED" statusundadır və Phase 1-8
+  qəbulundan asılıdır (hazırda yalnız Phase 1/2 STABLE-dır). Phase 5-8
+  (Visual AI, xəbər/fundamental analiz, Knowledge Base, Decision/Risk) hələ
+  yalnız dizayn sənədləridir — real qərar generatoru yoxdur. Bu artım
+  yalnız müqavilənin 3-cü (run manifestinin əvvəlcədən qeydiyyatı) və 9-cu
+  (append-only event ailələri) bölmələrindəki **persistence skeletini**
+  tikir; heç bir istehsalat kodu bu cədvəllərə hələ yazmır.
+- `0009_shadow_runs.sql`: `shadow_runs` (dəyişməz manifest — planlaşdırılan
+  bitmə vaxtı, kod commit-i, konfiqurasiya hash-i, feature/claim
+  versiyaları, simvol/timeframe/sessiya/rejim əhatəsi, minimum müşahidə
+  müddəti/nümunə sayı, əsas/ikinci metriklər, uğursuzluq qaydaları, nəzəri
+  fill modeli, risk büdcəsi, məlumat keyfiyyəti siyasəti, təsdiqləyən şəxs,
+  rollback planı), `shadow_run_participants` (champion/challenger rolları,
+  append-only), `shadow_events` (9 hadisə ailəsi, append-only).
+- **İki struktur invariantı, tətbiq kodundan asılı olmadan DB səviyyəsində
+  qorunur:**
+  - `execution_allowed` sütunu `CHECK (execution_allowed = 0)` ilə
+    məcburidir — heç bir gələcək kod dəyişikliyi bunu `1`-ə çevirə bilməz
+    (müqavilənin "execution_allowed=false bütün SHADOW qərarlarında
+    məcburidir" tələbi).
+  - `shadow_events.event_type` CHECK-i yalnız 9 `SHADOW_*` adını icazə
+    verir — heç bir `ORDER_*` event növü mümkün deyil. Əlavə olaraq
+    payload-da `order_id`/`mt5_ticket` kimi qadağan olunmuş açarlar
+    `record_shadow_event`-də rədd edilir.
+  - `prevent_shadow_run_manifest_mutation` trigger-i manifestin bütün
+    substantiv sahələrini `INSERT`-dən sonra dondurur (yalnız
+    `state`/`state_version`/`halt_reason`/`updated_at` dəyişə bilər) —
+    müqavilənin "Run başladıqdan sonra hədəf, metrik və hədlər
+    dəyişdirilmir" tələbi.
+- `backend/app/database/shadow_run_repository.py`: `register_shadow_run`
+  (tam manifest, dəqiq 1 champion + istənilən sayda challenger tələb edir),
+  `get_shadow_run`, `start_shadow_run` (registered→started),
+  `complete_shadow_run` (started→completed), `halt_shadow_run`
+  (registered/started→halted, istənilən an — order cəhdinə kritik
+  təhlükəsizlik cavabı üçün).
+- `backend/app/database/shadow_event_repository.py`: `record_shadow_event`,
+  `list_shadow_run_events`.
+- **API endpoint-ləri əlavə edilmədi** — hazırda bu reyestri çağıracaq real
+  bir SHADOW icra mühərriki yoxdur (Phase 5-8 yox), ona görə boş API
+  səthi əlavə etmək əvəzinə yalnız düzgünlüyü test-lərlə sübut edilmiş
+  persistence qatı saxlanıldı. Real çağıran (Phase 5-8-in nəticəsi) hazır
+  olanda API əlavə ediləcək.
+- Yoxlama: yeni `test_shadow_run_repository.py` (`13` test),
+  `test_shadow_event_repository.py` (`6` test) — manifest immutability,
+  `execution_allowed` DB-səviyyəli qıfıl, append-only trigger-lər,
+  lifecycle keçidləri, ownership/optimistic-lock, qadağan olunmuş payload
+  açarları daxil. `test_migration_runner.py` sayğacları `0009`-a
+  uyğunlaşdırıldı. Tam backend regressiyası: `352 passed`.
+- Bu qat heç bir bazar müşahidəsi, qərar, nəzəri mövqe və ya order
+  yaratmır; yalnız gələcək Phase 9 tətbiqi üçün strukturca təhlükəsiz
+  saxlama əsasıdır.
+
 ## 2026-08-06 — Multiple-testing reyestri: nəticələndirmə artıq ailəvi xəta düzəlişi tətbiq edir
 
 - Phase 3/4 müqaviləsinin "Multiple-testing qeydiyyatı olmadan namizəd qəbul
