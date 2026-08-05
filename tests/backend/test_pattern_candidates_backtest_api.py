@@ -152,9 +152,37 @@ def test_backtest_supports_liquidity_sweep_reclaim_hypothesis(isolated_database:
     assert response.json()["data"]["result"]["hypothesis_id"] == "liquidity_sweep_reclaim_long"
 
 
-def test_backtest_rejects_unsupported_hypothesis(isolated_database: Path) -> None:
+def test_backtest_supports_market_structure_hypothesis(isolated_database: Path) -> None:
     session = _prepare(isolated_database)
     candidate = _register_market_structure(session.session_id)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        response = client.post(
+            f"/api/v2/pattern-candidates/{candidate.candidate_id}/backtest",
+            json={}, headers=headers,
+        )
+    assert response.status_code == 200
+    assert response.json()["data"]["result"]["hypothesis_id"] == "market_structure_long"
+
+
+def test_backtest_rejects_unsupported_hypothesis(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    candidate = register_pattern_candidate(
+        created_by="TEST-USER", actor_role="operator", replay_session_id=session.session_id,
+        candidate_id="fvg_order_block_deferred:api", hypothesis_id="fvg_order_block_deferred",
+        hypothesis_version="1.0.0", family="zone_model", direction="neutral",
+        condition_state="candidate_confirmed", observed_at="2026-08-04T21:00:10+00:00",
+        evidence={}, pattern_candidate_version="1.0.0", hypothesis_registry_version="1.0.0",
+        source_fingerprint="sha256:pattern", timeframe="M1",
+        parameters={
+            "bar_limit": 10, "pivot_left": 2, "pivot_right": 2, "equality_tolerance_bps": 0.0,
+            "liquidity_pool_tolerance_bps": 10.0, "liquidity_minimum_touches": 2,
+            "liquidity_minimum_sweep_bps": 1.0, "liquidity_maximum_pool_age_bars": 250,
+            "bos_choch_minimum_close_break_bps": 1.0, "bos_choch_maximum_pivot_age_bars": 250,
+            "retest_touch_tolerance_bps": 5.0, "retest_confirmation_close_bps": 0.0,
+            "retest_invalidation_close_bps": 10.0, "retest_maximum_age_bars": 100,
+        },
+    )
     with TestClient(app) as client:
         headers = _headers(client)
         response = client.post(

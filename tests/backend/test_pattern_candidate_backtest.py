@@ -4,6 +4,11 @@ import pytest
 
 from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.liquidity_sweep import LiquiditySweepObservation, LiquiditySweepResult
+from backend.app.analysis.market_structure import (
+    MarketStructureResult,
+    StructureConfirmationObservation,
+    StructureSideObservation,
+)
 from backend.app.analysis.retest import RetestObservation, RetestResult
 from backend.app.strategies.pattern_candidate_backtest import (
     PatternCandidateBacktestUnsupportedError,
@@ -38,11 +43,20 @@ def _confirmed_sweep(direction: str, observed_at: str) -> LiquiditySweepObservat
     return LiquiditySweepObservation(direction, "confirmed_sweep", pool_side, 100.0, 2, observed_at, 5.0, True)
 
 
+def _market_structure(observations: tuple[StructureConfirmationObservation, ...] = ()) -> MarketStructureResult:
+    empty = StructureSideObservation("long", "insufficient_data", None, None, None)
+    return MarketStructureResult("1.0.0", 2, 2, 0.0, 5, (), observations, empty, empty, "sha256:structure")
+
+
+def _confirmed_structure(direction: str, observed_at: str) -> StructureConfirmationObservation:
+    return StructureConfirmationObservation(direction, "confirmed_structure", "HH", "HL", observed_at)
+
+
 def _run(**overrides):
     defaults = dict(
         candidate_id="c1", hypothesis_id="structure_break_long",
         bars=tuple(_bar(i, 100.0 + i) for i in range(10)),
-        retest=_retest(), liquidity_sweep=_liquidity(), horizon_bars=3,
+        retest=_retest(), liquidity_sweep=_liquidity(), market_structure=_market_structure(), horizon_bars=3,
     )
     defaults.update(overrides)
     return run_pattern_candidate_backtest(**defaults)
@@ -100,9 +114,23 @@ def test_trade_beyond_dataset_is_immature() -> None:
     assert result.immature_events == 1
 
 
+def test_market_structure_hypotheses_use_transition_events() -> None:
+    bars = tuple(_bar(i, 100.0 + i) for i in range(10))
+    structure = _market_structure((
+        _confirmed_structure("bullish", bars[2].end_at),
+        _confirmed_structure("bearish", bars[4].end_at),
+    ))
+    bullish = _run(hypothesis_id="market_structure_long", bars=bars, market_structure=structure)
+    bearish = _run(hypothesis_id="market_structure_short", bars=bars, market_structure=structure)
+    assert bullish.total_events == 1
+    assert bullish.trades[0].raw_return_percent > 0
+    assert bearish.total_events == 1
+    assert bearish.trades[0].raw_return_percent < 0
+
+
 def test_unsupported_hypothesis_is_rejected() -> None:
     with pytest.raises(PatternCandidateBacktestUnsupportedError):
-        _run(hypothesis_id="market_structure_long")
+        _run(hypothesis_id="fvg_order_block_deferred")
 
 
 def test_small_sample_is_insufficient_evidence() -> None:

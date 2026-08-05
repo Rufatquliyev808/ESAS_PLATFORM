@@ -180,6 +180,7 @@ def evaluate_replay_pattern_candidate_backtest(
     backtest = run_pattern_candidate_backtest(
         candidate_id=candidate.candidate_id, hypothesis_id=candidate.hypothesis_id,
         bars=context.bars.bars, retest=context.retest, liquidity_sweep=context.liquidity_sweep,
+        market_structure=context.market_structure,
         horizon_bars=horizon_bars, spread_bps=spread_bps, commission_bps=commission_bps,
         slippage_bps=slippage_bps, latency_bps=latency_bps,
         adverse_multiplier=adverse_multiplier, stress_multiplier=stress_multiplier,

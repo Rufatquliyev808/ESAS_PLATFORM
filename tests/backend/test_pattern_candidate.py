@@ -17,7 +17,7 @@ def _structure(long_state: str = "confirmed_structure", short_state: str = "insu
         "2026-08-05T00:10:00+00:00" if long_state == "confirmed_structure" else None,
     )
     short_obs = StructureSideObservation("short", short_state, None, None, None)
-    return MarketStructureResult("1.0.0", 2, 2, 0.0, 5, (), long_obs, short_obs, "sha256:structure")
+    return MarketStructureResult("1.0.0", 2, 2, 0.0, 5, (), (), long_obs, short_obs, "sha256:structure")
 
 
 def _liquidity(bullish_state: str = "confirmed_sweep", bearish_state: str = "insufficient_data") -> LiquiditySweepResult:

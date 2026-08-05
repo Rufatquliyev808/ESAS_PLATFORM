@@ -8,6 +8,21 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Market structure historical events complete backtest v1 coverage
+
+- `market_structure.py` gains an `observations` field recording every
+  transition into a confirmed HH/HL (bullish) or LH/LL (bearish) regime.
+  Only the transition is recorded, not every later pivot that keeps an
+  already-confirmed regime going -- otherwise a single long-lived trend
+  would produce many overlapping, highly correlated "events" and inflate
+  an effective sample size dishonestly, violating the purged-validation
+  principle already used elsewhere in this codebase.
+- Backtest v1 now covers `market_structure_long/short`, completing
+  coverage of all 6 pattern hypotheses.
+- Verification: backend `286 passed` (new market_structure historical
+  event tests, backtest integration tests), frontend production build and
+  `10/10` tests passed, lint clean.
+
 ### Fixed — Pattern candidate backtest direction bug, and liquidity sweep backtest coverage
 
 - **Bug fix:** `run_pattern_candidate_backtest` incorrectly accepted a

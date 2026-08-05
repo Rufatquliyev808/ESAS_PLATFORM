@@ -6,10 +6,11 @@ import statistics
 
 from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.liquidity_sweep import LiquiditySweepResult
+from backend.app.analysis.market_structure import MarketStructureResult
 from backend.app.analysis.retest import RetestResult
 
 
-BACKTEST_VERSION = "1.1.0"
+BACKTEST_VERSION = "1.2.0"
 MIN_EFFECTIVE_SAMPLE = 30
 Z_95 = 1.96
 SUPPORTIVE = "supportive_evidence"
@@ -18,19 +19,22 @@ MATURED = "matured"
 IMMATURE = "immature"
 
 # v1 only backtests hypotheses whose upstream detector already exposes every
-# historical confirmation, not just the latest one: bos_choch/retest and
-# liquidity_sweep now both keep a full observations history. market_structure
-# still only exposes the latest confirmed regime state (a continuous-regime
-# concept, not a discrete event), so it stays out of scope until that has its
-# own well-defined historical-event semantics.
+# historical confirmation, not just the latest one: bos_choch/retest,
+# liquidity_sweep, and market_structure all keep a full observations
+# history now (market_structure fires one event per transition *into* a
+# confirmed HH/HL or LH/LL regime, not on every pivot that keeps an
+# already-confirmed regime going).
 HYPOTHESIS_EVENT_DIRECTION = {
     "structure_break_long": "bullish",
     "structure_break_short": "bearish",
     "liquidity_sweep_reclaim_long": "bullish",
     "liquidity_sweep_reclaim_short": "bearish",
+    "market_structure_long": "bullish",
+    "market_structure_short": "bearish",
 }
 SUPPORTED_HYPOTHESES = frozenset(HYPOTHESIS_EVENT_DIRECTION)
 STRUCTURE_BREAK_HYPOTHESES = frozenset({"structure_break_long", "structure_break_short"})
+LIQUIDITY_SWEEP_HYPOTHESES = frozenset({"liquidity_sweep_reclaim_long", "liquidity_sweep_reclaim_short"})
 
 MAX_COST_COMPONENT_BPS = 1_000.0
 MAX_COST_MULTIPLIER = 10.0
@@ -125,7 +129,8 @@ def _scenario_result(name: str, total_cost_bps: float, matured_raw: tuple[float,
 
 
 def _historical_events(
-    hypothesis_id: str, event_direction: str, retest: RetestResult, liquidity_sweep: LiquiditySweepResult,
+    hypothesis_id: str, event_direction: str, retest: RetestResult,
+    liquidity_sweep: LiquiditySweepResult, market_structure: MarketStructureResult,
 ) -> tuple[tuple[str, str], ...]:
     """Return (trigger_observed_at, entry_reference_at) pairs for every historical confirmation."""
     if hypothesis_id in STRUCTURE_BREAK_HYPOTHESES:
@@ -134,10 +139,16 @@ def _historical_events(
             for item in retest.observations
             if item.direction == event_direction and item.state == "confirmed_retest" and item.observed_at is not None
         )
+    if hypothesis_id in LIQUIDITY_SWEEP_HYPOTHESES:
+        return tuple(
+            (item.observed_at, item.observed_at)
+            for item in liquidity_sweep.observations
+            if item.direction == event_direction and item.state == "confirmed_sweep" and item.observed_at is not None
+        )
     return tuple(
         (item.observed_at, item.observed_at)
-        for item in liquidity_sweep.observations
-        if item.direction == event_direction and item.state == "confirmed_sweep" and item.observed_at is not None
+        for item in market_structure.observations
+        if item.direction == event_direction and item.state == "confirmed_structure"
     )
 
 
@@ -148,6 +159,7 @@ def run_pattern_candidate_backtest(
     bars: tuple[MarketBar, ...],
     retest: RetestResult,
     liquidity_sweep: LiquiditySweepResult,
+    market_structure: MarketStructureResult,
     horizon_bars: int = 3,
     spread_bps: float = 2.0,
     commission_bps: float = 1.0,
@@ -170,8 +182,8 @@ def run_pattern_candidate_backtest(
     """
     if hypothesis_id not in SUPPORTED_HYPOTHESES:
         raise PatternCandidateBacktestUnsupportedError(
-            "backtest v1 only supports structure_break_long/short and "
-            "liquidity_sweep_reclaim_long/short"
+            "backtest v1 only supports structure_break_long/short, "
+            "liquidity_sweep_reclaim_long/short and market_structure_long/short"
         )
     if horizon_bars < 1:
         raise ValueError("horizon_bars must be at least 1")
@@ -188,7 +200,7 @@ def run_pattern_candidate_backtest(
     base_cost_bps = math.fsum((spread, commission, slippage, latency))
 
     index_by_end = {bar.end_at: index for index, bar in enumerate(bars)}
-    events = _historical_events(hypothesis_id, event_direction, retest, liquidity_sweep)
+    events = _historical_events(hypothesis_id, event_direction, retest, liquidity_sweep, market_structure)
 
     trades: list[BacktestTrade] = []
     for trigger_observed_at, entry_reference_at in events:
@@ -224,6 +236,7 @@ def run_pattern_candidate_backtest(
         "version": BACKTEST_VERSION, "candidate_id": candidate_id, "hypothesis_id": hypothesis_id,
         "direction": event_direction, "horizon_bars": horizon_bars,
         "retest_fingerprint": retest.fingerprint, "liquidity_sweep_fingerprint": liquidity_sweep.fingerprint,
+        "market_structure_fingerprint": market_structure.fingerprint,
         "trades": [asdict(item) for item in trades],
         "scenarios": [asdict(item) for item in scenarios],
     }

@@ -22,14 +22,16 @@ Son yenilənmə: 2026-08-05
   2. **Persistence/`registered`** — `candidate_confirmed` slotları dəyişməz
      qeyd edir (`pattern_candidate_repository.py`, migration `0005`,
      `POST/GET/GET{id}/archive`).
-  3. **Backtest v1** — `structure_break_long/short` VƏ `liquidity_sweep_
-     reclaim_long/short` üçün (bu ikisi + likvidlik indi tarixi hadisə
-     siyahısı saxlayır). `market_structure` hələ kənarda — davamlı rejim
-     konsepsiyası olduğu üçün "hadisə" semantikası ayrıca dizayn qərarı
-     tələb edir. Tarixi hadisə skanı, horizon nəticəsi, xərc ssenariləri,
-     statistik etibarlılıq (`pattern_candidate_backtest.py`, migration
-     `0006`, `POST/GET .../{id}/backtest`). Uğurlu ilk backtest
-     `registered → evaluated` keçirir.
+  3. **Backtest v1** — İNDİ BÜTÜN 6 HİPOTEZİ ƏHATƏ EDİR
+     (`structure_break_*`, `liquidity_sweep_reclaim_*`,
+     `market_structure_*`). `market_structure` üçün "tarixi hadisə" =
+     rejimin `confirmed_structure`-a keçdiyi an (transition-based, davam
+     edən rejimin sonrakı pivotları təkrar hadisə yaratmır — üst-üstə
+     düşən nümunələrin qarşısını almaq üçün). Tarixi hadisə skanı, horizon
+     nəticəsi, xərc ssenariləri, statistik etibarlılıq
+     (`pattern_candidate_backtest.py`, migration `0006`,
+     `POST/GET .../{id}/backtest`). Uğurlu ilk backtest `registered →
+     evaluated` keçirir.
 - **Düzəldilmiş bug:** backtest funksiyası əvvəlcə səhvən `direction`
   parametrini `"bullish"/"bearish"` gözləyirdi, real namizədin `direction`
   sahəsi isə hipotez reyestrindən `"long"/"short"` gəlir — bu, real axında
@@ -41,14 +43,14 @@ Son yenilənmə: 2026-08-05
   (əvvəlcədən genişləndirilib), amma tətbiq məntiqi hələ yoxdur.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) var.
-- Backend `281 passed`, frontend production build və `10/10` test, lint təmiz.
+- Backend `286 passed`, frontend production build və `10/10` test, lint təmiz.
 
 ## Commit/push vəziyyəti
 
-- Bu sənədin yazıldığı anda son artım (liquidity_sweep tarixi hadisələri +
-  istiqamət bug düzəlişi) hələ commit/push edilməyib — əvvəlki 5 addım
-  (`1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` → `73bf580`)
-  artıq push edilib və CI-də yaşıl idi.
+- Bu sənədin yazıldığı anda son artım (market_structure tarixi hadisələri,
+  backtest 6/6 hipotez) hələ commit/push edilməyib — əvvəlki 6 addım
+  (`1aa85c8` → `7d49f97` → `0a0f2d2` → `847249b` → `14345fd` → `73bf580` →
+  `90133ac`) artıq push edilib və CI-də yaşıl idi.
 - Diqqət: istifadəçi bir dəfə eyni lint düzəlişini paralel bir fon
   sessiyasında da (`task_b2a032b5`) başlatmışdı. Növbəti sessiya `git fetch`/
   `git log origin/main` ilə gözlənilməz commit olub-olmadığını yoxlamalıdır.
@@ -70,11 +72,10 @@ Son yenilənmə: 2026-08-05
 
 ## Növbəti mərhələ
 
-Seçilməyib. Namizədlər (`docs/status/NEXT_TASK.md`): backtest əhatəsini
-`market_structure`-a genişləndirmək (əvvəlcə "tarixi hadisə" semantikasının
-dizaynı lazımdır — davamlı rejim, diskret hadisə deyil), vəziyyət maşınının
-qalanı, multiple-testing reyestri, SHADOW hazırlığı. İstifadəçinin ayrıca
-təsdiqi tələb olunur.
+Seçilməyib. Backtest v1 bütün 6 hipotezi əhatə edir, hazır. Namizədlər
+(`docs/status/NEXT_TASK.md`): vəziyyət maşınının qalanı (`running`,
+`accepted_for_shadow`, `rejected` və s.), multiple-testing reyestri, SHADOW
+hazırlığı. İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

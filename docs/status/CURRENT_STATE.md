@@ -1,5 +1,21 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-05 — Backtest v1 bütün 6 hipotezi əhatə edir (Phase 4)
+
+- `market_structure.py`-a tarixi `observations` sahəsi əlavə edildi.
+  Dizayn qərarı: hər istiqamət üçün yalnız **rejimin təsdiqlənməyə
+  keçdiyi an** (transition into `confirmed_structure`) bir hadisə kimi
+  qeyd olunur — davam edən eyni rejimin sonrakı hər pivotu YENİDƏN hadisə
+  yaratmır. Səbəb: əks halda uzun bir trend onlarla üst-üstə düşən,
+  yüksək korrelyasiyalı "nümunə" yaradardı və effektiv nümunə sayını
+  süni artırardı (purged-validation prinsipinə zidd).
+- Backtest v1 indi `market_structure_long/short`-u da dəstəkləyir —
+  bütün 6 hipotez əhatə olunub.
+- Yoxlama: backend `286 passed` (yeni market_structure tarixi hadisə
+  testləri, backtest-ə market_structure inteqrasiya testləri); frontend
+  production build və `10/10` test, lint təmiz.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır.
+
 ## 2026-08-05 — Backtest v1 genişləndirilməsi və istiqamət bug-ı düzəldildi (Phase 4)
 
 - **Vacib düzəliş:** `run_pattern_candidate_backtest` səhvən `direction`

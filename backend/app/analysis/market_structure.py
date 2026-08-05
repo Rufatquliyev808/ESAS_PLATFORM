@@ -26,6 +26,14 @@ class StructureSideObservation:
     observed_at: str | None
 
 @dataclass(frozen=True)
+class StructureConfirmationObservation:
+    direction: str
+    state: str
+    latest_high: str | None
+    latest_low: str | None
+    observed_at: str
+
+@dataclass(frozen=True)
 class MarketStructureResult:
     version: str
     pivot_left: int
@@ -33,6 +41,7 @@ class MarketStructureResult:
     equality_tolerance_bps: float
     warmup_bars: int
     pivots: tuple[StructurePivot, ...]
+    observations: tuple[StructureConfirmationObservation, ...]
     long_observation: StructureSideObservation
     short_observation: StructureSideObservation
     fingerprint: str
@@ -55,6 +64,33 @@ def _side(side: str, high: str | None, low: str | None, observed_at: str | None)
     elif high == "EH" or low == "EL": state = "neutral"
     else: state = "conflicting"
     return StructureSideObservation(side, state, high, low, observed_at)
+
+def _confirmation_events(pivots: tuple[StructurePivot, ...]) -> tuple[StructureConfirmationObservation, ...]:
+    """Fire one event per side each time it *becomes* confirmed_structure.
+
+    Only the transition into confirmed_structure is recorded, not every
+    later pivot that keeps a still-confirmed regime going -- otherwise a
+    single long-lived trend would produce many overlapping, highly
+    correlated "events" and inflate an effective sample size dishonestly.
+    """
+    events: list[StructureConfirmationObservation] = []
+    high_classification: str | None = None
+    low_classification: str | None = None
+    previous_long_confirmed = False
+    previous_short_confirmed = False
+    for pivot in pivots:
+        if pivot.kind == "high":
+            high_classification = pivot.classification
+        else:
+            low_classification = pivot.classification
+        long_confirmed = high_classification == "HH" and low_classification == "HL"
+        short_confirmed = high_classification == "LH" and low_classification == "LL"
+        if long_confirmed and not previous_long_confirmed:
+            events.append(StructureConfirmationObservation("bullish", "confirmed_structure", high_classification, low_classification, pivot.confirmed_at))
+        if short_confirmed and not previous_short_confirmed:
+            events.append(StructureConfirmationObservation("bearish", "confirmed_structure", high_classification, low_classification, pivot.confirmed_at))
+        previous_long_confirmed, previous_short_confirmed = long_confirmed, short_confirmed
+    return tuple(events)
 
 def detect_market_structure(bars: tuple[MarketBar, ...], *, bar_fingerprint: str, pivot_left: int = 2, pivot_right: int = 2, equality_tolerance_bps: float = 0.0) -> MarketStructureResult:
     """Confirm causal swings only after the configured right-side bars close."""
@@ -86,6 +122,7 @@ def detect_market_structure(bars: tuple[MarketBar, ...], *, bar_fingerprint: str
     observed_at = max((item.confirmed_at for item in (latest_high, latest_low) if item), default=None)
     long_observation = _side("long", latest_high.classification if latest_high else None, latest_low.classification if latest_low else None, observed_at)
     short_observation = _side("short", latest_high.classification if latest_high else None, latest_low.classification if latest_low else None, observed_at)
-    payload = {"bar_fingerprint": bar_fingerprint.strip(), "version": MARKET_STRUCTURE_VERSION, "pivot_left": pivot_left, "pivot_right": pivot_right, "equality_tolerance_bps": equality_tolerance_bps, "pivots": [asdict(item) for item in pivots], "long_observation": asdict(long_observation), "short_observation": asdict(short_observation)}
+    observations = _confirmation_events(tuple(pivots))
+    payload = {"bar_fingerprint": bar_fingerprint.strip(), "version": MARKET_STRUCTURE_VERSION, "pivot_left": pivot_left, "pivot_right": pivot_right, "equality_tolerance_bps": equality_tolerance_bps, "pivots": [asdict(item) for item in pivots], "observations": [asdict(item) for item in observations], "long_observation": asdict(long_observation), "short_observation": asdict(short_observation)}
     digest = sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
-    return MarketStructureResult(MARKET_STRUCTURE_VERSION, pivot_left, pivot_right, equality_tolerance_bps, pivot_left + pivot_right + 1, tuple(pivots), long_observation, short_observation, f"sha256:{digest}")
+    return MarketStructureResult(MARKET_STRUCTURE_VERSION, pivot_left, pivot_right, equality_tolerance_bps, pivot_left + pivot_right + 1, tuple(pivots), observations, long_observation, short_observation, f"sha256:{digest}")

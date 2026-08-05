@@ -84,6 +84,7 @@ type Page<T> = Envelope<T[]>;
 const BACKTESTABLE_HYPOTHESES = new Set([
   "structure_break_long", "structure_break_short",
   "liquidity_sweep_reclaim_long", "liquidity_sweep_reclaim_short",
+  "market_structure_long", "market_structure_short",
 ]);
 const BACKTEST_STATUS_LABELS: Record<string, string> = {
   supportive_evidence: "Sübut yetərlidir",
@@ -373,7 +374,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 &ldquo;Struktur qırılması + retest&rdquo; və &ldquo;Likvidlik süpürməsi&rdquo; hipotezlərini dəstəkləyir. Bazar strukturu hələ dəstəklənmir — o hipotez hazırda yalnız son müşahidəni saxlayır, tarixi nümunə üçün kifayət etmir. Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
+        <p className="pattern-candidate-backtest-disclaimer">Backtest v1 bütün 6 hipotezi dəstəkləyir. Bazar strukturunda hər namizəd yalnız rejim təsdiqləndiyi anda (davam edən eyni rejim təkrar sayılmır) bir hadisə kimi hesablanır. Nəticə tarixi simulyasiyadır — sifariş, mövqe ölçüsü və ya gəlir zəmanəti deyil.</p>
       </section>
     </section>
   );

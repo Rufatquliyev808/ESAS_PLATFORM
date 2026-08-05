@@ -17,17 +17,16 @@ Mərhələ: Phase 4-ün qalan maddələri
   Yol ilə **vacib istiqamət bug-ı** düzəldildi (backtest real qeydə alınmış
   namizədlərdə həmişə uğursuz olurdu — bax `docs/status/CURRENT_STATE.md`).
   Backend `281 passed`, frontend build və `10/10` test.
+- Backtest v1 **tamamlandı**: `market_structure.py`-a tarixi
+  `observations` əlavə edildi (rejim transition-based hadisə semantikası —
+  yalnız `confirmed_structure`-a keçid anı, davam edən rejim təkrarı yox).
+  Backtest indi bütün 6 hipotezi əhatə edir. Backend `286 passed`, frontend
+  build və `10/10` test.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 4, `PROJECT_ROADMAP.md`-dən)
 
-- **Backtest əhatəsini `market_structure`-a genişləndirmək** — bu,
-  `liquidity_sweep`-dən fərqli olaraq sadə deyil: `market_structure`
-  davamlı rejim konsepsiyasıdır (HH/HL uzun müddət davam edə bilər), diskret
-  "hadisə" deyil. Tarixi backtest üçün "yeni hadisə" nəyi bildirir — hər
-  yeni pivot, yoxsa yalnız rejim keçidi (nəinsə olmadığından confirmed-ə
-  keçid)? Bu, ayrıca dizayn qərarı və istifadəçi təsdiqi tələb edir.
 - **Vəziyyət maşınının qalanı** — `running` (async/job-based icra, hazırda
   sinxron `evaluated`-ə birbaşa keçir), `accepted_for_shadow`, `rejected`,
   `blocked_by_data_quality`, `invalid_leakage`, `insufficient_evidence`,
