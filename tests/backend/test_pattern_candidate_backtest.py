@@ -248,6 +248,74 @@ def test_bonferroni_correction_leaves_an_insufficient_scenario_unchanged() -> No
     assert corrected is not scenario
 
 
+def test_scenario_includes_random_timing_baseline_fields() -> None:
+    bars = tuple(_bar(i, 100.0 + i * 0.5) for i in range(200))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(0, 150, 3))
+    retest = _retest(observations)
+    result = _run(
+        bars=bars, retest=retest, horizon_bars=2,
+        spread_bps=0, commission_bps=0, slippage_bps=0, latency_bps=0,
+    )
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    assert normal.random_timing_baseline_sample_size > 0
+    assert normal.random_timing_baseline_mean_return_percent is not None
+    assert normal.beats_random_timing_baseline is not None
+
+
+def test_random_timing_baseline_is_deterministic_for_same_inputs() -> None:
+    bars = tuple(_bar(i, 100.0 + i * 0.5) for i in range(200))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(0, 150, 3))
+    retest = _retest(observations)
+    first = _run(bars=bars, retest=retest, horizon_bars=2)
+    second = _run(bars=bars, retest=retest, horizon_bars=2)
+    normal_first = next(item for item in first.scenarios if item.scenario == "normal")
+    normal_second = next(item for item in second.scenarios if item.scenario == "normal")
+    assert normal_first.random_timing_baseline_mean_return_percent == normal_second.random_timing_baseline_mean_return_percent
+
+
+def test_candidate_rejected_when_it_underperforms_random_timing_baseline() -> None:
+    # A steep, uniform uptrend where the real triggers cluster late in the
+    # series (high price base -> small percentage move) while the
+    # random-timing sample draws from the whole series (including the early,
+    # low price base, high percentage move region). The candidate clears the
+    # flat zero baseline easily but is actually worse than a hypothesis-blind
+    # random entry over the same period.
+    bars = tuple(_bar(i, 100.0 + i) for i in range(300))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(250, 290))
+    retest = _retest(observations)
+    result = _run(
+        bars=bars, retest=retest, horizon_bars=2,
+        spread_bps=0, commission_bps=0, slippage_bps=0, latency_bps=0,
+    )
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    assert normal.effective_sample_size >= 30
+    assert normal.confidence_interval_low_percent > 0
+    assert normal.beats_random_timing_baseline is False
+    assert normal.status == "insufficient_evidence"
+    assert normal.reason == "ci_does_not_exceed_random_timing_baseline"
+    assert classify_backtest_verdict(status=normal.status, reason=normal.reason) == "rejected"
+
+
+def test_bonferroni_correction_can_fail_via_baseline_even_when_still_clearing_zero() -> None:
+    scenario = {
+        "scenario": "normal", "status": "supportive_evidence", "reason": "ci_entirely_above_zero_baseline",
+        "effective_sample_size": 100, "net_mean_return_percent": 2.0,
+        "sample_standard_deviation": 5.0, "confidence_interval_low_percent": 1.02,
+        "confidence_interval_high_percent": 2.98,
+        "random_timing_baseline_mean_return_percent": 0.5,
+    }
+    at_m1 = bonferroni_corrected_scenario(scenario, family_trial_count=1)
+    assert at_m1["status"] == "supportive_evidence"
+    assert at_m1["beats_random_timing_baseline"] is True
+
+    at_m100 = bonferroni_corrected_scenario(scenario, family_trial_count=100)
+    assert at_m100["confidence_interval_low_percent"] > 0
+    assert at_m100["beats_random_timing_baseline"] is False
+    assert at_m100["status"] == "insufficient_evidence"
+    assert at_m100["reason"] == "multiple_testing_correction_ci_does_not_exceed_random_timing_baseline"
+    assert classify_backtest_verdict(status=at_m100["status"], reason=at_m100["reason"]) == "rejected"
+
+
 def test_bonferroni_correction_rejects_invalid_inputs() -> None:
     scenario = _supportive_normal_scenario()
     with pytest.raises(ValueError):

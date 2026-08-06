@@ -1,5 +1,50 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Backtest v1-ə təsadüfi-zaman baseline müqayisəsi əlavə edildi
+
+- Phase 3/4 müqaviləsinin "Baseline və müqayisə" tələbindən (no-signal,
+  təsadüfi-zaman, tək-feature, əvvəlki namizəd) yalnız **təsadüfi-zaman
+  baseline-ı** tətbiq edildi (istifadəçi ilə həcm razılaşdırıldı). No-signal
+  baseline artıq örtülü şəkildə mövcud idi (mövcud CI-testi sıfır bazasına
+  qarşı yoxlayır); tək-feature qaydası və əvvəlki namizəd müqayisəsi ayrıca
+  namizəd kimi qeyd olundu (`docs/status/NEXT_TASK.md`).
+- `pattern_candidate_backtest.py`-a `_random_timing_baseline_raw_returns()`
+  əlavə edildi: eyni bar seriyasından, eyni istiqamət konvensiyası və
+  horizon ilə, **seed-lənmiş (deterministik) təsadüfi** giriş nöqtələri
+  seçib eyni cost modeli ilə nəticələndirir. Seed yalnız artıq sabit
+  girişlərdən (candidate_id, hypothesis_id, horizon_bars, bar sayı, ilk/son
+  bar vaxtı) hesablanır — eyni giriş həmişə eyni "təsadüfi" nümunəni verir
+  (reproducibility). Bu, "strategiya sadəcə bazar dreyfini/volatilliyini
+  tutur" riskini aşkarlayır: real namizədin orta gəliri sıfırı keçsə də,
+  eyni dövrdə hipotezə kor təsadüfi girişlərin ortasından aşağı qalırsa,
+  bu, real səbəbiyyət əlaqəsi deyil.
+- `BacktestCostScenario`-ya 3 yeni sahə əlavə edildi:
+  `random_timing_baseline_sample_size`,
+  `random_timing_baseline_mean_return_percent`,
+  `beats_random_timing_baseline`. Qərar qaydası genişləndirildi: namizəd
+  indi YALNIZ sıfır bazasını deyil, **HƏM DƏ** təsadüfi-zaman baseline-ını
+  keçdikdə `supportive_evidence` sayılır; sıfırı keçib baseline-ı keçməyən
+  hal yeni `ci_does_not_exceed_random_timing_baseline` səbəbi ilə
+  `insufficient_evidence`-ə düşür, bu da `classify_backtest_verdict`
+  vasitəsilə `rejected`-ə aparır (mövcud reason-əsaslı budaqlanma
+  dəyişmədən işlədi, yeni parametr əlavə etməyə ehtiyac olmadı).
+- `bonferroni_corrected_scenario()` uyğunlaşdırıldı: düzəlişli CI indi HƏM
+  sıfır, HƏM DƏ (varsa) təsadüfi-zaman baseline-ı ilə müqayisə olunur —
+  multiple-testing düzəlişi baseline yoxlamasını gizlədə bilməz.
+- `BACKTEST_VERSION` `1.2.0 → 1.3.0` (nəticə sxemi dəyişdi, fingerprint-lər
+  təbii şəkildə fərqlənəcək).
+- Frontend toxunulmayıb — yeni sahələr backend cavabında mövcuddur, amma
+  UI-də göstərilmir (TypeScript struktur tipləşdirməsi əlavə sahələri
+  sadəcə görməzdən gəlir, heç bir kəsilmə yoxdur).
+- Yoxlama: `test_pattern_candidate_backtest.py`-a `4` yeni test (baseline
+  sahələrinin mövcudluğu, determinizm, sıfırı keçib baseline-ı keçməyən
+  real ssenari, Bonferroni+baseline qarşılıqlı təsiri). Tam backend
+  regressiyası: `356 passed` (heç bir mövcud test pozulmadı — bütün digər
+  test fixture-ları ya kiçik nümunəli (n<30, artıq `insufficient_evidence`),
+  ya da yeni yoxlamanı təbii keçdi).
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; dəyişiklik yalnız
+  `accepted_for_shadow` qərarının statistik ciddiliyini daha da artırır.
+
 ## 2026-08-06 — Phase 9 SHADOW: run manifest + append-only event reyestri skeleti
 
 - **Diqqət — bu, CANLI SHADOW SİSTEMİ DEYİL.** `PHASE_9_SHADOW_VALIDATION_CONTRACT.md`

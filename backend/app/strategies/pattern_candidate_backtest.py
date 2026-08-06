@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from hashlib import sha256
 import json
 import math
+import random
 import statistics
 
 from backend.app.analysis.bars import MarketBar
@@ -10,13 +11,14 @@ from backend.app.analysis.market_structure import MarketStructureResult
 from backend.app.analysis.retest import RetestResult
 
 
-BACKTEST_VERSION = "1.2.0"
+BACKTEST_VERSION = "1.3.0"
 MIN_EFFECTIVE_SAMPLE = 30
 Z_95 = 1.96
 SUPPORTIVE = "supportive_evidence"
 INSUFFICIENT = "insufficient_evidence"
 MATURED = "matured"
 IMMATURE = "immature"
+RANDOM_TIMING_BASELINE_SAMPLE_SIZE = 500
 
 # v1 only backtests hypotheses whose upstream detector already exposes every
 # historical confirmation, not just the latest one: bos_choch/retest,
@@ -68,6 +70,9 @@ class BacktestCostScenario:
     confidence_interval_high_percent: float | None
     status: str
     reason: str
+    random_timing_baseline_sample_size: int
+    random_timing_baseline_mean_return_percent: float | None
+    beats_random_timing_baseline: bool | None
 
 
 @dataclass(frozen=True)
@@ -108,24 +113,79 @@ def _cost_multiplier(name: str, value: float) -> float:
     return value
 
 
-def _scenario_result(name: str, total_cost_bps: float, matured_raw: tuple[float, ...]) -> BacktestCostScenario:
+def _random_timing_baseline_raw_returns(
+    *, bars: tuple[MarketBar, ...], event_direction: str, horizon_bars: int, seed: int,
+) -> tuple[float, ...]:
+    """Deterministic (seeded), hypothesis-blind sample of raw returns from
+    randomly chosen entry points in the same bar series, using the same
+    direction convention and horizon as the real backtest.
+
+    This estimates what a randomly-timed entry would have captured over the
+    same period: if the candidate's own mean does not clear this baseline,
+    its apparent edge is indistinguishable from generic market drift or
+    volatility over the interval, not a real causal effect of the pattern.
+    Same seed + same bars always produces the same sample (reproducibility).
+    """
+    eligible_count = len(bars) - horizon_bars
+    if eligible_count <= 0:
+        return ()
+    rng = random.Random(seed)
+    sample_size = min(RANDOM_TIMING_BASELINE_SAMPLE_SIZE, eligible_count)
+    indices = rng.sample(range(eligible_count), sample_size)
+    values: list[float] = []
+    for entry_index in indices:
+        entry_bar = bars[entry_index]
+        if not math.isfinite(entry_bar.close) or entry_bar.close <= 0:
+            continue
+        exit_bar = bars[entry_index + horizon_bars]
+        raw_change = (exit_bar.close - entry_bar.close) / entry_bar.close * 100.0
+        values.append(raw_change if event_direction == "bullish" else -raw_change)
+    return tuple(values)
+
+
+def _scenario_result(
+    name: str, total_cost_bps: float, matured_raw: tuple[float, ...], baseline_raw: tuple[float, ...],
+) -> BacktestCostScenario:
     cost_percent = total_cost_bps / 100.0
+    baseline_net = tuple(value - cost_percent for value in baseline_raw)
+    baseline_size = len(baseline_net)
+    baseline_mean = math.fsum(baseline_net) / baseline_size if baseline_size else None
+
     net = tuple(value - cost_percent for value in matured_raw)
     count = len(net)
     if not count:
-        return BacktestCostScenario(name, total_cost_bps, 0, None, None, None, None, None, None, INSUFFICIENT, "no_matured_trades")
+        return BacktestCostScenario(
+            name, total_cost_bps, 0, None, None, None, None, None, None, INSUFFICIENT, "no_matured_trades",
+            baseline_size, baseline_mean, None,
+        )
     mean = math.fsum(net) / count
     hit_rate = sum(value > 0 for value in net) / count * 100.0
     if count < MIN_EFFECTIVE_SAMPLE:
-        return BacktestCostScenario(name, total_cost_bps, count, mean, hit_rate, None, None, None, None, INSUFFICIENT, "effective_sample_below_30")
+        return BacktestCostScenario(
+            name, total_cost_bps, count, mean, hit_rate, None, None, None, None, INSUFFICIENT, "effective_sample_below_30",
+            baseline_size, baseline_mean, None,
+        )
     deviation = statistics.stdev(net)
     if deviation == 0:
-        return BacktestCostScenario(name, total_cost_bps, count, mean, hit_rate, 0.0, 0.0, mean, mean, INSUFFICIENT, "zero_sample_variance")
+        return BacktestCostScenario(
+            name, total_cost_bps, count, mean, hit_rate, 0.0, 0.0, mean, mean, INSUFFICIENT, "zero_sample_variance",
+            baseline_size, baseline_mean, None,
+        )
     margin = Z_95 * deviation / math.sqrt(count)
     low, high = mean - margin, mean + margin
-    status = SUPPORTIVE if low > 0 else INSUFFICIENT
-    reason = "ci_entirely_above_zero_baseline" if status == SUPPORTIVE else "ci_crosses_or_is_below_zero_baseline"
-    return BacktestCostScenario(name, total_cost_bps, count, mean, hit_rate, mean / deviation, deviation, low, high, status, reason)
+    clears_zero = low > 0
+    beats_baseline = low > baseline_mean if baseline_mean is not None else None
+    status = SUPPORTIVE if clears_zero and beats_baseline in (True, None) else INSUFFICIENT
+    if not clears_zero:
+        reason = "ci_crosses_or_is_below_zero_baseline"
+    elif beats_baseline is False:
+        reason = "ci_does_not_exceed_random_timing_baseline"
+    else:
+        reason = "ci_entirely_above_zero_baseline"
+    return BacktestCostScenario(
+        name, total_cost_bps, count, mean, hit_rate, mean / deviation, deviation, low, high, status, reason,
+        baseline_size, baseline_mean, beats_baseline,
+    )
 
 
 def _historical_events(
@@ -160,11 +220,14 @@ def classify_backtest_verdict(*, status: str, reason: str) -> str:
 
     supportive_evidence -> accepted_for_shadow (not a live-trading decision;
     Phase 9 SHADOW does not exist yet, this only records that the historical
-    evidence met the predeclared bar). insufficient_evidence is split by
-    reason: too few samples to conclude anything ("effective_sample_below_30")
-    stays insufficient_evidence (may simply need a longer replay interval),
-    while a large-enough sample whose confidence interval does not clear the
-    zero baseline is rejected -- that is refuting evidence, not missing data.
+    evidence met the predeclared bar -- both the zero baseline and the
+    random-timing baseline). insufficient_evidence is split by reason: too
+    few samples to conclude anything ("effective_sample_below_30") stays
+    insufficient_evidence (may simply need a longer replay interval), while a
+    large-enough sample whose CI does not clear zero, or clears zero but does
+    not exceed the random-timing baseline mean, is rejected -- both are
+    refuting evidence (no edge, or an edge indistinguishable from generic
+    market drift), not missing data.
     """
     if status == SUPPORTIVE:
         return ACCEPTED_FOR_SHADOW
@@ -199,15 +262,21 @@ def bonferroni_corrected_scenario(
     count = scenario["effective_sample_size"]
     margin = z_corrected * deviation / math.sqrt(count)
     low, high = mean - margin, mean + margin
-    status = SUPPORTIVE if low > 0 else INSUFFICIENT
-    reason = (
-        "multiple_testing_correction_ci_still_above_zero_baseline" if status == SUPPORTIVE
-        else "multiple_testing_correction_ci_crosses_or_is_below_zero_baseline"
-    )
+    clears_zero = low > 0
+    baseline_mean = scenario.get("random_timing_baseline_mean_return_percent")
+    beats_baseline = low > baseline_mean if baseline_mean is not None else None
+    status = SUPPORTIVE if clears_zero and beats_baseline in (True, None) else INSUFFICIENT
+    if not clears_zero:
+        reason = "multiple_testing_correction_ci_crosses_or_is_below_zero_baseline"
+    elif beats_baseline is False:
+        reason = "multiple_testing_correction_ci_does_not_exceed_random_timing_baseline"
+    else:
+        reason = "multiple_testing_correction_ci_still_above_zero_baseline"
     corrected = dict(scenario)
     corrected.update({
         "status": status, "reason": reason,
         "confidence_interval_low_percent": low, "confidence_interval_high_percent": high,
+        "beats_random_timing_baseline": beats_baseline,
         "family_trial_count": family_trial_count, "family_wise_alpha": family_wise_alpha,
         "alpha_corrected": alpha_corrected, "z_critical": z_corrected,
     })
@@ -288,9 +357,24 @@ def run_pattern_candidate_backtest(
         ))
 
     matured_raw = tuple(item.raw_return_percent for item in trades if item.status == MATURED and item.raw_return_percent is not None)
+
+    # Deterministic seed derived only from already-fixed inputs, so the same
+    # candidate/hypothesis/horizon/dataset always draws the same "random"
+    # baseline sample (reproducibility), without needing to persist the
+    # sampled indices themselves.
+    seed_source = json.dumps(
+        [candidate_id, hypothesis_id, horizon_bars, len(bars),
+         bars[0].start_at if bars else None, bars[-1].end_at if bars else None],
+        ensure_ascii=True, separators=(",", ":"),
+    ).encode("utf-8")
+    seed = int.from_bytes(sha256(seed_source).digest()[:8], "big")
+    baseline_raw = _random_timing_baseline_raw_returns(
+        bars=bars, event_direction=event_direction, horizon_bars=horizon_bars, seed=seed,
+    )
+
     scenario_definitions = (("normal", 1.0), ("adverse", adverse), ("stress", stress))
     scenarios = tuple(
-        _scenario_result(name, base_cost_bps * multiplier, matured_raw)
+        _scenario_result(name, base_cost_bps * multiplier, matured_raw, baseline_raw)
         for name, multiplier in scenario_definitions
     )
 

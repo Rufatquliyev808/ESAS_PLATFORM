@@ -8,6 +8,50 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Random-timing baseline comparison for pattern candidate backtests
+
+- Implements one of the Phase 3/4 contract's four required baselines
+  (no-signal, random-timing, single-feature rule, previously-accepted
+  candidate) -- random-timing, scoped down with the user's agreement. The
+  no-signal baseline was already implicit (the existing CI test already
+  compares against a zero-return baseline); single-feature-rule and
+  previous-candidate comparisons remain open follow-up items.
+- `pattern_candidate_backtest.py` gains
+  `_random_timing_baseline_raw_returns()`: draws a deterministic (seeded),
+  hypothesis-blind sample of entry points from the same bar series, using
+  the same direction convention, horizon, and cost model as the real
+  backtest. The seed is derived only from already-fixed inputs (candidate
+  id, hypothesis id, horizon, bar count, first/last bar timestamps), so the
+  same inputs always draw the same "random" sample (reproducibility). This
+  guards against an apparent edge that is actually indistinguishable from
+  generic market drift or volatility over the period.
+- `BacktestCostScenario` gains three fields:
+  `random_timing_baseline_sample_size`,
+  `random_timing_baseline_mean_return_percent`,
+  `beats_random_timing_baseline`. The acceptance rule now requires clearing
+  *both* the zero baseline *and* the random-timing baseline to be
+  `supportive_evidence`; clearing zero but not the baseline produces a new
+  `ci_does_not_exceed_random_timing_baseline` reason, which
+  `classify_backtest_verdict` already routes to `rejected` (no signature
+  change needed there).
+- `bonferroni_corrected_scenario()` updated to also re-check the
+  random-timing baseline against the corrected confidence interval -- the
+  multiple-testing correction can no longer accidentally bypass the
+  baseline check.
+- `BACKTEST_VERSION` bumped `1.2.0 -> 1.3.0` (result schema changed, so
+  fingerprints naturally differ from prior runs).
+- No frontend changes; the new fields are present in the API response but
+  not yet rendered (TypeScript's structural typing simply ignores the
+  extra fields, no breakage).
+- Verification: 4 new tests in `test_pattern_candidate_backtest.py`
+  (baseline field presence, determinism, a scenario that clears zero but
+  fails the baseline, and the Bonferroni/baseline interaction). Full
+  backend regression: `356 passed` -- no existing test needed updating,
+  since every other fixture either stays below the n=30 sample floor or
+  happened to already clear the new bar.
+- This layer creates no strategy, entry, risk sizing, or order; the change
+  only makes the `accepted_for_shadow` decision statistically stricter.
+
 ### Added — Phase 9 SHADOW run manifest + append-only event registry (persistence skeleton only)
 
 - **This is not a live SHADOW system.** `PHASE_9_SHADOW_VALIDATION_CONTRACT.md`
