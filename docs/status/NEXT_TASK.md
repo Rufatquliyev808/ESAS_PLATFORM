@@ -38,15 +38,20 @@ Mərhələ: Phase 4-ün qalan maddələri
   statistik doğruluğu artırır); əgər xam siqnal kifayət idi (`≥30`) amma
   purge onu `30`-dan aşağı salıbsa, namizəd `insufficient_evidence`-ə
   deyil `invalid_leakage`-ə keçir.
-- **Phase 9 SHADOW: nəzəri portfolio/risk ledger (section 6)** (hələ
-  commit edilməyib) — `shadow_theoretical_positions` cədvəli (migration
-  `0010`), `shadow_portfolio_repository.py`
-  (`open_theoretical_position`/`close_theoretical_position`/
-  `get_theoretical_portfolio_summary`). Mövqe-səviyyəli risk limitləri
-  (eyni-vaxtda mövqe sayı, simvol+istiqamət konsentrasiyası, ümumi ehtiyat
-  risk) tətbiq olunur; gündəlik itki/drawdown (realized PnL zaman sırası
-  tələb edir) şüurlu şəkildə kənarda saxlanılıb. Hələ də canlı sistem
-  deyil — API/frontend yoxdur. Backend `391 passed`.
+- **Phase 9 SHADOW: nəzəri portfolio/risk ledger (section 6)** (commit
+  `a502a70`, push edilib, CI yaşıl) — `shadow_theoretical_positions`
+  cədvəli (migration `0010`), mövqe-səviyyəli risk limitləri. Gündəlik
+  itki/drawdown şüurlu şəkildə kənarda saxlanılıb.
+- **Phase 9 SHADOW-a admin API + frontend əlavə edildi** (hələ commit
+  edilməyib) — istifadəçinin "çağıranı düzəldək" tələbinə cavab: 12 yeni
+  qorunan endpoint (`/api/v2/shadow-runs...`) + yeni `shadow-runs-panel.tsx`
+  bölməsi (NƏZƏRİDİR banneri ilə). Canlı brauzerdə real qərar generatoru
+  olmadan (əl ilə, admin kimi) tam sınandı: run yaradıldı → başladıldı →
+  risk limiti ilə mövqə düzgün bloklandı → mövqə bağlandı → event qeydə
+  alındı → tamamlandı. Sınaq zamanı real bug tapılıb düzəldildi (risk-blok
+  xəbərdarlığı `loadDetail()`-un öz sıfırlanması ilə görünmədən itirdi).
+  Backend `404 passed`, frontend lint/build/`11/11` test təmiz. Real
+  bazaya toxunulmadı.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -58,10 +63,12 @@ Mərhələ: Phase 4-ün qalan maddələri
 - Backtest v1-in son vəziyyət maşını indi tamdır: `draft → registered →
   evaluated → accepted_for_shadow | rejected | insufficient_evidence |
   invalid_leakage | blocked_by_data_quality → archived`.
-- Phase 9 sxeminin davamı: nəzəri portfolio/risk ledger tamamlandı (section
-  6). Qalan bölmələr (champion/challenger müqayisə mühərriki section 7,
+- Phase 9: manifest + event + portfolio skeleti VƏ admin API/frontend
+  tamamlandı. Real bazaya migration `0010` hələ tətbiq edilməyib (ayrıca
+  icazə tələb olunacaq, real istifadəyə başlanmaq istənsə). Qalan
+  bölmələr (champion/challenger müqayisə mühərriki section 7,
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
-  real çağıranı yoxdur.
+  real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
 
 ## Vizual yoxlama qeydi
@@ -72,7 +79,9 @@ toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 2026-08-06: real production bazanın `0005`-`0009` migrasiyaları istifadəçi
 ilə birlikdə canlı brauzerdə aşkarlanan `HTTP 500` xətasından yola çıxaraq
-tətbiq edildi və doğrulandı.
+tətbiq edildi və doğrulandı. Eyni gün, Phase 9 admin panelinin tam dövrü
+də (real bazaya toxunmadan, birdəfəlik test backend/frontend ilə) canlı
+brauzerdə sınandı.
 
 ## Başlama şərti
 

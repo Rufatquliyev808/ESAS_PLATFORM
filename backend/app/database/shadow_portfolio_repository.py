@@ -253,6 +253,16 @@ def close_theoretical_position(
     return _row_to_position(result_row)
 
 
+def list_theoretical_positions(shadow_run_id: str) -> tuple[ShadowTheoreticalPosition, ...]:
+    normalized = _required_text(shadow_run_id, "shadow_run_id")
+    with get_connection() as connection:
+        rows = connection.execute(
+            "SELECT * FROM shadow_theoretical_positions WHERE shadow_run_id = ? ORDER BY opened_at DESC;",
+            (normalized,),
+        ).fetchall()
+    return tuple(_row_to_position(row) for row in rows)
+
+
 def get_theoretical_portfolio_summary(shadow_run_id: str) -> dict[str, object]:
     """Minimal observability (contract section 10): open theoretical
     positions, total reserved risk, and net realized theoretical PnL.

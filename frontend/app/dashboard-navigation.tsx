@@ -12,7 +12,8 @@ export type DashboardSection =
   | "fvg"
   | "strategies"
   | "hypotheses"
-  | "pattern-candidates";
+  | "pattern-candidates"
+  | "shadow-runs";
 
 type MenuItem = {
   id: DashboardSection;
@@ -34,6 +35,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "strategies", title: "Strategiya müqayisəsi", description: "Ayrı yanaşmaların nəticələri", group: "Qiymətləndirmə" },
   { id: "hypotheses", title: "Hipotezlər", description: "Sınaq üçün qaydalar reyestri", group: "Qiymətləndirmə" },
   { id: "pattern-candidates", title: "Pattern namizədləri", description: "Draft — hipotezlərin birləşmiş nəticəsi", group: "Qiymətləndirmə" },
+  { id: "shadow-runs", title: "SHADOW run-ları", description: "Phase 9 skeleti — nəzəridir, order yaratmır", group: "Qiymətləndirmə" },
 ];
 
 const MENU_ENTRIES = MENU_ITEMS.map((item, index) => ({

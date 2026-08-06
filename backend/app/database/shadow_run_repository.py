@@ -246,6 +246,29 @@ def get_shadow_run(shadow_run_id: str) -> PersistedShadowRun:
     return _row_to_run(row, participant_rows)
 
 
+def list_shadow_runs(*, owner: str, limit: int = 100) -> tuple[PersistedShadowRun, ...]:
+    """Owner-scoped run list, newest first.
+
+    Unlike replay sessions or pattern candidates, SHADOW runs are rare,
+    deliberate, long-lived experiments (weeks per the manifest's own
+    planned_end_at) -- a simple bounded list is proportionate here, not
+    signed keyset cursor pagination sized for a high-volume stream.
+    """
+    normalized_owner = _required_text(owner, "owner")
+    if not 1 <= limit <= 200:
+        raise ValueError("limit must be between 1 and 200")
+    with get_connection() as connection:
+        rows = connection.execute(
+            "SELECT * FROM shadow_runs WHERE created_by = ? ORDER BY created_at DESC LIMIT ?;",
+            (normalized_owner, limit),
+        ).fetchall()
+        runs = []
+        for row in rows:
+            participant_rows = _load_participants(connection, row["shadow_run_id"])
+            runs.append(_row_to_run(row, participant_rows))
+    return tuple(runs)
+
+
 def _transition(
     *, shadow_run_id: str, actor: str, expected_state_version: int,
     allowed_from: frozenset[str], next_state: str, halt_reason: str | None = None,

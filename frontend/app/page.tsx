@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayPanel } from "./replay-panel";
 import { PatternHypothesisRegistry } from "./pattern-hypothesis-registry";
+import { ShadowRunsPanel } from "./shadow-runs-panel";
 import { DashboardSidebar, SectionGuide, type DashboardSection } from "./dashboard-navigation";
 
 type Bridge = {
@@ -521,6 +522,12 @@ export default function Home() {
       impact: "Struktur, likvidlik və struktur qırılması/retest detektorlarının eyni anda üst-üstə düşməsi GOLD üçün daha güclü kontekst yarada bilər, amma bu hələ sübut deyil.",
       evidence: "Hər namizəd mövcud causal detektorların nəticəsini müvafiq hipotezə bağlayır; yalnız `draft` vəziyyətdədir, backtest və qəbul qərarı yoxdur.",
     },
+    "shadow-runs": {
+      title: "SHADOW run-ları (Phase 9 skelet)",
+      metric: "Nəzəri portfolio",
+      impact: "Real qərar generatoru (Phase 5-8) hazır olmadığı üçün bu bölmə hələ heç bir GOLD nəticəsinə təsir etmir — yalnız gələcək SHADOW sisteminin saxlama əsasını göstərir.",
+      evidence: "Run manifesti, append-only event reyestri və nəzəri (real hesaba toxunmayan) mövqe/risk ledger-i əl ilə idarə olunur.",
+    },
   };
 
   const sectionSteps: Record<DashboardSection, string[]> = {
@@ -583,6 +590,11 @@ export default function Home() {
       "Hər namizədin `draft` vəziyyətdə olduğunu, sübut olmadığını xatırlayın.",
       "Şərti təsdiqlənən (candidate_confirmed) namizədlərin sübutunu digər bölmələrdən yoxlayın.",
       "Backtest və qəbul qərarı hələ yoxdur; namizədi əməliyyat üçün istifadə etməyin.",
+    ],
+    "shadow-runs": [
+      "Bu, əl ilə idarə olunan bir skeletdir — avtomatik qərar axını yoxdur.",
+      "\"NƏZƏRİDİR\" bannerini həmişə diqqətdə saxlayın; heç bir order və ya real mövqe yaranmır.",
+      "Run-ı yalnız test/araşdırma məqsədilə yaradın və nəticələrini ticarət qərarı kimi istifadə etməyin.",
     ],
   };
 
@@ -868,6 +880,12 @@ export default function Home() {
               )}
               {activeSection === "hypotheses" && (
           <PatternHypothesisRegistry
+            token={token}
+            onUnauthorized={handleReplayUnauthorized}
+          />
+              )}
+              {activeSection === "shadow-runs" && (
+          <ShadowRunsPanel
             token={token}
             onUnauthorized={handleReplayUnauthorized}
           />

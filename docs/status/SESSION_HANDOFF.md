@@ -56,29 +56,45 @@ Son yenilənmə: 2026-08-06
   purge/embargo (`_purge_overlapping_events()`, bütün namizədlər üçün
   tətbiq olunur). Xam siqnal kifayət idisə (`≥30`) amma purge onu aşağı
   salıbsa → `invalid_leakage`. `BACKTEST_VERSION 1.5.0`.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 9 SHADOW nəzəri portfolio/risk
-  ledger (section 6).** `shadow_theoretical_positions` (migration `0010`),
-  `shadow_portfolio_repository.py`:
+- **Phase 9 SHADOW nəzəri portfolio/risk ledger (section 6)** (commit
+  `a502a70`, PUSH EDİLİB, CI yaşıl). `shadow_theoretical_positions`
+  (migration `0010`), `shadow_portfolio_repository.py`:
   `open_theoretical_position()` (mövqe-səviyyəli risk limitlərini
   namizədin öz `risk_budget_json`-undan yoxlayır — eyni-vaxtda mövqe sayı,
   simvol+istiqamət konsentrasiyası, ümumi ehtiyat risk; limit keçilirsə
   `SHADOW_RISK_BLOCKED` event-i qeydə alır, mövqe açmır),
   `close_theoretical_position()`, `get_theoretical_portfolio_summary()`.
   **Şüurlu şəkildə kənarda:** gündəlik itki/drawdown (realized PnL zaman
-  sırası tələb edir, canlı axın olmadan mənasız). **Hələ də canlı sistem
-  deyil** — API/frontend yoxdur (real çağıran yoxdur, əvvəlki skelet
-  artımı ilə eyni səbəb). Backend `391 passed`.
+  sırası tələb edir, canlı axın olmadan mənasız).
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 9 SHADOW admin API + frontend.**
+  İstifadəçinin "çağıranı düzəldək" tələbinə cavab — əvvəlki portfolio
+  ledger artımının real çağıranı yox idi, indi var (əl ilə idarə olunan
+  admin panel). 12 yeni qorunan endpoint
+  (`POST/GET /api/v2/shadow-runs...` — yaratma, siyahı, detal, start/
+  complete/halt keçidləri, event qeydiyyatı, mövqə açma/bağlama, portfolio
+  xülasəsi). Yeni `backend/app/models/shadow.py` (Pydantic request
+  modelləri). Frontend: yeni `shadow-runs-panel.tsx` bölməsi, məcburi
+  `NƏZƏRİDİR — REAL ƏMƏLİYYAT YOXDUR` banneri ilə, `dashboard-navigation.tsx`
+  və `page.tsx`-ə inteqrasiya olunub. Canlı brauzerdə (birdəfəlik test
+  backend/frontend, real bazaya toxunmadan) tam dövr sınandı: run yaradıldı
+  → başladıldı → 2 mövqə açıldı → 3-cü mövqə risk limiti ilə düzgün
+  bloklandı → mövqə bağlandı → event qeydə alındı → run tamamlandı. Sınaq
+  zamanı real bug tapılıb düzəldildi: `openPosition()`-da risk-blok
+  xəbərdarlığı `setDetailError(...)`-dan sonra çağırılan `loadDetail()`
+  öz növbəsində `detailError`-u sıfırlayırdı, xəbərdarlıq heç görünmürdü —
+  çağırış sırası dəyişdirilərək düzəldildi. Backend `404 passed`, frontend
+  lint/build/`11/11` test təmiz. Real bazaya toxunulmadı.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var.
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `2753fcc`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `a502a70`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
-  real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage` —
-  hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 9 nəzəri portfolio/risk ledger
+  real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
+  portfolio ledger — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 9 SHADOW admin API + frontend
   artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
   qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
   İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
@@ -93,21 +109,23 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində).
-- Frontend: bu artımda (Phase 9 portfolio ledger) toxunulmayıb — API/UI
-  yoxdur, ona görə ayrıca frontend sınağı aparılmadı.
-  `blocked_by_data_quality`/`invalid_leakage` artımlarında frontend
-  lint/build/`10/10` test təmiz keçmişdi.
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `404
+  passed`.
+- Frontend: bu artımda (Phase 9 admin API + frontend) lint/build/`11/11`
+  test təmiz keçdi (yeni `shadow-runs-ui.test.mjs` daxil).
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
-  düzəldilib.
+  düzəldilib; eyni gün Phase 9 admin panelinin tam dövrü də (birdəfəlik
+  test backend/frontend ilə, real bazaya toxunmadan) canlı brauzerdə
+  sınanıb, bir real bug tapılıb düzəldilib.
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 9-un manifest/event/portfolio skeleti tamdır (section
-3, 6, 9). Qalan bölmələr (section 7 champion/challenger müqayisə
-mühərriki, section 8 kəsinti/restart) — real çağıranı hələ yoxdur.
+Seçilməyib. Phase 9-un manifest/event/portfolio skeleti VƏ admin
+API/frontend tamamlandı (section 3, 6, 9 + əl ilə idarəetmə). Qalan
+bölmələr (section 7 champion/challenger müqayisə mühərriki, section 8
+kəsinti/restart) — real qərar generatoru (Phase 5-8) hələ yoxdur.
 Namizədlər (`docs/status/NEXT_TASK.md`): Phase 9-un davamı (istəsə),
 job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb
 olunur.

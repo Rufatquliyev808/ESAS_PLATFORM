@@ -521,6 +521,38 @@ footer p { margin: 0; }
 .pattern-candidate-backtest-disclaimer { margin: 14px 0 0; border-left: 4px solid var(--amber); padding: 10px 13px; background: #fff8ea; font-size: 12px; color: #67450d; }
 @media (max-width: 800px) { .pattern-candidate-grid { grid-template-columns: 1fr; } }
 
+/* Phase 9 SHADOW skeleton -- manual admin surface, no live decision feed. */
+.shadow-runs { margin-top: 24px; border: 1px solid var(--line); border-radius: 18px; padding: 24px; background: rgba(255,255,255,.88); }
+.shadow-runs-head { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.shadow-runs-head h2 { margin: 4px 0 8px; }
+.shadow-runs-head p { margin: 0; color: var(--muted); }
+.danger-pill { border-radius: 999px; padding: 9px 13px; background: var(--red-soft); color: var(--red); font-weight: 800; white-space: nowrap; }
+.shadow-runs-boundary { margin: 14px 0 0; border-left: 4px solid var(--red); padding: 10px 13px; background: var(--red-soft); font-size: 12px; color: var(--red); }
+.shadow-runs-body { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
+.shadow-runs-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.shadow-runs-list-head h3 { margin: 0; }
+.shadow-runs-items { display: grid; gap: 6px; margin: 12px 0; padding: 0; list-style: none; }
+.shadow-runs-items button { width: 100%; display: grid; gap: 3px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: white; text-align: left; cursor: pointer; }
+.shadow-runs-items button.active { border-color: var(--green); background: var(--green-soft); }
+.shadow-runs-items button span { color: var(--muted); font-size: 11px; }
+.shadow-run-create-form, .shadow-run-inline-form { display: grid; gap: 10px; margin-top: 12px; }
+.shadow-run-create-form label, .shadow-run-inline-form label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.shadow-run-create-form input, .shadow-run-create-form textarea, .shadow-run-create-form select,
+.shadow-run-inline-form input, .shadow-run-inline-form textarea, .shadow-run-inline-form select {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; color: var(--ink);
+}
+.shadow-run-detail { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: #fbfdfc; }
+.shadow-run-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.shadow-run-detail-head h3 { margin: 0; }
+.shadow-run-actions { display: flex; gap: 8px; }
+.shadow-run-section { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.shadow-run-section h4 { margin: 0 0 8px; }
+.shadow-run-section summary { cursor: pointer; font-weight: 750; }
+.shadow-positions-list, .shadow-events-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.shadow-positions-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-radius: 8px; padding: 8px 10px; background: white; border: 1px solid var(--line); font-size: 12px; }
+.shadow-events-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 8px; padding: 6px 10px; background: white; border: 1px solid var(--line); font-size: 12px; }
+@media (max-width: 900px) { .shadow-runs-body { grid-template-columns: 1fr; } }
+
 /* Section-based dashboard navigation keeps one learning topic in focus. */
 .dashboard-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
 .dashboard-sidebar { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: rgba(255,255,255,.94); box-shadow: 0 14px 32px rgba(15,44,34,.07); }

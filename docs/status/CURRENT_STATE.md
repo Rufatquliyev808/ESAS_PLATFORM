@@ -1,5 +1,52 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 9 SHADOW-a "çağıran" əlavə edildi: admin API + frontend
+
+- İstifadəçi Phase 9 skeletinin "real çağıranı yoxdur" qeydinə görə əl ilə
+  idarə oluna bilən admin API + frontend bölməsi istədi. Bu, real qərar
+  generatoru (Phase 5-8) DEYİL — insan operator SHADOW run yarada, event
+  qeydə ala, nəzəri mövqe aça/bağlaya bilər. `execution_allowed` DB
+  səviyyəsində `0`-a qıfıllı qalır, dəyişməz.
+- `shadow_run_repository.py`-a `list_shadow_runs()` əlavə edildi (owner
+  üzrə, sadə həddli siyahı — SHADOW run-ları nadir, uzunmüddətli
+  eksperimentlərdir, `pattern_candidates`/`replay_sessions` kimi yüksək
+  həcmli axın deyil, ona görə imzalı keyset cursor-a ehtiyac yoxdur).
+  `shadow_portfolio_repository.py`-a `list_theoretical_positions()`.
+- `backend/app/models/shadow.py` (yeni): bütün SHADOW sorğuları üçün
+  Pydantic modelləri.
+- `backend/app/main.py`-a 12 yeni qorunan endpoint: `POST/GET
+  /api/v2/shadow-runs`, `GET .../{id}`, `POST .../{id}/start|complete|halt`,
+  `GET/POST .../{id}/events`, `GET/POST .../{id}/positions`, `POST
+  .../{id}/positions/{position_id}/close`, `GET
+  .../{id}/portfolio-summary`. Risk-bloklu mövqe açılışı `200`
+  status-la `{"opened": false, "reason": ...}` qaytarır (bu, xəta deyil,
+  müqavilənin gözlədiyi qanuni nəticədir).
+- Frontend: yeni `shadow-runs-panel.tsx` bölməsi (`dashboard-navigation.tsx`,
+  `page.tsx`-ə qoşulub) — **"NƏZƏRİDİR — REAL ƏMƏLİYYAT YOXDUR"** bannerini
+  həmişə göstərir. Run siyahısı + yaratma formu, run təfərrüatı
+  (iştirakçılar, vəziyyət, start/complete/halt düymələri), nəzəri mövqe
+  aç/bağla formu, event qeydiyyat formu, portfolio xülasəsi.
+- **Canlı brauzerdə tam sınandı** (real bazaya toxunmadan — birdəfəlik
+  test backend-i port 8001-də, frontend 5173-də, sonra tamamilə
+  təmizləndi): run yaradıldı → başladıldı → 2 mövqe açıldı → 3-cü mövqə
+  risk limiti ilə düzgün bloklandı (`max_concurrent_positions_exceeded`)
+  → mövqə bağlandı → event qeydə alındı → run tamamlandı. Brauzer
+  konsolunda heç bir xəta olmadı.
+- **Sınaq zamanı tapılan real bug düzəldildi:** `openPosition`-da risk-blok
+  xəbərdarlığı (`setDetailError`) `loadDetail()`-dan ƏVVƏL çağırılırdı,
+  amma `loadDetail` özü `detailError`-u sıfırlayır — nəticədə xəbərdarlıq
+  istifadəçiyə heç vaxt görünmürdü (dərhal təmizlənirdi). Sıra
+  dəyişdirildi (`loadDetail` sonra `setDetailError`), brauzerdə yenidən
+  sınanıb təsdiqləndi.
+- Yoxlama: yeni `test_shadow_runs_api.py` (`13` test) — tam HTTP axını
+  (yaratma, siyahı, keçidlər, event/mövqe CRUD, risk bloku, səhv
+  run-a bağlı mövqeni bağlamağa cəhd `404`). Yeni `shadow-runs-ui.test.mjs`
+  (mənbə-mətn yoxlaması, digər panellərlə eyni konvensiya). Tam backend
+  regressiyası: `404 passed`. Frontend: lint təmiz, `11/11` test, production
+  build uğurlu.
+- Real production bazaya heç nə tətbiq edilmədən (migration `0010` hələ
+  yalnız kodda/test bazalarında).
+
 ## 2026-08-06 — Phase 9 SHADOW: nəzəri portfolio/risk ledger (section 6, skelet davamı)
 
 - Əvvəlki artımda tikilmiş SHADOW run manifest + event reyestri skeletinin

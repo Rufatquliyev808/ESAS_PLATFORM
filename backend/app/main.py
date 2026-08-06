@@ -95,6 +95,38 @@ from backend.app.database.analysis_job_repository import (
     request_cancel,
 )
 from backend.app.workers.analysis_job_worker import drain_queue
+from backend.app.models.shadow import (
+    ShadowEventCreateRequest,
+    ShadowPositionCloseRequest,
+    ShadowPositionOpenRequest,
+    ShadowRunCreateRequest,
+    ShadowRunHaltRequest,
+    ShadowRunTransitionRequest,
+)
+from backend.app.database.shadow_run_repository import (
+    ShadowRunConflictError,
+    ShadowRunNotFoundError,
+    ShadowRunOwnershipError,
+    complete_shadow_run,
+    get_shadow_run,
+    halt_shadow_run,
+    list_shadow_runs,
+    register_shadow_run,
+    start_shadow_run,
+)
+from backend.app.database.shadow_event_repository import (
+    list_shadow_run_events,
+    record_shadow_event,
+)
+from backend.app.database.shadow_portfolio_repository import (
+    ShadowPositionConflictError,
+    ShadowPositionNotFoundError,
+    ShadowRiskBlockedResult,
+    close_theoretical_position,
+    get_theoretical_portfolio_summary,
+    list_theoretical_positions,
+    open_theoretical_position,
+)
 from backend.app.replay.cursor import (
     InvalidReplayCursorError,
     decode_replay_session_cursor,
@@ -786,6 +818,259 @@ def analysis_jobs_metrics(
     _: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     return {"data": queue_metrics("pattern_candidate_backtest"), "meta": {"api_version": "2"}}
+
+
+# Phase 9 SHADOW validation contract skeleton (docs/architecture/
+# PHASE_9_SHADOW_VALIDATION_CONTRACT.md). This is a manual admin surface for
+# the persistence skeleton -- there is still no live decision feed (Phase
+# 5-8 remain design-only). execution_allowed is locked to 0 at the database
+# level regardless of anything these endpoints do.
+@app.post("/api/v2/shadow-runs")
+def shadow_run_create(
+    create_request: ShadowRunCreateRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = register_shadow_run(
+            created_by=user_code,
+            planned_end_at=create_request.planned_end_at,
+            code_commit=create_request.code_commit,
+            config_hash=create_request.config_hash,
+            feature_claim_versions=tuple(create_request.feature_claim_versions),
+            symbols=tuple(create_request.symbols),
+            timeframes=tuple(create_request.timeframes),
+            sessions=tuple(create_request.sessions),
+            accepted_market_regimes=tuple(create_request.accepted_market_regimes),
+            minimum_market_open_duration_seconds=create_request.minimum_market_open_duration_seconds,
+            minimum_eligible_decision_count=create_request.minimum_eligible_decision_count,
+            primary_metric=create_request.primary_metric,
+            primary_metric_threshold=create_request.primary_metric_threshold,
+            secondary_metrics=create_request.secondary_metrics,
+            failure_rules=create_request.failure_rules,
+            theoretical_fill_model=create_request.theoretical_fill_model,
+            risk_budget=create_request.risk_budget,
+            data_quality_policy=create_request.data_quality_policy,
+            approved_by=create_request.approved_by,
+            rollback_plan=create_request.rollback_plan,
+            participants=tuple(
+                (item.role, item.module_id, item.module_version) for item in create_request.participants
+            ),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(run), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/shadow-runs")
+def shadow_runs_list(
+    limit: int = Query(default=50, ge=1, le=200),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    runs = list_shadow_runs(owner=user_code, limit=limit)
+    return {"data": [asdict(run) for run in runs], "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/shadow-runs/{shadow_run_id}")
+def shadow_run_detail(
+    shadow_run_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    return {"data": asdict(run), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/start")
+def shadow_run_start(
+    shadow_run_id: str,
+    transition_request: ShadowRunTransitionRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = start_shadow_run(
+            shadow_run_id=shadow_run_id, actor=user_code,
+            expected_state_version=transition_request.expected_state_version,
+        )
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    except ShadowRunOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ShadowRunConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(run), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/complete")
+def shadow_run_complete(
+    shadow_run_id: str,
+    transition_request: ShadowRunTransitionRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = complete_shadow_run(
+            shadow_run_id=shadow_run_id, actor=user_code,
+            expected_state_version=transition_request.expected_state_version,
+        )
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    except ShadowRunOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ShadowRunConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(run), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/halt")
+def shadow_run_halt(
+    shadow_run_id: str,
+    halt_request: ShadowRunHaltRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = halt_shadow_run(
+            shadow_run_id=shadow_run_id, actor=user_code,
+            expected_state_version=halt_request.expected_state_version, reason=halt_request.reason,
+        )
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    except ShadowRunOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ShadowRunConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(run), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/shadow-runs/{shadow_run_id}/events")
+def shadow_run_events_list(
+    shadow_run_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    events = list_shadow_run_events(shadow_run_id)
+    return {"data": [asdict(event) for event in events], "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/events")
+def shadow_run_event_create(
+    shadow_run_id: str,
+    event_request: ShadowEventCreateRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    try:
+        event = record_shadow_event(
+            shadow_run_id=shadow_run_id, event_type=event_request.event_type,
+            correlation_id=event_request.correlation_id, actor=user_code, payload=event_request.payload,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(event), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/shadow-runs/{shadow_run_id}/positions")
+def shadow_run_positions_list(
+    shadow_run_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    positions = list_theoretical_positions(shadow_run_id)
+    return {"data": [asdict(position) for position in positions], "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/positions")
+def shadow_run_position_open(
+    shadow_run_id: str,
+    open_request: ShadowPositionOpenRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        result = open_theoretical_position(
+            shadow_run_id=shadow_run_id, participant_id=open_request.participant_id,
+            symbol=open_request.symbol, direction=open_request.direction,
+            theoretical_size=open_request.theoretical_size,
+            reserved_risk_amount=open_request.reserved_risk_amount,
+            actor=user_code, correlation_id=open_request.correlation_id,
+        )
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    except ShadowRunOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ShadowPositionConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    if isinstance(result, ShadowRiskBlockedResult):
+        return {
+            "data": {"opened": False, "reason": result.reason, "event_id": result.event_id},
+            "meta": {"api_version": "2"},
+        }
+    return {"data": {"opened": True, "position": asdict(result)}, "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/shadow-runs/{shadow_run_id}/positions/{position_id}/close")
+def shadow_run_position_close(
+    shadow_run_id: str,
+    position_id: str,
+    close_request: ShadowPositionCloseRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    existing = next(
+        (item for item in list_theoretical_positions(shadow_run_id) if item.position_id == position_id), None,
+    )
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Shadow theoretical position was not found")
+    try:
+        position = close_theoretical_position(
+            position_id=position_id, actor=user_code, correlation_id=close_request.correlation_id,
+            theoretical_pnl_percent=close_request.theoretical_pnl_percent,
+            expected_state_version=close_request.expected_state_version,
+        )
+    except ShadowPositionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow theoretical position was not found") from error
+    except ShadowRunOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ShadowPositionConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(position), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/shadow-runs/{shadow_run_id}/portfolio-summary")
+def shadow_run_portfolio_summary(
+    shadow_run_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        run = get_shadow_run(shadow_run_id)
+    except ShadowRunNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Shadow run was not found") from error
+    if run.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Shadow run belongs to another user")
+    return {"data": get_theoretical_portfolio_summary(shadow_run_id), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions")

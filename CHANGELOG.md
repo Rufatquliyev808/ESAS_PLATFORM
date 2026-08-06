@@ -8,6 +8,57 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 9 SHADOW admin API + frontend (real caller for the persistence skeleton)
+
+- Gives the previously-orphaned Phase 9 skeleton (run manifest, event
+  registry, theoretical portfolio ledger) a genuine caller: a manually-
+  operated admin surface, since no live decision generator (Phase 5-8)
+  exists yet. Still **not** a live trading system -- `execution_allowed`
+  stays structurally locked to `0` (DB CHECK constraint), and the panel
+  only lets an operator create/observe SHADOW runs and theoretical
+  positions by hand.
+- 12 new protected endpoints under `/api/v2/shadow-runs...`: create,
+  list (per-owner), detail, `start`/`complete`/`halt` transitions, list/
+  record events, list/open theoretical positions, close a position, and a
+  portfolio summary. Position-open returns HTTP 200 with
+  `{"opened": false, "reason": ...}` when a risk limit blocks it (a
+  contract-defined outcome, not an error). Closing a position first
+  fetches the owning run and verifies the position belongs to it, before
+  calling close, to avoid a close-then-check ordering bug.
+- New `backend/app/models/shadow.py`: Pydantic request models for all of
+  the above (`ShadowRunCreateRequest`, `ShadowRunTransitionRequest`,
+  `ShadowEventCreateRequest`, `ShadowPositionOpenRequest`, etc.).
+- New `backend/app/database/shadow_run_repository.list_shadow_runs()` and
+  `shadow_portfolio_repository.list_theoretical_positions()` to support
+  the list views.
+- Frontend: new `shadow-runs-panel.tsx` section (wired into
+  `dashboard-navigation.tsx` / `page.tsx`), carrying a mandatory
+  "NƏZƏRİDİR -- REAL ƏMƏLİYYAT YOXDUR" banner and boundary text
+  explaining no order is sent, no MT5 position is opened, and no real
+  account balance is touched.
+- Verified live in the browser end-to-end (disposable scratch database +
+  temporary backend/frontend, real production database and services never
+  touched): create run -> start -> open two positions -> third correctly
+  blocked by `max_concurrent_positions` -> close a position -> record an
+  event -> complete the run. Found and fixed a real bug during
+  verification: `openPosition()` set the risk-block warning via
+  `setDetailError(...)` *before* `await loadDetail(...)`, but `loadDetail`
+  itself resets `detailError` to `null` on entry, silently wiping the
+  warning before the user ever saw it -- fixed by reordering the two
+  calls.
+- Verification: new `test_shadow_runs_api.py` (13 tests) covering create/
+  list/detail/lifecycle transitions/events/positions/risk-blocking/wrong-
+  run 404. New `frontend/tests/shadow-runs-ui.test.mjs` source-text guard
+  (matching the existing `pattern-hypothesis-registry-ui.test.mjs`
+  convention) asserting the panel keeps its theoretical-only banner and
+  never references order/position-sizing calls. Full backend regression:
+  `404 passed`. Frontend lint/build/`11/11` tests clean.
+- Migration `0010` (the portfolio ledger table this admin surface reads
+  and writes) has only ever been tested against scratch/test databases --
+  it has **not** been applied to the real production database
+  (`database/ESAS_PLATFORM.sqlite`, currently on `0009`). Applying it
+  requires separate explicit user permission, per standing policy.
+
 ### Added — Phase 9 SHADOW theoretical portfolio/risk ledger (section 6, skeleton continued)
 
 - Continues the earlier Phase 9 run-manifest + event-registry skeleton
