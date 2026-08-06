@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from backend.app.analysis.bars import MarketBar
+from backend.app.analysis.indicators import IndicatorPoint, IndicatorSeries
 from backend.app.analysis.liquidity_sweep import LiquiditySweepObservation, LiquiditySweepResult
 from backend.app.analysis.market_structure import (
     MarketStructureResult,
@@ -296,6 +297,67 @@ def test_candidate_rejected_when_it_underperforms_random_timing_baseline() -> No
     assert classify_backtest_verdict(status=normal.status, reason=normal.reason) == "rejected"
 
 
+def _flat_rsi_series(bars: tuple[MarketBar, ...]) -> IndicatorSeries:
+    points = tuple(IndicatorPoint(bar.end_at, "ready", 50.0) for bar in bars)
+    return IndicatorSeries("rsi.close", "1.0.0", 14, "index", points)
+
+
+def test_scenario_includes_single_feature_baseline_fields() -> None:
+    bars = tuple(_bar(i, 100.0 + i * 0.5) for i in range(200))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(0, 150, 3))
+    retest = _retest(observations)
+    result = _run(
+        bars=bars, retest=retest, horizon_bars=2, rsi=_flat_rsi_series(bars),
+        spread_bps=0, commission_bps=0, slippage_bps=0, latency_bps=0,
+    )
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    # A flat RSI series never crosses the oversold/overbought thresholds, so
+    # the baseline is present but empty -- this must not block acceptance.
+    assert normal.single_feature_baseline_sample_size == 0
+    assert normal.single_feature_baseline_mean_return_percent is None
+    assert normal.beats_single_feature_baseline is None
+
+
+def test_single_feature_baseline_is_skipped_without_rsi_data() -> None:
+    bars = tuple(_bar(i, 100.0 + i) for i in range(50))
+    result = _run(bars=bars, horizon_bars=2)
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    assert normal.single_feature_baseline_sample_size == 0
+    assert normal.single_feature_baseline_mean_return_percent is None
+    assert normal.beats_single_feature_baseline is None
+
+
+def test_candidate_rejected_when_it_underperforms_single_feature_baseline_but_beats_random_timing() -> None:
+    # Same steep uptrend idea as the random-timing test, but the real trades
+    # cluster in a moderately favorable early region (beats the broad
+    # random-timing sample) while the single-feature RSI rule's crossings
+    # are placed even earlier (the very lowest price base -> very high
+    # percentage return), so only the single-feature baseline check fails.
+    bars = tuple(_bar(i, 100.0 + i) for i in range(300))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(50, 90))
+    retest = _retest(observations)
+
+    rsi_values = [50.0] * 300
+    for index in range(0, 21):
+        rsi_values[index] = 20.0 if index % 2 == 0 else 40.0
+    points = tuple(IndicatorPoint(bars[index].end_at, "ready", rsi_values[index]) for index in range(300))
+    rsi = IndicatorSeries("rsi.close", "1.0.0", 14, "index", points)
+
+    result = _run(
+        bars=bars, retest=retest, horizon_bars=2, rsi=rsi,
+        spread_bps=0, commission_bps=0, slippage_bps=0, latency_bps=0,
+    )
+    normal = next(item for item in result.scenarios if item.scenario == "normal")
+    assert normal.effective_sample_size >= 30
+    assert normal.confidence_interval_low_percent > 0
+    assert normal.beats_random_timing_baseline is True
+    assert normal.single_feature_baseline_sample_size > 0
+    assert normal.beats_single_feature_baseline is False
+    assert normal.status == "insufficient_evidence"
+    assert normal.reason == "ci_does_not_exceed_single_feature_baseline"
+    assert classify_backtest_verdict(status=normal.status, reason=normal.reason) == "rejected"
+
+
 def test_bonferroni_correction_can_fail_via_baseline_even_when_still_clearing_zero() -> None:
     scenario = {
         "scenario": "normal", "status": "supportive_evidence", "reason": "ci_entirely_above_zero_baseline",
@@ -313,6 +375,29 @@ def test_bonferroni_correction_can_fail_via_baseline_even_when_still_clearing_ze
     assert at_m100["beats_random_timing_baseline"] is False
     assert at_m100["status"] == "insufficient_evidence"
     assert at_m100["reason"] == "multiple_testing_correction_ci_does_not_exceed_random_timing_baseline"
+    assert classify_backtest_verdict(status=at_m100["status"], reason=at_m100["reason"]) == "rejected"
+
+
+def test_bonferroni_correction_can_fail_via_single_feature_baseline_specifically() -> None:
+    scenario = {
+        "scenario": "normal", "status": "supportive_evidence", "reason": "ci_entirely_above_zero_baseline",
+        "effective_sample_size": 100, "net_mean_return_percent": 2.0,
+        "sample_standard_deviation": 5.0, "confidence_interval_low_percent": 1.02,
+        "confidence_interval_high_percent": 2.98,
+        "random_timing_baseline_mean_return_percent": -1.0,
+        "single_feature_baseline_mean_return_percent": 0.5,
+    }
+    at_m1 = bonferroni_corrected_scenario(scenario, family_trial_count=1)
+    assert at_m1["status"] == "supportive_evidence"
+    assert at_m1["beats_random_timing_baseline"] is True
+    assert at_m1["beats_single_feature_baseline"] is True
+
+    at_m100 = bonferroni_corrected_scenario(scenario, family_trial_count=100)
+    assert at_m100["confidence_interval_low_percent"] > 0
+    assert at_m100["beats_random_timing_baseline"] is True
+    assert at_m100["beats_single_feature_baseline"] is False
+    assert at_m100["status"] == "insufficient_evidence"
+    assert at_m100["reason"] == "multiple_testing_correction_ci_does_not_exceed_single_feature_baseline"
     assert classify_backtest_verdict(status=at_m100["status"], reason=at_m100["reason"]) == "rejected"
 
 

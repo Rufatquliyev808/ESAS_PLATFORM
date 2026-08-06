@@ -1,5 +1,51 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 3/4 baseline müqayisəsi tamamlandı (4/4)
+
+- Qalan iki baseline əlavə edildi: **tək-feature qaydası** və **əvvəlki
+  qəbul edilmiş namizəd**. Phase 3/4 müqaviləsinin bütün 4 baseline-ı
+  (no-signal, təsadüfi-zaman, tək-feature, əvvəlki namizəd) indi tam
+  tətbiq olunub.
+- **Tək-feature qaydası:** `pattern_candidate_backtest.py`-a
+  `_single_feature_rsi_reversal_raw_returns()` əlavə edildi — sabit
+  (tənzimlənməyən) klassik RSI reversal qaydası: RSI 30-dan yuxarı keçəndə
+  bullish, 70-dən aşağı keçəndə bearish giriş. Hədlər **qəsdən sabit**
+  saxlanıldı (30/70, `SINGLE_FEATURE_RSI_LOW/HIGH_THRESHOLD`) — tənzimlənə
+  bilən olsaydı, bu baseline özü multiple-testing "parametr alış-verişi"
+  səthinə çevrilərdi. `run_pattern_candidate_backtest` indi `rsi:
+  IndicatorSeries | None = None` parametri qəbul edir (`context.indicators.rsi`
+  vasitəsilə real çağırışda ötürülür); RSI yoxdursa baseline sadəcə boş
+  keçir, bloklamır.
+- **Əvvəlki qəbul edilmiş namizəd:** `pattern_candidate_repository.py`-a
+  `get_latest_accepted_candidate_for_hypothesis()` əlavə edildi — eyni
+  `hypothesis_id` üzrə (bütün sessiyalar üzrə **qlobal**, multiple-testing
+  ailəsindən fərqli olaraq sessiya ilə məhdudlaşmır) ən son
+  `accepted_for_shadow` namizədi tapır. `classify_replay_pattern_candidate`
+  indi: əgər qərar `accepted_for_shadow` olacaqdısa VƏ eyni hipotez üzrə
+  əvvəlki qəbul edilmiş namizəd varsa, yeni namizədin (düzəlişli) orta
+  gəliri əvvəlkini keçməlidir — keçməzsə `rejected`-ə düşür.
+- `BacktestCostScenario`-ya daha 3 sahə: `single_feature_baseline_*` (3
+  sahə). Qərar qaydası: namizəd indi sıfırı, təsadüfi-zaman baseline-ını
+  VƏ tək-feature baseline-ını **hamısını birlikdə** keçməlidir.
+  `bonferroni_corrected_scenario()` da uyğunlaşdırıldı (düzəliş heç bir
+  baseline yoxlamasını gizlədə bilməz). `classify_replay_pattern_candidate`
+  `PatternCandidateClassificationOutcome`-a `previous_accepted_candidate_comparison`
+  sahəsi əlavə etdi; API-də `meta.previous_accepted_candidate_comparison`
+  altında görünür. `BACKTEST_VERSION 1.4.0`.
+- Frontend toxunulmayıb.
+- Yoxlama: `test_pattern_candidate_backtest.py`-a `4` yeni test (tək-feature
+  sahələri, RSI-siz skip, sıfırı+təsadüfi-zamanı keçib tək-feature-i
+  keçməyən ssenari, Bonferroni+tək-feature qarşılıqlı təsiri).
+  `test_pattern_candidate_repository.py`-a `4` yeni test (əvvəlki qəbul
+  edilmiş namizəd sorğusu: tapılmır/tapılır/özünü xaric edir/fərqli
+  hipotezi görməzdən gəlir). Yeni
+  `test_replay_pattern_candidates_classification.py` (`4` test) —
+  `classify_replay_pattern_candidate`-i uc-uca, sintetik saxlanmış
+  backtest nəticələri ilə, əvvəlki-namizəd qapısının həqiqətən qərarı
+  dəyişdiyini sübut edir. Tam backend regressiyası: `368 passed`.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; dəyişiklik yalnız
+  `accepted_for_shadow` qərarının statistik ciddiliyini daha da artırır.
+
 ## 2026-08-06 — Backtest v1-ə təsadüfi-zaman baseline müqayisəsi əlavə edildi
 
 - Phase 3/4 müqaviləsinin "Baseline və müqayisə" tələbindən (no-signal,

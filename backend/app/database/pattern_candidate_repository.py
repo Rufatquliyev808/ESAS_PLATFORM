@@ -185,6 +185,31 @@ def get_pattern_candidate(candidate_id: str) -> PersistedPatternCandidate:
     return _row_to_candidate(row)
 
 
+def get_latest_accepted_candidate_for_hypothesis(
+    *, hypothesis_id: str, exclude_candidate_id: str,
+) -> PersistedPatternCandidate | None:
+    """The most recently classified accepted_for_shadow candidate for this
+    hypothesis, across all replay sessions -- the "previously accepted
+    candidate" baseline (Phase 3/4 contract). Global, not session-scoped:
+    unlike the multiple-testing family (same dataset), this is a
+    cross-dataset "is this new candidate at least as good as our current
+    best for this hypothesis" comparison. None if this is the first.
+    """
+    normalized_hypothesis = _required_text(hypothesis_id, "hypothesis_id")
+    normalized_exclude = _required_text(exclude_candidate_id, "exclude_candidate_id")
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT * FROM pattern_candidates
+            WHERE hypothesis_id = ? AND lifecycle_state = 'accepted_for_shadow' AND candidate_id != ?
+            ORDER BY updated_at DESC, candidate_id DESC
+            LIMIT 1;
+            """,
+            (normalized_hypothesis, normalized_exclude),
+        ).fetchone()
+    return _row_to_candidate(row) if row is not None else None
+
+
 def list_pattern_candidates(
     *,
     owner: str,

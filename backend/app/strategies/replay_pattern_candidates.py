@@ -14,6 +14,7 @@ from backend.app.database.pattern_candidate_repository import (
     PatternCandidateOwnershipError,
     PersistedPatternCandidate,
     classify_pattern_candidate,
+    get_latest_accepted_candidate_for_hypothesis,
     get_pattern_candidate,
     register_pattern_candidate,
 )
@@ -23,6 +24,8 @@ from backend.app.database.replay_session_repository import (
 )
 from backend.app.strategies.pattern_candidate import detect_pattern_candidates
 from backend.app.strategies.pattern_candidate_backtest import (
+    ACCEPTED_FOR_SHADOW,
+    REJECTED,
     bonferroni_corrected_scenario,
     classify_backtest_verdict,
     run_pattern_candidate_backtest,
@@ -188,7 +191,7 @@ def evaluate_replay_pattern_candidate_backtest(
     backtest = run_pattern_candidate_backtest(
         candidate_id=candidate.candidate_id, hypothesis_id=candidate.hypothesis_id,
         bars=context.bars.bars, retest=context.retest, liquidity_sweep=context.liquidity_sweep,
-        market_structure=context.market_structure,
+        market_structure=context.market_structure, rsi=context.indicators.rsi,
         horizon_bars=horizon_bars, spread_bps=spread_bps, commission_bps=commission_bps,
         slippage_bps=slippage_bps, latency_bps=latency_bps,
         adverse_multiplier=adverse_multiplier, stress_multiplier=stress_multiplier,
@@ -219,6 +222,7 @@ class PatternCandidateClassificationOutcome:
     candidate: PersistedPatternCandidate
     family_trial_count: int
     corrected_scenario: dict[str, object]
+    previous_accepted_candidate_comparison: dict[str, object] | None
 
 
 def classify_replay_pattern_candidate(
@@ -229,10 +233,14 @@ def classify_replay_pattern_candidate(
     The verdict comes from the candidate's latest backtest "normal" cost
     scenario, after a Bonferroni family-wise error correction across every
     backtest trial registered against the same replay session (the
-    multiple-testing registry) -- deterministic, no client input.
-    accepted_for_shadow records that the corrected evidence still met the
-    predeclared bar; it does not authorize real trading (Phase 9 SHADOW does
-    not exist yet) or any order.
+    multiple-testing registry). If that verdict would be accepted_for_shadow
+    and a previously accepted_for_shadow candidate already exists for the
+    same hypothesis (any replay session), the new candidate must also beat
+    that candidate's net return -- the "previously accepted candidate"
+    baseline -- or it is rejected instead. All deterministic, no client
+    input. accepted_for_shadow records that all of this evidence held; it
+    does not authorize real trading (Phase 9 SHADOW does not exist yet) or
+    any order.
     """
     candidate = get_pattern_candidate(candidate_id)
     if candidate.created_by != actor:
@@ -248,6 +256,31 @@ def classify_replay_pattern_candidate(
     next_state = classify_backtest_verdict(
         status=corrected_scenario["status"], reason=corrected_scenario["reason"],
     )
+
+    previous_comparison: dict[str, object] | None = None
+    if next_state == ACCEPTED_FOR_SHADOW:
+        previous = get_latest_accepted_candidate_for_hypothesis(
+            hypothesis_id=candidate.hypothesis_id, exclude_candidate_id=candidate_id,
+        )
+        if previous is not None:
+            previous_backtest = get_latest_pattern_candidate_backtest(previous.candidate_id)
+            previous_normal = next(
+                item for item in previous_backtest.result["scenarios"] if item["scenario"] == "normal"
+            )
+            previous_mean = previous_normal["net_mean_return_percent"]
+            current_mean = corrected_scenario["net_mean_return_percent"]
+            beats_previous = (
+                current_mean > previous_mean if previous_mean is not None and current_mean is not None else None
+            )
+            previous_comparison = {
+                "previous_candidate_id": previous.candidate_id,
+                "previous_net_mean_return_percent": previous_mean,
+                "current_net_mean_return_percent": current_mean,
+                "beats_previous_accepted_candidate": beats_previous,
+            }
+            if beats_previous is False:
+                next_state = REJECTED
+
     classified = classify_pattern_candidate(
         candidate_id=candidate_id, actor=actor, actor_role=actor_role,
         expected_state_version=expected_state_version, next_lifecycle_state=next_state,
@@ -255,4 +288,5 @@ def classify_replay_pattern_candidate(
     return PatternCandidateClassificationOutcome(
         candidate=classified, family_trial_count=family_trial_count,
         corrected_scenario=corrected_scenario,
+        previous_accepted_candidate_comparison=previous_comparison,
     )

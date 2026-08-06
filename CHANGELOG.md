@@ -8,6 +8,49 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Single-feature rule and previous-accepted-candidate baselines (Phase 3/4 baseline comparison complete, 4/4)
+
+- Completes the Phase 3/4 contract's four required baseline comparisons
+  (no-signal, random-timing, single-feature rule, previously-accepted
+  candidate). A candidate must now clear all four to be classified
+  `accepted_for_shadow`.
+- **Single-feature rule:** `pattern_candidate_backtest.py` gains
+  `_single_feature_rsi_reversal_raw_returns()` -- a classic, fixed
+  (non-tunable) RSI reversal rule: bullish entries on RSI crossing up
+  through 30, bearish on crossing down through 70. The thresholds are
+  deliberately fixed (`SINGLE_FEATURE_RSI_LOW/HIGH_THRESHOLD`), not
+  configurable -- a tunable baseline would itself become a multiple-testing
+  parameter-shopping surface. `run_pattern_candidate_backtest` gains an
+  `rsi: IndicatorSeries | None = None` parameter (wired from
+  `context.indicators.rsi` in `evaluate_replay_pattern_candidate_backtest`);
+  without RSI data the baseline is simply skipped, not blocking.
+- **Previously-accepted candidate:** `pattern_candidate_repository.py`
+  gains `get_latest_accepted_candidate_for_hypothesis()` -- the most
+  recently classified `accepted_for_shadow` candidate for the same
+  hypothesis, globally across all replay sessions (unlike the
+  multiple-testing family, which is session-scoped). If classification
+  would otherwise produce `accepted_for_shadow` and such a candidate
+  exists, the new candidate's net return must exceed it or the outcome
+  becomes `rejected` instead.
+- `BacktestCostScenario` gains three more fields
+  (`single_feature_baseline_sample_size/mean_return_percent`,
+  `beats_single_feature_baseline`); `bonferroni_corrected_scenario()`
+  re-checks this baseline too, so the correction cannot bypass it.
+  `PatternCandidateClassificationOutcome` gains
+  `previous_accepted_candidate_comparison`, exposed via the classify
+  endpoint's `meta.previous_accepted_candidate_comparison`.
+  `BACKTEST_VERSION` bumped `1.3.0 -> 1.4.0`.
+- No frontend changes.
+- Verification: 4 new tests in `test_pattern_candidate_backtest.py`
+  (single-feature field presence, skip-without-RSI, a scenario that beats
+  random-timing but fails single-feature, and the Bonferroni interaction),
+  4 new tests in `test_pattern_candidate_repository.py` for the new query,
+  and a new `test_replay_pattern_candidates_classification.py` (4 tests)
+  proving the previous-candidate gate end-to-end with synthetic stored
+  backtest results. Full backend regression: `368 passed`.
+- This layer creates no strategy, entry, risk sizing, or order; the change
+  only makes the `accepted_for_shadow` decision statistically stricter.
+
 ### Added — Random-timing baseline comparison for pattern candidate backtests
 
 - Implements one of the Phase 3/4 contract's four required baselines

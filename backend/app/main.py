@@ -701,6 +701,7 @@ def pattern_candidate_classify(
                 "family_trial_count": outcome.family_trial_count,
                 "corrected_scenario": outcome.corrected_scenario,
             },
+            "previous_accepted_candidate_comparison": outcome.previous_accepted_candidate_comparison,
         },
     }
 

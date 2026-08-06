@@ -4,6 +4,7 @@ import pytest
 
 from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
+from backend.app.database.pattern_candidate_backtest_repository import store_pattern_candidate_backtest
 from backend.app.database.pattern_candidate_repository import (
     PatternCandidateConflictError,
     PatternCandidateListPosition,
@@ -11,6 +12,7 @@ from backend.app.database.pattern_candidate_repository import (
     PatternCandidateOwnershipError,
     archive_pattern_candidate,
     classify_pattern_candidate,
+    get_latest_accepted_candidate_for_hypothesis,
     get_pattern_candidate,
     list_pattern_candidates,
     register_pattern_candidate,
@@ -47,6 +49,66 @@ def _register(session_id: str = "rps_test", created_by: str = "TEST-USER", candi
         source_fingerprint="sha256:pattern", timeframe="M5",
         parameters={"bar_limit": 500},
     )
+
+
+def _accept(candidate_id: str, created_by: str = "TEST-USER"):
+    store_pattern_candidate_backtest(
+        candidate_id=candidate_id, actor=created_by, actor_role="operator",
+        horizon_bars=3, cost_parameters={}, result={}, fingerprint=f"sha256:{candidate_id}",
+    )
+    candidate = get_pattern_candidate(candidate_id)
+    return classify_pattern_candidate(
+        candidate_id=candidate_id, actor=created_by, actor_role="operator",
+        expected_state_version=candidate.state_version, next_lifecycle_state="accepted_for_shadow",
+    )
+
+
+def test_get_latest_accepted_candidate_for_hypothesis_returns_none_when_none_exist(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    assert get_latest_accepted_candidate_for_hypothesis(
+        hypothesis_id=candidate.hypothesis_id, exclude_candidate_id=candidate.candidate_id,
+    ) is None
+
+
+def test_get_latest_accepted_candidate_for_hypothesis_finds_previous_accepted(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    first = _register(candidate_id="market_structure_long:first")
+    _accept(first.candidate_id)
+    second = _register(candidate_id="market_structure_long:second")
+    found = get_latest_accepted_candidate_for_hypothesis(
+        hypothesis_id="market_structure_long", exclude_candidate_id=second.candidate_id,
+    )
+    assert found is not None
+    assert found.candidate_id == first.candidate_id
+
+
+def test_get_latest_accepted_candidate_for_hypothesis_excludes_self(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    _accept(candidate.candidate_id)
+    found = get_latest_accepted_candidate_for_hypothesis(
+        hypothesis_id=candidate.hypothesis_id, exclude_candidate_id=candidate.candidate_id,
+    )
+    assert found is None
+
+
+def test_get_latest_accepted_candidate_for_hypothesis_ignores_other_hypotheses(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    accepted = _register(candidate_id="market_structure_long:acc")
+    _accept(accepted.candidate_id)
+    other = register_pattern_candidate(
+        created_by="TEST-USER", actor_role="operator", replay_session_id="rps_test",
+        candidate_id="structure_break_long:other", hypothesis_id="structure_break_long",
+        hypothesis_version="1.0.0", family="bos_choch_retest", direction="long",
+        condition_state="candidate_confirmed", observed_at="2026-08-05T00:10:00+00:00",
+        evidence={}, pattern_candidate_version="1.0.0", hypothesis_registry_version="1.0.0",
+        source_fingerprint="sha256:pattern", timeframe="M5", parameters={"bar_limit": 500},
+    )
+    found = get_latest_accepted_candidate_for_hypothesis(
+        hypothesis_id="structure_break_long", exclude_candidate_id=other.candidate_id,
+    )
+    assert found is None
 
 
 def test_register_persists_confirmed_candidate_with_initial_audit(isolated_database: Path) -> None:
