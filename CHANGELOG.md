@@ -8,6 +8,45 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 9 SHADOW theoretical portfolio/risk ledger (section 6, skeleton continued)
+
+- Continues the earlier Phase 9 run-manifest + event-registry skeleton
+  with contract section 6 ("Nəzəri portfolio və risk"). **Still not a live
+  SHADOW system** -- no real decision feed exists (Phase 5-8 remain
+  design-only), so nothing writes to this table in production. No API or
+  frontend was added, for the same reason as the earlier skeleton
+  increment: there is no real caller yet.
+- `0010_shadow_theoretical_positions.sql`: `shadow_theoretical_positions`
+  has zero relationship to any real account or MT5 position by
+  construction (only references `shadow_runs`/`shadow_run_participants`/
+  `shadow_events`). A position's identity (run, participant, symbol,
+  direction, size, reserved risk, open event) is frozen by trigger once
+  opened; only state/close fields may change afterward.
+- `backend/app/database/shadow_portfolio_repository.py`:
+  `open_theoretical_position()` checks the run's own declared
+  `risk_budget` for position-level limits (concurrent position count,
+  same symbol+direction concentration, total reserved risk) and records a
+  `SHADOW_RISK_BLOCKED` event instead of opening when a limit would be
+  violated. `close_theoretical_position()` releases reserved risk.
+  `get_theoretical_portfolio_summary()` provides minimal observability
+  (open positions, total reserved risk, net realized theoretical PnL).
+- Deliberately out of scope: daily-loss and drawdown limits, which are
+  time-series concepts over realized PnL and would be meaningless without
+  a live decision stream to realize any PnL against.
+- Concurrency note: opening a position does an advisory limit check first
+  (so a doomed open never gets an OPENED event recorded), then an
+  authoritative re-check atomically with the insert itself. A rare race
+  between two concurrent opens raises `ShadowPositionConflictError` --
+  accepted for this skeleton since no real concurrent caller exists yet.
+- Verification: new `test_shadow_portfolio_repository.py` (10 tests)
+  covering open/close, each of the three risk limits, an empty risk
+  budget never blocking, ownership, optimistic locking, and invalid
+  input rejection. `test_migration_runner.py` counters updated for
+  `0010`. Full backend regression: `391 passed`. Frontend untouched.
+- This layer creates no real risk, position, or order; it is a
+  structurally-safe theoretical ledger foundation for a future Phase 9
+  implementation.
+
 ### Added — `invalid_leakage` lifecycle state via overlap purge/embargo
 
 - A real, previously-unguarded statistical validity gap: backtest v1

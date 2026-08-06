@@ -1,5 +1,44 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 9 SHADOW: nəzəri portfolio/risk ledger (section 6, skelet davamı)
+
+- Əvvəlki artımda tikilmiş SHADOW run manifest + event reyestri skeletinin
+  davamı: müqavilənin 6-cı bölməsi ("Nəzəri portfolio və risk"). **Hələ də
+  canlı SHADOW sistemi deyil** — real qərar generatoru (Phase 5-8) yoxdur,
+  heç bir istehsalat kodu bu cədvələ yazmır. API/frontend əlavə edilmədi
+  (əvvəlki skelet artımındakı eyni səbəbdən: real çağıran yoxdur).
+- `0010_shadow_theoretical_positions.sql`: `shadow_theoretical_positions`
+  cədvəli — real hesaba/MT5 mövqeyinə heç bir əlaqəsi yoxdur (yalnız
+  `shadow_runs`/`shadow_run_participants`/`shadow_events`-ə istinad edir).
+  Mövqenin kimliyi (`shadow_run_id`, `symbol`, `direction`, ölçü, ehtiyat
+  risk, açılış event-i) trigger ilə dəyişməzdir; yalnız `state`/`closed_at`/
+  `close_event_id`/`theoretical_pnl_percent` dəyişə bilər.
+- `backend/app/database/shadow_portfolio_repository.py`:
+  `open_theoretical_position()` — müqavilənin mövqe-səviyyəli risk
+  limitlərini (eyni-vaxtda mövqe sayı, simvol+istiqamət konsentrasiyası,
+  ümumi ehtiyat risk) namizədin öz `risk_budget_json`-undan yoxlayır; limit
+  keçilirsə mövqe açmır, əvəzinə `SHADOW_RISK_BLOCKED` event-i qeydə alır
+  (bu event növü artıq əvvəlki skelet artımında təyin olunmuşdu).
+  `close_theoretical_position()` — ehtiyat riski azad edir.
+  `get_theoretical_portfolio_summary()` — açıq mövqe sayı, ümumi ehtiyat
+  risk, bağlanmış mövqe sayı, xalis nəzəri PnL (müşahidə üçün).
+- **Şüurlu şəkildə kənarda qalıb:** gündəlik itki və drawdown limitləri —
+  bunlar realized PnL zaman sırası üzərində hesablanan konseptlərdir, heç
+  bir canlı qərar axını olmadan mənasız olardı. Kodda və sənədlərdə açıq
+  qeyd olunub.
+- Atomiklik qeydi: mövqe açılışı iki addımlı-təhlükəsizdir — məsləhət
+  xarakterli ilkin limit yoxlaması (boş yerə `OPENED` event-i yazılmasın
+  deyə), sonra əsl yoxlama+insert EYNİ tranzaksiyada (yarışı bağlayır).
+  Nadir yarış halında `ShadowPositionConflictError` atılır — real paralel
+  çağıran hələ olmadığı üçün qəbul edilən, sənədləşdirilmiş məhdudiyyət.
+- Yoxlama: yeni `test_shadow_portfolio_repository.py` (`10` test) —
+  mövqe açılışı/bağlanışı, 3 risk limitinin hər biri, boş risk büdcəsi
+  heç vaxt bloklamır, ownership, optimistic lock, səhv giriş rədd edilməsi.
+  `test_migration_runner.py` sayğacları `0010`-a uyğunlaşdırıldı. Tam
+  backend regressiyası: `391 passed`. Frontend toxunulmayıb.
+- Bu qat heç bir real risk, mövqe və ya order yaratmır; yalnız gələcək
+  Phase 9 tətbiqi üçün strukturca təhlükəsiz nəzəri hesab əsasıdır.
+
 ## 2026-08-06 — `invalid_leakage` lifecycle vəziyyəti: üst-üstə düşən hadisələr üçün purge/embargo
 
 - Real, əvvəllər qorunmayan bir statistik boşluq tapıldı və düzəldildi:

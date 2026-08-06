@@ -32,13 +32,21 @@ Mərhələ: Phase 4-ün qalan maddələri
   əvvəl replay sessiyasının keyfiyyət hesabatı yoxlanılır; `critical_count
   > 0`-dırsa namizəd `evaluated`-ə deyil, `blocked_by_data_quality`-yə
   keçir (API `409`).
-- **`invalid_leakage` lifecycle vəziyyəti tətbiq edildi** (hələ commit
-  edilməyib) — backtest v1-ə üst-üstə düşən tarixi hadisələr üçün
-  purge/embargo əlavə edildi (bütün namizədlər üçün, statistik doğruluğu
-  artırır); əgər xam siqnal kifayət idi (`≥30`) amma purge onu `30`-dan
-  aşağı salıbsa, namizəd `insufficient_evidence`-ə deyil
-  `invalid_leakage`-ə keçir. Backend `381 passed`, frontend
-  lint/build/`10/10` test təmiz.
+- **`invalid_leakage` lifecycle vəziyyəti tətbiq edildi** (commit
+  `2753fcc`, push edilib, CI yaşıl) — backtest v1-ə üst-üstə düşən tarixi
+  hadisələr üçün purge/embargo əlavə edildi (bütün namizədlər üçün,
+  statistik doğruluğu artırır); əgər xam siqnal kifayət idi (`≥30`) amma
+  purge onu `30`-dan aşağı salıbsa, namizəd `insufficient_evidence`-ə
+  deyil `invalid_leakage`-ə keçir.
+- **Phase 9 SHADOW: nəzəri portfolio/risk ledger (section 6)** (hələ
+  commit edilməyib) — `shadow_theoretical_positions` cədvəli (migration
+  `0010`), `shadow_portfolio_repository.py`
+  (`open_theoretical_position`/`close_theoretical_position`/
+  `get_theoretical_portfolio_summary`). Mövqe-səviyyəli risk limitləri
+  (eyni-vaxtda mövqe sayı, simvol+istiqamət konsentrasiyası, ümumi ehtiyat
+  risk) tətbiq olunur; gündəlik itki/drawdown (realized PnL zaman sırası
+  tələb edir) şüurlu şəkildə kənarda saxlanılıb. Hələ də canlı sistem
+  deyil — API/frontend yoxdur. Backend `391 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -50,8 +58,10 @@ Mərhələ: Phase 4-ün qalan maddələri
 - Backtest v1-in son vəziyyət maşını indi tamdır: `draft → registered →
   evaluated → accepted_for_shadow | rejected | insufficient_evidence |
   invalid_leakage | blocked_by_data_quality → archived`.
-- Phase 9 sxeminin davamı (nəzəri portfolio/risk cədvəlləri) — yalnız
-  istifadəçi ayrıca istəsə, çünki hələ real çağıranı yoxdur.
+- Phase 9 sxeminin davamı: nəzəri portfolio/risk ledger tamamlandı (section
+  6). Qalan bölmələr (champion/challenger müqayisə mühərriki section 7,
+  kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
+  real çağıranı yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
 
 ## Vizual yoxlama qeydi
