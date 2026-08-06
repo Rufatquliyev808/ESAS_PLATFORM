@@ -1,5 +1,37 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Real production baza `0005`-`0009` migrasiyalarına köçürüldü
+
+- İstifadəçi frontend-də "Qeydə alınmış namizədlər" siyahısının `HTTP 500`
+  verdiyini bildirdi. Kök səbəb: real `database/ESAS_PLATFORM.sqlite`
+  yalnız `0004` migrasiyasında idi — bu sessiyada (və əvvəlki sessiyada)
+  görülən bütün Pattern namizədi/job-queue/multiple-testing/Phase 9 işi
+  qəsdən yalnız müvəqqəti test bazalarında aparılmışdı (AGENTS.md qaydası:
+  real bazaya toxunmazdan əvvəl ayrıca icazə). `pattern_candidates`
+  cədvəli mövcud olmadığı üçün siyahı endpoint-i `sqlite3.OperationalError:
+  no such table` ilə çökürdü (draft hesablama DB-siz işlədiyi üçün
+  təsirlənmirdi).
+- İstifadəçinin açıq təsdiqindən sonra: real bazanın **tam surətində**
+  (kopiya) `0005`-`0009` əvvəlcə sınandı — təmiz tətbiq olundu, yalnız 5
+  yeni cədvəl əlavə etdi, mövcud `tick_events`/`replay_sessions` sətir
+  sayları dəyişmədi (yalnız əlavəedici `CREATE TABLE/INDEX/TRIGGER`, heç
+  bir `DROP/DELETE/UPDATE` yoxdur).
+- Sonra: backend/frontend rəsmi `tools/stop-local-platform.ps1` ilə
+  dayandırıldı (MT5 Bridge FIFO buferi tick itkisinin qarşısını alır),
+  real bazanın `database/backups/ESAS_PLATFORM_pre-0005-0009_<UTC
+  timestamp>.sqlite` adlı tam ehtiyat nüsxəsi götürüldü (`quick_check=ok`
+  təsdiqləndi), migrasiyalar birbaşa real fayla tətbiq edildi.
+- Doğrulama: `quick_check=ok`, `tick_events` sayı dəyişməz qaldı,
+  `replay_sessions` sayı `7`-də qaldı, bütün `0001`-`0009` `schema_migrations`
+  cədvəlində qeydə alındı. Backend/frontend `tools/start-local-platform.ps1`
+  ilə yenidən başladıldı; `/health`, `/status/operational` (tick axını
+  `active`) və `GET /api/v2/pattern-candidates` (əvvəllər 500, indi `200`,
+  boş siyahı — real bazada hələ heç bir namizəd qeydə alınmayıb) təsdiqləndi.
+- `database/backups/` `.gitignore`-a əlavə edildi (böyük SQLite ehtiyat
+  nüsxələrinin təsadüfən commit edilməsinin qarşısını almaq üçün).
+- Bu, sessiya ərzində real bazaya edilən YEGANƏ dəyişiklikdir; xam
+  `tick_events` və mövcud sessiya/audit sətirlərinə heç toxunulmayıb.
+
 ## 2026-08-06 — Phase 3/4 baseline müqayisəsi tamamlandı (4/4)
 
 - Qalan iki baseline əlavə edildi: **tək-feature qaydası** və **əvvəlki

@@ -11,6 +11,15 @@ Son yenilənmə: 2026-08-06
 
 ## Cari vəziyyət (ətraflı: `docs/status/CURRENT_STATE.md`)
 
+- **YENİ: real production baza (`database/ESAS_PLATFORM.sqlite`) indi
+  `0009` migrasiyasındadır** (əvvəllər `0004`-də donub qalmışdı).
+  İstifadəçinin açıq təsdiqi ilə edildi: kopiyada sınandı, backend
+  dayandırıldı, ehtiyat nüsxə götürüldü (`database/backups/`,
+  `.gitignore`-a əlavə edildi), migrasiya tətbiq edildi, doğrulandı,
+  xidmətlər yenidən başladıldı. `pattern_candidates` və digər 4 yeni
+  cədvəl indi real bazada mövcuddur; "Qeydə alınmış namizədlər" siyahısı
+  əvvəlki `HTTP 500`-dən `200`-ə keçdi. Xam `tick_events` və mövcud
+  sessiya/audit sətirlərinə toxunulmayıb.
 - **Phase 1: STABLE. Phase 2 (Replay və məlumat keyfiyyəti): STABLE**
   (`docs/releases/PHASE_2_STABLE.md`). **Phase 4: IN PROGRESS** (cari aktiv
   mərhələ). **Phase 9: hələ "DESIGN READY — NOT IMPLEMENTED"** — yalnız
@@ -76,19 +85,19 @@ Son yenilənmə: 2026-08-06
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `6b5b210`-ə qədər (job-queue, multiple-testing,
-  Phase 9 skeleti, random-timing baseline — dördü də push edilib, CI-də
-  yaşıl).
-- **Yeni: tək-feature + əvvəlki-namizəd baseline artımı hələ commit
-  edilməyib** — kod yazılıb, `368 passed` ilə yoxlanılıb, sənədlər
-  yenilənib, amma AGENTS.md qaydasına görə commit/push istifadəçinin
-  ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki
-  sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
+- `main` origin ilə sinxrondur `4c8b2fa`-ya qədər (job-queue, multiple-testing,
+  Phase 9 skeleti, random-timing baseline, tək-feature + əvvəlki-namizəd
+  baseline — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** `.gitignore`-a `database/backups/`
+  qaydası (real bazanın migrasiyadan əvvəlki ehtiyat nüsxəsinin təsadüfən
+  commit edilməsinin qarşısını almaq üçün). Kod dəyişikliyi yoxdur, sadəcə
+  bu tək sətir. İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları,
+  untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi** (heç bir
-  real bazaya tətbiq edilmədən). `0007`, `0008`, `0009` isə adi əlavə
-  migrasiyalardır. Bu artımda yeni migration yoxdur (yalnız
-  `pattern_candidate_backtest.py`/`pattern_candidate_repository.py`
-  genişləndi).
+  real bazaya tətbiq edilmədən). `0006`-`0009` isə adi əlavə
+  migrasiyalardır.
+- **Real baza indi `0009`-dadır** (bax yuxarı bölmə) — bu, kod repo-suna
+  aid deyil, yalnız `database/ESAS_PLATFORM.sqlite` faylına aiddir.
 
 ## Yoxlama vəziyyəti
 
