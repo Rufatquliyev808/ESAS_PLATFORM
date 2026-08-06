@@ -480,7 +480,7 @@ def replay_strategy_analysis(
 def replay_statistical_analysis(
     session_id: str,
     timeframe: str = Query(default="M1", pattern="^(S1|S10|M1|M5|M15|H1)$"),
-    minimum_window_returns: int = Query(default=30, ge=1, le=10_000),
+    minimum_sample_size: int = Query(default=30, ge=1, le=10_000),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     try:
@@ -492,7 +492,7 @@ def replay_statistical_analysis(
     try:
         analysis = create_replay_statistical_analysis(
             session=session, timeframe=timeframe,
-            minimum_window_returns=minimum_window_returns,
+            minimum_sample_size=minimum_sample_size,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(status_code=409, detail="Replay session is not completed") from error

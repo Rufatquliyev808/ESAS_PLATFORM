@@ -64,6 +64,15 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   nümunəsi ilə, dataset-drift qorumalı). Async job/persistence resursu
   (müqavilənin `POST /api/v2/statistical-analyses`-i) və frontend hələ
   əlavə edilmədi — ilk artım qəsdən kiçik saxlanıldı. Backend `418 passed`.
+- **Phase 3 SA-002 (volatilite) — pəncərə range-i, mütləq return, robust MAD**
+  (hələ commit edilməyib) — SA-001-in birbaşa davamı. Yeni `volatility.py`:
+  `window_range_absolute`/`window_range_relative` (`high-low`, bütün
+  bar-lar), `window_log_return_abs` (yalnız return-eligible pəncərələr),
+  `robust_mad`. Tick-to-tick return std-i (contract-ın ayrıca bəndi) qəsdən
+  kənarda saxlanıldı — yeni xam-tick keçidi tələb edir, ayrıca kiçik artım
+  kimi planlaşdırılıb. `minimum_window_returns` parametri orkestrasiya
+  qatında ümumi `minimum_sample_size`-a çevrildi.
+  `STATISTICAL_ANALYSIS_API_VERSION 1.1.0`. Backend `425 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -82,13 +91,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
-- **Phase 3 statistik analiz başladı** (pəncərə/resampling təməli + SA-001
-  gəlir seriyası, təfərrüat yuxarıda). Növbəti namizədlər: SA-002
-  (volatilite), SA-003 (spread davranışı), SA-004 (tick sürəti), SA-005
-  (tick-volume), SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb
-  edir), SA-007 (bazar rejimi namizədləri). Sonra: async
-  job/persistence resursu (`POST /api/v2/statistical-analyses`) və
-  frontend paneli.
+- **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
+  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi, təfərrüat yuxarıda).
+  Növbəti namizədlər: SA-002-nin qalan hissəsi (tick-to-tick return std-i —
+  yeni xam-tick keçidi tələb edir), SA-003 (spread davranışı), SA-004
+  (tick sürəti), SA-005 (tick-volume), SA-006 (sessiya müqayisəsi —
+  versiyalanmış təqvim tələb edir), SA-007 (bazar rejimi namizədləri).
+  Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
+  və frontend paneli.
 
 ## Vizual yoxlama qeydi
 

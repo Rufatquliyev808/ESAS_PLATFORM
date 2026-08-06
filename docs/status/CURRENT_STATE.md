@@ -1,5 +1,45 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 3 SA-002: pəncərə range-i, mütləq return və robust MAD (volatilite)
+
+- İstifadəçinin tövsiyəsi ilə (SA-001-in birbaşa davamı olduğu üçün) SA-002
+  (volatilite) seçildi. Bu artım müqavilənin dörd təsviri ölçüsündən üçünü
+  əhatə edir: pəncərə mid-price range-i (mütləq və nisbi), pəncərə
+  log-return-un mütləq dəyəri, robust median absolute deviation (MAD).
+  **Kənarda qalıb:** "tick-return standart sapması" (tick-to-tick, pəncərə
+  olmadan) — bu, yeni bir xam-tick keçidi tələb edir (hazırkı bütün
+  `backend/app/analysis/*` modulları yalnız `bars.py`-ın artıq qurduğu
+  `MarketBar`-lar üzərində işləyir, `bars.py` istisna olmaqla heç biri xam
+  tick oxumur); ayrıca, kiçik artım kimi saxlanılıb.
+- Yeni `backend/app/analysis/volatility.py`: `compute_volatility(bars,
+  return_series, ...)` — artıq qurulmuş `return_series`-i (SA-001-dən) VƏ
+  bar-ları giriş kimi qəbul edir (təkrar hesablama yoxdur, tək mənbə).
+  Ümumi `DistributionSummary` (say/orta/median/std/min/maks/p05/p95) üç
+  yerdə təkrar istifadə olunur: `window_range_absolute` (`high-low`, bütün
+  bar-lar, tick_count≥1 kifayətdir — tək-tick pəncərə range üçün etibarlıdır,
+  return üçün deyil), `window_range_relative` (`range/open`),
+  `window_log_return_abs` (yalnız `return_series`-in özünün artıq süzdüyü
+  tick_count≥2 pəncərələr). `robust_mad` — imzalı return-ların median-dan
+  mütləq kənarlaşmasının median-ı (əl-hər metrik öz `n_valid`-ini ayrıca
+  göstərir — müqavilənin "hər metric istifadə etdiyi və kənarlaşdırdığı
+  müşahidə sayını ayrıca göstərir" tələbi).
+- `statistical_analysis.py`-a inteqrasiya: `minimum_window_returns`
+  parametri daha ümumi `minimum_sample_size`-a çevrildi (indi həm
+  return-series, həm volatility eyni həddi paylaşır; `return_series.py`-ın
+  öz daxili parametri `minimum_window_returns` olaraq dəyişməz qalıb —
+  yalnız orkestrasiya qatında ümumi ad istifadə olunur).
+  `STATISTICAL_ANALYSIS_API_VERSION 1.0.0 → 1.1.0` (yeni `volatility`
+  sahəsi). API sorğu parametri də uyğun yeniləndi
+  (`?minimum_sample_size=`).
+- Bu qat siqnal, giriş, risk ölçüsü və order yaratmır.
+- Yoxlama: yeni `test_volatility.py` (`7` test — minimum həddən yuxarı/aşağı
+  davranış, tək-tick pəncərənin range-ə daxil amma return-a xaric
+  edilməsi, range dəyərinin `high-low`-a bərabərliyi, fingerprint
+  determinizmi, uyğunsuz simvol/timeframe rəddi, təhlükəsiz
+  `minimum_sample` rəddi). API testləri (`test_replay_technical_analysis_api.py`)
+  `volatility` sahəsini və yeni `api_version`-u əhatə edəcək şəkildə
+  yeniləndi. Tam backend regressiyası: `425 passed`. Frontend toxunulmayıb.
+
 ## 2026-08-06 — Phase 3 statistik analiz başladı: pəncərə/resampling təməli + SA-001 gəlir seriyası
 
 - İstifadəçinin təsdiqi ilə (Phase 4-ün namizəd lifecycle-ı əsasən

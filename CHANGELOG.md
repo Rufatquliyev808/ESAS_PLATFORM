@@ -8,6 +8,46 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-002: window range, absolute return magnitude, robust MAD (volatility)
+
+- Direct continuation of SA-001: three of the contract's four descriptive
+  volatility measures. Deliberately deferred: tick-to-tick return standard
+  deviation, which needs a raw-tick pass -- every existing
+  `backend/app/analysis/*` module (other than `bars.py` itself) operates
+  only on already-built `MarketBar` tuples, and this increment preserves
+  that boundary rather than special-casing one metric; it's planned as its
+  own small follow-up.
+- New `backend/app/analysis/volatility.py`: `compute_volatility(bars,
+  return_series, ...)` takes the SA-001 return series and the same bars as
+  input rather than recomputing anything -- single source of truth. A
+  shared `DistributionSummary` (count/mean/median/std-dev/min/max/p05/p95)
+  is reused for `window_range_absolute` (`high - low`, all bars --
+  including single-tick windows, which are meaningless for *return* but
+  perfectly valid for *range*), `window_range_relative` (`range / open`),
+  and `window_log_return_abs` (only the return-eligible windows SA-001
+  already filtered to tick_count >= 2). `robust_mad` is the median
+  absolute deviation of the *signed* window log-returns around their own
+  median -- a robust alternative to standard deviation. Each metric
+  reports its own `n_total`/`n_valid` and gates independently on the
+  minimum sample threshold, matching the contract's "each metric shows
+  its own used/excluded observation count separately."
+- `statistical_analysis.py`: generalized the orchestration-level
+  `minimum_window_returns` parameter to `minimum_sample_size`, now shared
+  by both the return series and volatility calls (the pure
+  `compute_return_series()` function keeps its own precise parameter name
+  unchanged -- only the orchestrator/API layer exposes one combined knob).
+  `STATISTICAL_ANALYSIS_API_VERSION` `1.0.0 -> 1.1.0` for the new
+  `volatility` field; the `statistical-analysis` endpoint's query param
+  renamed accordingly (`?minimum_sample_size=`).
+- This layer creates no signal, entry, position size, or order.
+- Verification: new `test_volatility.py` (7 tests) covering the minimum-
+  sample gate (met and unmet), single-tick windows counting toward range
+  but not return, range-equals-high-minus-low, fingerprint determinism,
+  mismatched symbol/timeframe rejection, and unsafe `minimum_sample`
+  rejection. `test_replay_technical_analysis_api.py` updated for the new
+  `volatility` field, `api_version`, and renamed query parameter. Full
+  backend regression: `425 passed`. Frontend untouched.
+
 ### Added — Phase 3 statistical analysis kickoff: window/resampling foundation + SA-001 return series
 
 - Starts Phase 3 (`PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`), the next

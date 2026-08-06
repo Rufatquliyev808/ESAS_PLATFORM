@@ -85,34 +85,45 @@ Son yenilənmə: 2026-08-06
   öz növbəsində `detailError`-u sıfırlayırdı, xəbərdarlıq heç görünmürdü —
   çağırış sırası dəyişdirilərək düzəldildi. Backend `404 passed`, frontend
   lint/build/`11/11` test təmiz. Real bazaya toxunulmadı.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 statistik analiz — pəncərə/resampling
-  təməli + SA-001 gəlir seriyası.** Phase 4-ün namizəd lifecycle-ı əsasən
-  tamamlandığı üçün istifadəçinin təsdiqi ilə Phase 3-ə keçildi. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: `bars.py`-a `S1`/`S10` (1s/10s)
-  pəncərələri (`BAR_BUILDER_VERSION 1.1.0`), yeni `return_series.py`
-  (`compute_return_series()` — pəncərə-daxili log-return, tək-tick pəncərə
-  return yaratmır, `n_valid<30`-da `insufficient_data`), yeni
-  `statistical_analysis.py` (orkestrasiya, dataset-drift qorumalı), yeni
-  qorunan `GET .../statistical-analysis` endpoint-i. Backend `418 passed`.
-  Frontend toxunulmayıb (qəsdən — Phase 4-ün ilk artımlarında da eyni
-  ardıcıllıq izlənilib). Async job/persistence resursu
-  (`POST /api/v2/statistical-analyses`) hələ əlavə edilmədi.
+- **Phase 3 statistik analiz — pəncərə/resampling təməli + SA-001 gəlir
+  seriyası** (commit `7467f95`, PUSH EDİLİB, CI yaşıl). `bars.py`-a
+  `S1`/`S10` (1s/10s) pəncərələri (`BAR_BUILDER_VERSION 1.1.0`), yeni
+  `return_series.py` (`compute_return_series()` — pəncərə-daxili
+  log-return, tək-tick pəncərə return yaratmır, `insufficient_data` həddi),
+  yeni `statistical_analysis.py` (orkestrasiya, dataset-drift qorumalı),
+  yeni qorunan `GET .../statistical-analysis` endpoint-i.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-002 — pəncərə volatilitesi.**
+  SA-001-in birbaşa davamı. Ətraflı: `docs/status/CURRENT_STATE.md`.
+  Qısaca: yeni `volatility.py` (`compute_volatility()` — artıq qurulmuş
+  `return_series`-i və bar-ları girişi kimi qəbul edir, təkrar hesablama
+  yoxdur): `window_range_absolute`/`window_range_relative` (`high-low`,
+  bütün bar-lar, tək-tick pəncərələr də daxildir), `window_log_return_abs`
+  (yalnız return-eligible pəncərələr), `robust_mad`. **Tick-to-tick return
+  std-i qəsdən kənarda saxlanıldı** — yeni xam-tick keçidi tələb edir
+  (hazırkı bütün analiz modulları yalnız artıq qurulmuş bar-lar üzərində
+  işləyir), ayrıca kiçik artım kimi planlaşdırılıb.
+  `minimum_window_returns` orkestrasiya qatında ümumi
+  `minimum_sample_size`-a çevrildi. `STATISTICAL_ANALYSIS_API_VERSION
+  1.0.0 → 1.1.0`. Backend `425 passed`. Frontend toxunulmayıb (qəsdən —
+  Phase 4-ün ilk artımlarında da eyni ardıcıllıq izlənilib). Async
+  job/persistence resursu (`POST /api/v2/statistical-analyses`) hələ əlavə
+  edilmədi.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var.
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `c380d08`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `7467f95`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
-  portfolio ledger, Phase 9 admin API + frontend — hamısı push edilib,
-  CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 statistik analiz — pəncərə/
-  resampling təməli + SA-001 gəlir seriyası artımı (kod + testlər +
-  sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına görə commit/push
-  istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/`
-  (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
+  portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
+  seriyası — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 SA-002 — pəncərə volatilitesi
+  artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
+  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
+  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
+  əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -123,27 +134,28 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `418
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `425
   passed`.
-- Frontend: bu artımda (Phase 3 SA-001) toxunulmayıb — yeni endpoint UI-də
-  göstərilmir, qəsdən (Phase 4-ün ilk artımlarında da eyni ardıcıllıq).
-  Əvvəlki artımda (Phase 9 admin API + frontend) lint/build/`11/11` test
-  təmiz keçmişdi.
+- Frontend: bu artımda (Phase 3 SA-002) toxunulmayıb — yeni sahə API
+  cavabında mövcuddur, amma UI-də göstərilmir, qəsdən (Phase 4-ün ilk
+  artımlarında da eyni ardıcıllıq). Əvvəlki artımda (Phase 9 admin API +
+  frontend) lint/build/`11/11` test təmiz keçmişdi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
   düzəldilib; eyni gün Phase 9 admin panelinin tam dövrü də (birdəfəlik
   test backend/frontend ilə, real bazaya toxunmadan) canlı brauzerdə
-  sınanıb, bir real bug tapılıb düzəldilib. Phase 3 SA-001 üçün UI hələ
-  yoxdur, canlı brauzer yoxlaması tələb olunmur.
+  sınanıb, bir real bug tapılıb düzəldilib. Phase 3 (SA-001/SA-002) üçün
+  UI hələ yoxdur, canlı brauzer yoxlaması tələb olunmur.
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 3-ün ilk artımı (pəncərə/resampling təməli + SA-001)
-tamamlandı. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-SA-007
-(volatilite, spread, tick sürəti, tick-volume, sessiya, rejim), Phase 9-un
-qalan bölmələri (istəsə), job-queue-nun frontend səthi (istəsə).
-İstifadəçinin ayrıca təsdiqi tələb olunur.
+Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002-nin böyük
+hissəsi (pəncərə volatilitesi) tamamlandı. Namizədlər
+(`docs/status/NEXT_TASK.md`): SA-002-nin qalan hissəsi (tick-to-tick
+return std-i), SA-003-SA-007 (spread, tick sürəti, tick-volume, sessiya,
+rejim), Phase 9-un qalan bölmələri (istəsə), job-queue-nun frontend səthi
+(istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

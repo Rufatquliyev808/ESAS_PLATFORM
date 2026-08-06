@@ -394,7 +394,7 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     session = _prepare(isolated_database)
     url = (
         f"/api/v2/replay-sessions/{session.session_id}/statistical-analysis"
-        "?timeframe=M1&minimum_window_returns=3"
+        "?timeframe=M1&minimum_sample_size=3"
     )
     with get_connection() as connection:
         before = connection.execute(
@@ -411,11 +411,12 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     data = first.json()["data"]
     assert data["session_id"] == session.session_id
     assert data["timeframe"] == "M1"
-    assert data["api_version"] == "1.0.0"
+    assert data["api_version"] == "1.1.0"
     assert data["interpretation"] == "research_observation_not_trading_signal"
     assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
     assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
     assert data["lineage"]["return_series_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["volatility_fingerprint"].startswith("sha256:")
     series = data["return_series"]
     assert series["status"] == "completed"
     assert series["n_total"] == 3
@@ -423,6 +424,15 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     assert series["count"] == 3
     assert series["minimum"] <= series["p05"] <= series["median"] <= series["p95"] <= series["maximum"]
     assert series["interpretation"] == "research_observation_not_trading_signal"
+    volatility = data["volatility"]
+    assert volatility["window_range_absolute"]["status"] == "completed"
+    assert volatility["window_range_absolute"]["n_total"] == 3
+    assert volatility["window_range_relative"]["status"] == "completed"
+    assert volatility["window_log_return_abs"]["status"] == "completed"
+    assert volatility["window_log_return_abs"]["n_valid"] == 3
+    assert volatility["robust_mad_status"] == "completed"
+    assert volatility["robust_mad"] is not None and volatility["robust_mad"] >= 0
+    assert volatility["interpretation"] == "research_observation_not_trading_signal"
     with get_connection() as connection:
         after = connection.execute(
             "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
@@ -445,10 +455,15 @@ def test_statistical_analysis_api_defaults_to_insufficient_data_below_minimum_sa
             headers=_headers(client),
         )
     assert response.status_code == 200
-    series = response.json()["data"]["return_series"]
+    data = response.json()["data"]
+    series = data["return_series"]
     assert series["status"] == "insufficient_data"
     assert series["mean"] is None
     assert series["n_valid"] == 3
+    volatility = data["volatility"]
+    assert volatility["window_range_absolute"]["status"] == "insufficient_data"
+    assert volatility["robust_mad_status"] == "insufficient_data"
+    assert volatility["robust_mad"] is None
 
 
 def test_statistical_analysis_api_enforces_owner_completed_state_and_safe_parameters(
