@@ -23,10 +23,11 @@ Son yenilənmə: 2026-08-06
   çünki heç bir real çağıran yoxdur (bu, canlı SHADOW sisteminin bir
   hissəsi deyil, yalnız gələcək üçün skelet). Real bazaya tətbiq lazım
   olduqda ayrıca icazə tələb olunacaq.
-- **Phase 1: STABLE. Phase 2: STABLE. Phase 4: IN PROGRESS** (cari aktiv
-  mərhələ). **Phase 9: hələ "DESIGN READY — NOT IMPLEMENTED"** — yalnız
-  persistence skeleti tikilib (manifest + event reyestri + nəzəri
-  portfolio/risk ledger), canlı sistem yoxdur.
+- **Phase 1: STABLE. Phase 2: STABLE. Phase 4: namizəd lifecycle-ı əsasən
+  tamamlanıb. Phase 3: İN PROGRESS** (cari aktiv mərhələ — indicə
+  başlanıb). **Phase 9: hələ "DESIGN READY — NOT IMPLEMENTED"** — yalnız
+  persistence skeleti + admin API/frontend tikilib (manifest + event
+  reyestri + nəzəri portfolio/risk ledger), canlı qərar generatoru yoxdur.
 - Pattern namizədi işi bu qatlardan ibarətdir:
   1. **Draft generator** — hesablama-zamanı 6 hipotez slotu.
   2. **Persistence/`registered`** — migration `0005`.
@@ -66,10 +67,10 @@ Son yenilənmə: 2026-08-06
   `close_theoretical_position()`, `get_theoretical_portfolio_summary()`.
   **Şüurlu şəkildə kənarda:** gündəlik itki/drawdown (realized PnL zaman
   sırası tələb edir, canlı axın olmadan mənasız).
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 9 SHADOW admin API + frontend.**
-  İstifadəçinin "çağıranı düzəldək" tələbinə cavab — əvvəlki portfolio
-  ledger artımının real çağıranı yox idi, indi var (əl ilə idarə olunan
-  admin panel). 12 yeni qorunan endpoint
+- **Phase 9 SHADOW admin API + frontend** (commit `c380d08`, PUSH EDİLİB,
+  CI yaşıl). İstifadəçinin "çağıranı düzəldək" tələbinə cavab — əvvəlki
+  portfolio ledger artımının real çağıranı yox idi, indi var (əl ilə idarə
+  olunan admin panel). 12 yeni qorunan endpoint
   (`POST/GET /api/v2/shadow-runs...` — yaratma, siyahı, detal, start/
   complete/halt keçidləri, event qeydiyyatı, mövqə açma/bağlama, portfolio
   xülasəsi). Yeni `backend/app/models/shadow.py` (Pydantic request
@@ -84,21 +85,34 @@ Son yenilənmə: 2026-08-06
   öz növbəsində `detailError`-u sıfırlayırdı, xəbərdarlıq heç görünmürdü —
   çağırış sırası dəyişdirilərək düzəldildi. Backend `404 passed`, frontend
   lint/build/`11/11` test təmiz. Real bazaya toxunulmadı.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 statistik analiz — pəncərə/resampling
+  təməli + SA-001 gəlir seriyası.** Phase 4-ün namizəd lifecycle-ı əsasən
+  tamamlandığı üçün istifadəçinin təsdiqi ilə Phase 3-ə keçildi. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: `bars.py`-a `S1`/`S10` (1s/10s)
+  pəncərələri (`BAR_BUILDER_VERSION 1.1.0`), yeni `return_series.py`
+  (`compute_return_series()` — pəncərə-daxili log-return, tək-tick pəncərə
+  return yaratmır, `n_valid<30`-da `insufficient_data`), yeni
+  `statistical_analysis.py` (orkestrasiya, dataset-drift qorumalı), yeni
+  qorunan `GET .../statistical-analysis` endpoint-i. Backend `418 passed`.
+  Frontend toxunulmayıb (qəsdən — Phase 4-ün ilk artımlarında da eyni
+  ardıcıllıq izlənilib). Async job/persistence resursu
+  (`POST /api/v2/statistical-analyses`) hələ əlavə edilmədi.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var.
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `a502a70`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `c380d08`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
-  portfolio ledger — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 9 SHADOW admin API + frontend
-  artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
-  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
-  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
-  əhəmiyyətsiz) də qalıb.
+  portfolio ledger, Phase 9 admin API + frontend — hamısı push edilib,
+  CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 statistik analiz — pəncərə/
+  resampling təməli + SA-001 gəlir seriyası artımı (kod + testlər +
+  sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına görə commit/push
+  istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/`
+  (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -109,26 +123,27 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `404
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `418
   passed`.
-- Frontend: bu artımda (Phase 9 admin API + frontend) lint/build/`11/11`
-  test təmiz keçdi (yeni `shadow-runs-ui.test.mjs` daxil).
+- Frontend: bu artımda (Phase 3 SA-001) toxunulmayıb — yeni endpoint UI-də
+  göstərilmir, qəsdən (Phase 4-ün ilk artımlarında da eyni ardıcıllıq).
+  Əvvəlki artımda (Phase 9 admin API + frontend) lint/build/`11/11` test
+  təmiz keçmişdi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
   düzəldilib; eyni gün Phase 9 admin panelinin tam dövrü də (birdəfəlik
   test backend/frontend ilə, real bazaya toxunmadan) canlı brauzerdə
-  sınanıb, bir real bug tapılıb düzəldilib.
+  sınanıb, bir real bug tapılıb düzəldilib. Phase 3 SA-001 üçün UI hələ
+  yoxdur, canlı brauzer yoxlaması tələb olunmur.
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 9-un manifest/event/portfolio skeleti VƏ admin
-API/frontend tamamlandı (section 3, 6, 9 + əl ilə idarəetmə). Qalan
-bölmələr (section 7 champion/challenger müqayisə mühərriki, section 8
-kəsinti/restart) — real qərar generatoru (Phase 5-8) hələ yoxdur.
-Namizədlər (`docs/status/NEXT_TASK.md`): Phase 9-un davamı (istəsə),
-job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb
-olunur.
+Seçilməyib. Phase 3-ün ilk artımı (pəncərə/resampling təməli + SA-001)
+tamamlandı. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-SA-007
+(volatilite, spread, tick sürəti, tick-volume, sessiya, rejim), Phase 9-un
+qalan bölmələri (istəsə), job-queue-nun frontend səthi (istəsə).
+İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

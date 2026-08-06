@@ -1,5 +1,65 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Phase 3 statistik analiz başladı: pəncərə/resampling təməli + SA-001 gəlir seriyası
+
+- İstifadəçinin təsdiqi ilə (Phase 4-ün namizəd lifecycle-ı əsasən
+  tamamlandığı üçün) Phase 3-ə (`PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`)
+  keçildi. Müqavilə böyükdür (SA-001-dən SA-007-yə qədər) — ilk artım kimi
+  təməl pəncərə/resampling infrastrukturu və SA-001 (gəlir seriyası)
+  seçildi, çünki qalan bölmələr (volatilite, spread, tick sürəti və s.) bu
+  pəncərə seriyasından asılıdır.
+- `backend/app/analysis/bars.py`: `TIMEFRAME_SECONDS`-a `S1` (1 saniyə) və
+  `S10` (10 saniyə) əlavə edildi (müqavilənin "1s, 10s, 1m, 5m, 15m, 1h"
+  tələbinə uyğun; əvvəllər yalnız `M1/M5/M15/H1` var idi). `BAR_BUILDER_VERSION
+  1.0.0 → 1.1.0`. Mövcud `build_closed_mid_bars()` funksiyası dəyişmədən
+  yenidən istifadə olundu (əvvəllər tikilmiş, artıq forward-fill etməyən,
+  boş pəncərəni doldurmayan mid-price OHLC qurucusu).
+- Yeni `backend/app/analysis/return_series.py`: `compute_return_series()` —
+  hər qapalı pəncərənin öz ilk (open) və son (close) etibarlı mid-price-ı
+  ilə log-return hesablayır (`r = ln(close/open)`). **Tək-tick pəncərə heç
+  bir return yaratmır** (xaric edilir, sıfır kimi sayılmır) — müqavilənin
+  "bir qiymətli pəncərə return yaratmır" tələbi. Nəticə: say, orta, median,
+  standart sapma, min, maks, p05/p25/p75/p95 (xətti interpolyasiya üsulu,
+  `n_valid` konfiqurasiya olunan minimumdan (defolt `30`) azdırsa
+  `insufficient_data`, boş nəticə sıfır effekt kimi göstərilmir). Boş
+  `bars` girişi (diapazonda heç bir tick yoxdursa) də etibarlı, deqradasiya
+  olunan giriş kimi işlənir (xəta atmır) — digər detektor modullarının
+  konvensiyasına uyğun (məs. `fair_value_gap.py`).
+- Yeni `backend/app/analysis/statistical_analysis.py`:
+  `create_replay_statistical_analysis()` — tamamlanmış replay sessiyası
+  üçün (dataset-drift qoruması, `technical-analysis`/`strategy-analysis`
+  ilə eyni nümunə) bir `timeframe` üzrə bar qurur və gəlir seriyasını
+  hesablayır. `MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000` təhlükəsizlik
+  həddi (sessiyanın tam diapazonu emal olunur, `technical-analysis`-dəki
+  kimi "son N bar" məhdudiyyəti yoxdur — Phase 3 dataset-səviyyəli təsviri
+  statistika üçün bu, məntiqi cəhətdən düzgündür).
+- Yeni qorunan, yalnız-oxuma `GET
+  /api/v2/replay-sessions/{session_id}/statistical-analysis` endpoint-i
+  (`timeframe`, `minimum_window_returns` sorğu parametrləri) — mövcud
+  `technical-analysis`/`strategy-analysis` endpoint-lərinin eyni nümunəsi
+  ilə (ownership, `409`/`403`/`422`/`404`, dataset-drift `409`).
+- **Şüurlu şəkildə kənarda qalıb (növbəti artımlara saxlanılıb):**
+  müqavilənin `POST /api/v2/statistical-analyses` async job/persistence
+  resursu (Phase 2 job-queue ilə, səhifələnmə, audit) — bu, ilk artımda
+  həddindən artıq həcmli olardı; hazırkı endpoint sinxron və DB-siz-nəticə
+  (digər Phase 4 analiz endpoint-lərinin ilk versiyaları kimi). SA-002-dən
+  SA-007-yə qədər (volatilite, spread, tick sürəti, tick-volume, sessiya,
+  rejim) — bu pəncərə seriyası üzərində qurulacaq. Frontend paneli —
+  Phase 3-ün daha çox hissəsi hazır olanda əlavə olunacaq (Phase 4-ün ilk
+  artımlarında da eyni ardıcıllıq izlənilib).
+- Bu qat siqnal, giriş, risk ölçüsü və order yaratmır; yalnız təsviri
+  statistikadır (`interpretation: "research_observation_not_trading_signal"`).
+- Yoxlama: yeni `test_return_series.py` (`9` test — determinizm,
+  tək-tick-in xaric edilməsi, `insufficient_data` həddi, boş giriş,
+  percentile sıralaması, fingerprint determinizmi, uyğunsuz
+  simvol/timeframe rəddi, təhlükəsiz `minimum_window_returns`).
+  `test_analysis_bars.py`-da mövcud parametrized test `S1`/`S10`-u da
+  əhatə etdi. `test_replay_technical_analysis_api.py`-a `4` yeni API testi
+  (qorunma+determinizm+tədqiqat-yalnız, defolt minimumdan aşağı
+  `insufficient_data`, ownership/completed/parametr təhlükəsizliyi,
+  dataset-drift). Tam backend regressiyası: `418 passed`. Frontend
+  toxunulmayıb.
+
 ## 2026-08-06 — Phase 9 SHADOW-a "çağıran" əlavə edildi: admin API + frontend
 
 - İstifadəçi Phase 9 skeletinin "real çağıranı yoxdur" qeydinə görə əl ilə

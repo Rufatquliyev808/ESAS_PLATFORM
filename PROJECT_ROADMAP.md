@@ -1,7 +1,7 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-08-05
-Cari mərhələ: Phase 4
+Son yenilənmə: 2026-08-06
+Cari mərhələ: Phase 3 (Phase 4-ün namizəd lifecycle-ı əsasən tamamlanıb)
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -109,7 +109,7 @@ Rəsmi qəbul sübutu və qərar: `docs/releases/PHASE_2_STABLE.md`
 
 # Phase 3 — Statistik analiz
 
-Status: PLANNED
+Status: IN PROGRESS
 
 Tədqiqat qeydiyyatı, məlumat sızması, zaman bölgüsü, holdout, walk-forward,
 multiple-testing, xərclər və qəbul qapıları:
@@ -247,9 +247,13 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 
 ## Cari növbəti tapşırıq
 
-Phase 4-ün qalan bəndləri: pattern namizədi persistence/`registered` vəziyyəti,
-backtesting, uğursuz eksperimentlərin arxivləşdirilməsi və SHADOW mərhələsi
-üçün hazırlıq. Növbəti konkret addım istifadəçinin ayrıca təsdiqi ilə seçilir.
+Phase 4-ün namizəd lifecycle-ı (persistence, backtest v1, baseline müqayisəsi,
+multiple-testing, arxivləşdirmə, job-queue) əsasən tamamlanıb; Phase 9 SHADOW
+skeleti + admin panel də əvvəlcədən tikilib. Cari iş Phase 3-ə (statistik
+analiz) keçib: ilk artım kimi pəncərə/resampling təməli və SA-001 (gəlir
+seriyası) tamamlandı. Qalan SA-002-SA-007 (volatilite, spread, tick sürəti,
+tick-volume, sessiya, rejim) növbəti addımlardır. Növbəti konkret addım
+istifadəçinin ayrıca təsdiqi ilə seçilir.
 
 Ətraflı tapşırıq:
 

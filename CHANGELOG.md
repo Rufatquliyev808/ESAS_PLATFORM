@@ -8,6 +8,65 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 statistical analysis kickoff: window/resampling foundation + SA-001 return series
+
+- Starts Phase 3 (`PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`), the next
+  roadmap phase now that Phase 4's pattern-candidate lifecycle is
+  substantially complete. The contract spans SA-001 through SA-007
+  (returns, volatility, spread, tick rate, tick volume, session
+  comparison, regime candidates); this increment deliberately scopes down
+  to the foundation everything else depends on: fixed-window resampling
+  plus the return series itself.
+- `backend/app/analysis/bars.py`: added `S1` (1 second) and `S10` (10
+  second) to `TIMEFRAME_SECONDS`, alongside the existing `M1/M5/M15/H1`,
+  matching the contract's required window set. `BAR_BUILDER_VERSION`
+  `1.0.0 -> 1.1.0`. The existing `build_closed_mid_bars()` (already
+  causal, already refuses to forward-fill empty windows) is reused
+  unchanged.
+- New `backend/app/analysis/return_series.py`: `compute_return_series()`
+  computes one log-return per closed window from that window's own first
+  (open) and last (close) valid mid-price. A single-tick window has no
+  first/last pair and is excluded, not counted as a zero-return
+  observation. Returns descriptive statistics (count, mean, median,
+  std-dev, min, max, p05/p25/p75/p95 via linear interpolation) once
+  `n_valid` reaches a configurable minimum (default `30`); below that,
+  `insufficient_data` is returned with all statistics `null` rather than
+  a fabricated zero effect. An empty bar set (no ticks in range) is
+  treated as a valid degenerate input, not an error, matching the
+  existing detector-module convention (e.g. `fair_value_gap.py`).
+- New `backend/app/analysis/statistical_analysis.py`:
+  `create_replay_statistical_analysis()` orchestrates bar-building plus
+  the return series for one completed replay session and timeframe, with
+  the same dataset-drift guard used by `technical-analysis`/
+  `strategy-analysis`. `MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000` bounds
+  memory for now (the contract's full session range is analyzed, unlike
+  `technical-analysis`'s "last N bars" window, since Phase 3 is a
+  dataset-level descriptive-statistics concept).
+- New protected, read-only `GET
+  /api/v2/replay-sessions/{session_id}/statistical-analysis` endpoint
+  (`timeframe`, `minimum_window_returns` query params), following the
+  exact ownership/completed-state/dataset-drift conventions of the
+  existing `technical-analysis` and `strategy-analysis` endpoints.
+- Deliberately deferred to later increments: the contract's async
+  job/persistence resource (`POST /api/v2/statistical-analyses`, with
+  pagination and audit) -- out of scope for a first slice; the current
+  endpoint is synchronous and stateless, matching how Phase 4's earliest
+  analysis endpoints started. SA-002 through SA-007 (volatility, spread,
+  tick rate, tick volume, sessions, regime), which build on this return
+  series. A frontend panel, once more of Phase 3 exists to show.
+- This layer creates no signal, entry, position size, or order; output
+  carries `interpretation: "research_observation_not_trading_signal"`.
+- Verification: new `test_return_series.py` (9 tests) covering
+  determinism, single-tick exclusion, the insufficient-data threshold,
+  empty input, percentile ordering, fingerprint determinism, mismatched
+  symbol/timeframe rejection, and unsafe `minimum_window_returns`
+  rejection. `test_analysis_bars.py`'s existing parametrized timeframe
+  test now also covers `S1`/`S10`. 4 new API tests in
+  `test_replay_technical_analysis_api.py` (protected/deterministic/
+  research-only, default-insufficient-data below the minimum sample,
+  ownership/completed-state/parameter safety, dataset drift). Full
+  backend regression: `418 passed`. Frontend untouched.
+
 ### Added — Phase 9 SHADOW admin API + frontend (real caller for the persistence skeleton)
 
 - Gives the previously-orphaned Phase 9 skeleton (run manifest, event

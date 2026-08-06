@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 4-ün qalan maddələri
+Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əsasən tamamlanıb
 
 ## Tamamlanan (bu sessiya)
 
@@ -52,6 +52,18 @@ Mərhələ: Phase 4-ün qalan maddələri
   xəbərdarlığı `loadDetail()`-un öz sıfırlanması ilə görünmədən itirdi).
   Backend `404 passed`, frontend lint/build/`11/11` test təmiz. Real
   bazaya toxunulmadı.
+- **Phase 3 statistik analiz başladı: pəncərə/resampling təməli + SA-001
+  gəlir seriyası** (hələ commit edilməyib) — Phase 4-ün namizəd
+  lifecycle-ı əsasən tamamlandığı üçün istifadəçinin təsdiqi ilə Phase 3-ə
+  keçildi. `bars.py`-a `S1`/`S10` (1s/10s) pəncərələri əlavə edildi (əvvəllər
+  yalnız `M1/M5/M15/H1`). Yeni `return_series.py`: hər pəncərənin öz ilk/son
+  etibarlı mid-price-ı ilə log-return (tək-tick pəncərə return yaratmır),
+  say/orta/median/std/min/maks/p05-p95 statistikası,
+  `n_valid<minimum_window_returns` olduqda `insufficient_data`. Yeni qorunan
+  `GET .../statistical-analysis` endpoint-i (mövcud `technical-analysis`
+  nümunəsi ilə, dataset-drift qorumalı). Async job/persistence resursu
+  (müqavilənin `POST /api/v2/statistical-analyses`-i) və frontend hələ
+  əlavə edilmədi — ilk artım qəsdən kiçik saxlanıldı. Backend `418 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -70,6 +82,13 @@ Mərhələ: Phase 4-ün qalan maddələri
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
+- **Phase 3 statistik analiz başladı** (pəncərə/resampling təməli + SA-001
+  gəlir seriyası, təfərrüat yuxarıda). Növbəti namizədlər: SA-002
+  (volatilite), SA-003 (spread davranışı), SA-004 (tick sürəti), SA-005
+  (tick-volume), SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb
+  edir), SA-007 (bazar rejimi namizədləri). Sonra: async
+  job/persistence resursu (`POST /api/v2/statistical-analyses`) və
+  frontend paneli.
 
 ## Vizual yoxlama qeydi
 

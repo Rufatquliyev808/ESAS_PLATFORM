@@ -58,6 +58,7 @@ from backend.app.analysis.replay_analysis import (
     ReplayDatasetChangedError,
     create_replay_technical_analysis,
 )
+from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.strategies.replay_pattern_candidates import (
@@ -462,6 +463,36 @@ def replay_strategy_analysis(
             cost_latency_bps=cost_latency_bps,
             adverse_cost_multiplier=adverse_cost_multiplier,
             stress_cost_multiplier=stress_cost_multiplier,
+        )
+    except ReplayTransitionConflictError as error:
+        raise HTTPException(status_code=409, detail="Replay session is not completed") from error
+    except ReplayDatasetChangedError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Replay dataset no longer matches the session snapshot",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(analysis), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/replay-sessions/{session_id}/statistical-analysis")
+def replay_statistical_analysis(
+    session_id: str,
+    timeframe: str = Query(default="M1", pattern="^(S1|S10|M1|M5|M15|H1)$"),
+    minimum_window_returns: int = Query(default=30, ge=1, le=10_000),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Replay session was not found") from error
+    if session.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Replay session belongs to another user")
+    try:
+        analysis = create_replay_statistical_analysis(
+            session=session, timeframe=timeframe,
+            minimum_window_returns=minimum_window_returns,
         )
     except ReplayTransitionConflictError as error:
         raise HTTPException(status_code=409, detail="Replay session is not completed") from error
