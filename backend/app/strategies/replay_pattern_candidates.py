@@ -27,6 +27,8 @@ from backend.app.quality.report import create_replay_quality_report
 from backend.app.strategies.pattern_candidate import detect_pattern_candidates
 from backend.app.strategies.pattern_candidate_backtest import (
     ACCEPTED_FOR_SHADOW,
+    INVALID_LEAKAGE,
+    MIN_EFFECTIVE_SAMPLE,
     REJECTED,
     bonferroni_corrected_scenario,
     classify_backtest_verdict,
@@ -250,7 +252,8 @@ class PatternCandidateClassificationOutcome:
 def classify_replay_pattern_candidate(
     *, candidate_id: str, actor: str, actor_role: str, expected_state_version: int,
 ) -> PatternCandidateClassificationOutcome:
-    """Move an "evaluated" candidate to accepted_for_shadow/rejected/insufficient_evidence.
+    """Move an "evaluated" candidate to accepted_for_shadow/rejected/
+    insufficient_evidence/invalid_leakage.
 
     The verdict comes from the candidate's latest backtest "normal" cost
     scenario, after a Bonferroni family-wise error correction across every
@@ -263,6 +266,14 @@ def classify_replay_pattern_candidate(
     input. accepted_for_shadow records that all of this evidence held; it
     does not authorize real trading (Phase 9 SHADOW does not exist yet) or
     any order.
+
+    Before any of that: if the backtest's raw historical trigger count was
+    itself ample (>= MIN_EFFECTIVE_SAMPLE) but purging overlapping/embargoed
+    windows collapsed the independent sample below the reliability floor,
+    the apparent "evidence" was inflated by correlated, near-duplicate
+    windows rather than truly independent occurrences -- that is
+    invalid_leakage, not insufficient_evidence (which means the pattern
+    genuinely has not fired enough times yet).
     """
     candidate = get_pattern_candidate(candidate_id)
     if candidate.created_by != actor:
@@ -275,9 +286,18 @@ def classify_replay_pattern_candidate(
     corrected_scenario = bonferroni_corrected_scenario(
         normal_scenario, family_trial_count=family_trial_count,
     )
-    next_state = classify_backtest_verdict(
-        status=corrected_scenario["status"], reason=corrected_scenario["reason"],
+
+    leakage_invalidated = (
+        backtest.result.get("discarded_for_overlap", 0) > 0
+        and backtest.result.get("raw_event_count", 0) >= MIN_EFFECTIVE_SAMPLE
+        and normal_scenario["effective_sample_size"] < MIN_EFFECTIVE_SAMPLE
     )
+    if leakage_invalidated:
+        next_state = INVALID_LEAKAGE
+    else:
+        next_state = classify_backtest_verdict(
+            status=corrected_scenario["status"], reason=corrected_scenario["reason"],
+        )
 
     previous_comparison: dict[str, object] | None = None
     if next_state == ACCEPTED_FOR_SHADOW:

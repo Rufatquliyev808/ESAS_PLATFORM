@@ -19,7 +19,7 @@ class PatternCandidateConflictError(RuntimeError):
 
 ARCHIVABLE_STATES = frozenset({
     "registered", "evaluated", "accepted_for_shadow", "rejected", "insufficient_evidence",
-    "blocked_by_data_quality",
+    "blocked_by_data_quality", "invalid_leakage",
 })
 
 
@@ -324,7 +324,9 @@ def archive_pattern_candidate(
     return _row_to_candidate(result_row)
 
 
-CLASSIFICATION_OUTCOMES = frozenset({"accepted_for_shadow", "rejected", "insufficient_evidence"})
+CLASSIFICATION_OUTCOMES = frozenset({
+    "accepted_for_shadow", "rejected", "insufficient_evidence", "invalid_leakage",
+})
 
 
 def classify_pattern_candidate(
@@ -337,9 +339,10 @@ def classify_pattern_candidate(
 ) -> PersistedPatternCandidate:
     """Move an "evaluated" candidate to its backtest-driven terminal outcome.
 
-    The verdict (accepted_for_shadow / rejected / insufficient_evidence) is
-    computed by the caller from the candidate's latest backtest -- this
-    function only enforces that the transition is legal and atomic. None of
+    The verdict (accepted_for_shadow / rejected / insufficient_evidence /
+    invalid_leakage) is computed by the caller from the candidate's latest
+    backtest -- this function only enforces that the transition is legal
+    and atomic. None of
     these outcomes authorizes real trading; accepted_for_shadow only means
     the historical evidence met the predeclared statistical bar.
     """

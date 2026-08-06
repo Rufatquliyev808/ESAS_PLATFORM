@@ -1,5 +1,48 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — `invalid_leakage` lifecycle vəziyyəti: üst-üstə düşən hadisələr üçün purge/embargo
+
+- Real, əvvəllər qorunmayan bir statistik boşluq tapıldı və düzəldildi:
+  backtest v1 hər tarixi tetikləməni (məs. `horizon_bars=5` ilə ard-arda 2
+  bar məsafəli tetikləmələr) **müstəqil nümunə** kimi sayırdı, halbuki
+  onların [giriş, çıxış] pəncərələri üst-üstə düşəndə nəticələr korrelyasiya
+  olunur — bu, effektiv nümunə sayını və etibar intervalını süni şəkildə
+  şişirdirdi. Əsl "gələcək məlumat sızması" (causal leakage) hər detektorda
+  artıq struktur olaraq qarşısı alınıb (bütün "no-lookahead" testləri) —
+  orada əlavə ediləcək məzmunlu bir şey yox idi; real boşluq üst-üstə düşmə
+  idi (Phase 3-ün "üst-üstə düşən horizon-lar purge/embargo tələb edir"
+  tələbi).
+- `pattern_candidate_backtest.py`-a `_purge_overlapping_events()` əlavə
+  edildi: xronoloji sırayla, əvvəlki saxlanmış hadisənin
+  `[giriş, giriş+horizon_bars)` pəncərəsinə düşən sonrakı hadisələr atılır
+  (embargo). **Bütün namizədlər üçün tətbiq olunur** (yalnız bayraqlanan
+  hallarda deyil) — statistik doğruluğu səssizcə artırır.
+  `PatternCandidateBacktest`-ə `raw_event_count`/`discarded_for_overlap`
+  sahələri əlavə edildi. `BACKTEST_VERSION 1.5.0`.
+- `replay_pattern_candidates.py`-nın `classify_replay_pattern_candidate`-i
+  indi: əgər xam hadisə sayı kifayət idi (`≥30`) AMMA purge-dan sonra
+  effektiv nümunə `30`-dan aşağı düşübsə → namizəd `invalid_leakage`-ə
+  keçir (`insufficient_evidence`-ə DEYİL — bu fərq vacibdir: birincisi
+  "sübut üst-üstə düşmə ilə şişirdilib", ikincisi "hələ kifayət qədər
+  tarixi hadisə baş verməyib").
+- `pattern_candidate_repository.py`: `CLASSIFICATION_OUTCOMES` və
+  `ARCHIVABLE_STATES`-ə `invalid_leakage` əlavə edildi.
+- Frontend: `LIFECYCLE_LABELS`-ə "Etibarsız — sübut üst-üstə düşən
+  hadisələrlə şişirdilib" etiketi əlavə edildi.
+- Yoxlama: `test_pattern_candidate_backtest.py`-a `2` yeni test (purge
+  davranışı, dəqiq say təsdiqi ilə: `40` xam hadisədən `8`-i qalır,
+  horizon=5 ilə); mövcud `2` baseline testi yeni purge davranışına uyğun
+  yenidən konfiqurasiya edildi (hadisələr artıq `horizon_bars` qədər
+  aralıqla yerləşdirilib ki, baseline testləri təsadüfən purge-la
+  qarışmasın). `test_pattern_candidate_repository.py`-a `1` yeni test.
+  Yeni `test_replay_pattern_candidates_classification.py`-a `3` yeni test
+  (leakage keçidi, purge olmadıqda normal axın, xam siqnal əvvəlcədən azdısa
+  `insufficient_evidence` qalması). Tam backend regressiyası: `381 passed`.
+  Frontend: lint təmiz, `10/10` test, production build uğurlu.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; dəyişiklik həm
+  bütün namizədlər üçün statistik doğruluğu artırır, həm də üst-üstə düşmə
+  ilə şişirdilmiş "sübutu" ayrıca aşkarlayır.
+
 ## 2026-08-06 — `blocked_by_data_quality` lifecycle vəziyyəti tətbiq edildi
 
 - Phase 4 müqaviləsinin əvvəlcədən deklarasiya edilmiş (migration `0005`-in

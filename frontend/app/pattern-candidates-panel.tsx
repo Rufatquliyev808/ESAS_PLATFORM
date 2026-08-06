@@ -49,7 +49,7 @@ type PersistedPatternCandidate = {
   source_fingerprint: string;
   timeframe: string;
   parameters: Record<string, unknown>;
-  lifecycle_state: "registered" | "evaluated" | "accepted_for_shadow" | "rejected" | "insufficient_evidence" | "blocked_by_data_quality" | "archived";
+  lifecycle_state: "registered" | "evaluated" | "accepted_for_shadow" | "rejected" | "insufficient_evidence" | "blocked_by_data_quality" | "invalid_leakage" | "archived";
   state_version: number;
   created_at: string;
   updated_at: string;
@@ -98,6 +98,7 @@ const LIFECYCLE_LABELS: Record<string, string> = {
   rejected: "Rədd edilib (sübut dəstəkləmir)",
   insufficient_evidence: "Nəticələndirilib — sübut yetərsizdir",
   blocked_by_data_quality: "Bloklanıb — məlumat keyfiyyəti kritik tapıntı göstərir",
+  invalid_leakage: "Etibarsız — sübut üst-üstə düşən hadisələrlə şişirdilib",
   archived: "Arxivləşdirilib",
 };
 

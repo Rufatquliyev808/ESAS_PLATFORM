@@ -12,7 +12,7 @@ from backend.app.analysis.market_structure import MarketStructureResult
 from backend.app.analysis.retest import RetestResult
 
 
-BACKTEST_VERSION = "1.4.0"
+BACKTEST_VERSION = "1.5.0"
 MIN_EFFECTIVE_SAMPLE = 30
 Z_95 = 1.96
 SUPPORTIVE = "supportive_evidence"
@@ -94,6 +94,8 @@ class PatternCandidateBacktest:
     total_events: int
     matured_events: int
     immature_events: int
+    raw_event_count: int
+    discarded_for_overlap: int
     trades: tuple[BacktestTrade, ...]
     scenarios: tuple[BacktestCostScenario, ...]
     fingerprint: str
@@ -264,8 +266,44 @@ def _historical_events(
     )
 
 
+def _purge_overlapping_events(
+    events: tuple[tuple[str, str], ...], *, index_by_end: dict[str, int], horizon_bars: int,
+) -> tuple[tuple[tuple[str, str], ...], int]:
+    """Keep only non-overlapping (embargoed) trigger events, in chronological
+    order: an event is discarded if its entry bar falls inside the previous
+    kept event's [entry, entry + horizon_bars) window.
+
+    Without this, a run of nearly back-to-back triggers would each count as
+    an "independent" trade even though their outcome windows overlap and
+    are therefore statistically correlated -- silently inflating the
+    apparent effective sample size and the resulting confidence interval.
+    This is the same purge/embargo principle already used elsewhere in this
+    codebase's purged-validation logic, applied here to backtest v1's own
+    historical event scan.
+
+    Events whose entry bar cannot be resolved are passed through unchanged
+    (the caller already treats those as unmatched/immature); only
+    resolvable, overlapping events are ever discarded here.
+    """
+    kept: list[tuple[str, str]] = []
+    embargo_until_index: int | None = None
+    discarded = 0
+    for trigger_observed_at, entry_reference_at in events:
+        entry_index = index_by_end.get(entry_reference_at)
+        if entry_index is None:
+            kept.append((trigger_observed_at, entry_reference_at))
+            continue
+        if embargo_until_index is not None and entry_index < embargo_until_index:
+            discarded += 1
+            continue
+        kept.append((trigger_observed_at, entry_reference_at))
+        embargo_until_index = entry_index + horizon_bars
+    return tuple(kept), discarded
+
+
 ACCEPTED_FOR_SHADOW = "accepted_for_shadow"
 REJECTED = "rejected"
+INVALID_LEAKAGE = "invalid_leakage"
 
 def classify_backtest_verdict(*, status: str, reason: str) -> str:
     """Map the "normal" cost scenario's verdict to a candidate lifecycle outcome.
@@ -393,7 +431,10 @@ def run_pattern_candidate_backtest(
     base_cost_bps = math.fsum((spread, commission, slippage, latency))
 
     index_by_end = {bar.end_at: index for index, bar in enumerate(bars)}
-    events = _historical_events(hypothesis_id, event_direction, retest, liquidity_sweep, market_structure)
+    raw_events = _historical_events(hypothesis_id, event_direction, retest, liquidity_sweep, market_structure)
+    events, discarded_for_overlap = _purge_overlapping_events(
+        raw_events, index_by_end=index_by_end, horizon_bars=horizon_bars,
+    )
 
     trades: list[BacktestTrade] = []
     for trigger_observed_at, entry_reference_at in events:
@@ -448,6 +489,7 @@ def run_pattern_candidate_backtest(
         "direction": event_direction, "horizon_bars": horizon_bars,
         "retest_fingerprint": retest.fingerprint, "liquidity_sweep_fingerprint": liquidity_sweep.fingerprint,
         "market_structure_fingerprint": market_structure.fingerprint,
+        "raw_event_count": len(raw_events), "discarded_for_overlap": discarded_for_overlap,
         "trades": [asdict(item) for item in trades],
         "scenarios": [asdict(item) for item in scenarios],
     }
@@ -456,5 +498,6 @@ def run_pattern_candidate_backtest(
         direction=event_direction, horizon_bars=horizon_bars, total_events=len(trades),
         matured_events=sum(item.status == MATURED for item in trades),
         immature_events=sum(item.status == IMMATURE for item in trades),
+        raw_event_count=len(raw_events), discarded_for_overlap=discarded_for_overlap,
         trades=tuple(trades), scenarios=scenarios, fingerprint=_fingerprint(payload),
     )

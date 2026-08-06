@@ -27,11 +27,18 @@ Mərhələ: Phase 4-ün qalan maddələri
   (commit `66f8d51`, push edilib, CI yaşıl) — əvvəllər `0004`-də donub
   qalmışdı, "Qeydə alınmış namizədlər" siyahısı `HTTP 500` verirdi. Ehtiyat
   nüsxə götürüldü, doğrulandı, tətbiq edildi.
-- **`blocked_by_data_quality` lifecycle vəziyyəti tətbiq edildi** (hələ
-  commit edilməyib) — namizədin ilk backtest cəhdindən əvvəl replay
-  sessiyasının keyfiyyət hesabatı yoxlanılır; `critical_count > 0`-dırsa
-  namizəd `evaluated`-ə deyil, `blocked_by_data_quality`-yə keçir (API
-  `409`). Backend `375 passed`, frontend lint/build/`10/10` test təmiz.
+- **`blocked_by_data_quality` lifecycle vəziyyəti tətbiq edildi** (commit
+  `4e46f0f`, push edilib, CI yaşıl) — namizədin ilk backtest cəhdindən
+  əvvəl replay sessiyasının keyfiyyət hesabatı yoxlanılır; `critical_count
+  > 0`-dırsa namizəd `evaluated`-ə deyil, `blocked_by_data_quality`-yə
+  keçir (API `409`).
+- **`invalid_leakage` lifecycle vəziyyəti tətbiq edildi** (hələ commit
+  edilməyib) — backtest v1-ə üst-üstə düşən tarixi hadisələr üçün
+  purge/embargo əlavə edildi (bütün namizədlər üçün, statistik doğruluğu
+  artırır); əgər xam siqnal kifayət idi (`≥30`) amma purge onu `30`-dan
+  aşağı salıbsa, namizəd `insufficient_evidence`-ə deyil
+  `invalid_leakage`-ə keçir. Backend `381 passed`, frontend
+  lint/build/`10/10` test təmiz.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -39,10 +46,10 @@ Mərhələ: Phase 4-ün qalan maddələri
 
 - Baseline müqayisəsi tamamlandı (4/4).
 - `blocked_by_data_quality` tamamlandı.
-- Qalan əlavə son vəziyyət: `invalid_leakage` (Phase 3-ün leakage/holdout
-  qorumasına bağlıdır, hazırkı backtest v1 arxitekturasında train/holdout
-  ayrılığı yoxdur — real məzmunu üçün əvvəlcə bu ayrılığın layihələndirilməsi
-  lazımdır).
+- `invalid_leakage` tamamlandı (purge/embargo əsaslı).
+- Backtest v1-in son vəziyyət maşını indi tamdır: `draft → registered →
+  evaluated → accepted_for_shadow | rejected | insufficient_evidence |
+  invalid_leakage | blocked_by_data_quality → archived`.
 - Phase 9 sxeminin davamı (nəzəri portfolio/risk cədvəlləri) — yalnız
   istifadəçi ayrıca istəsə, çünki hələ real çağıranı yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.

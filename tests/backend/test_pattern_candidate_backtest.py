@@ -118,6 +118,33 @@ def test_trade_beyond_dataset_is_immature() -> None:
     assert result.immature_events == 1
 
 
+def test_overlapping_events_are_purged_and_counts_are_reported() -> None:
+    # Consecutive-bar retest confirmations (indices 10..49, 40 raw events)
+    # with horizon_bars=5: each kept event embargoes the next 4 indices, so
+    # only every 5th one survives -- 10, 15, 20, 25, 30, 35, 40, 45 (8 kept).
+    bars = tuple(_bar(i, 100.0 + i) for i in range(60))
+    observations = tuple(
+        _confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(10, 50)
+    )
+    retest = _retest(observations)
+    result = _run(bars=bars, retest=retest, horizon_bars=5)
+    assert result.raw_event_count == 40
+    assert result.discarded_for_overlap == 32
+    assert result.total_events == 8
+
+
+def test_non_overlapping_events_are_not_purged() -> None:
+    bars = tuple(_bar(i, 100.0 + i) for i in range(60))
+    observations = tuple(
+        _confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(10, 50, 5)
+    )
+    retest = _retest(observations)
+    result = _run(bars=bars, retest=retest, horizon_bars=5)
+    assert result.raw_event_count == 8
+    assert result.discarded_for_overlap == 0
+    assert result.total_events == 8
+
+
 def test_market_structure_hypotheses_use_transition_events() -> None:
     bars = tuple(_bar(i, 100.0 + i) for i in range(10))
     structure = _market_structure((
@@ -281,8 +308,10 @@ def test_candidate_rejected_when_it_underperforms_random_timing_baseline() -> No
     # low price base, high percentage move region). The candidate clears the
     # flat zero baseline easily but is actually worse than a hypothesis-blind
     # random entry over the same period.
+    # Events are spaced exactly horizon_bars apart so none are purged for
+    # overlap -- this test is about the random-timing baseline, not purging.
     bars = tuple(_bar(i, 100.0 + i) for i in range(300))
-    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(250, 290))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(200, 290, 2))
     retest = _retest(observations)
     result = _run(
         bars=bars, retest=retest, horizon_bars=2,
@@ -333,8 +362,10 @@ def test_candidate_rejected_when_it_underperforms_single_feature_baseline_but_be
     # random-timing sample) while the single-feature RSI rule's crossings
     # are placed even earlier (the very lowest price base -> very high
     # percentage return), so only the single-feature baseline check fails.
+    # Events are spaced exactly horizon_bars apart so none are purged for
+    # overlap -- this test is about baseline comparisons, not purging.
     bars = tuple(_bar(i, 100.0 + i) for i in range(300))
-    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(50, 90))
+    observations = tuple(_confirmed_retest("bullish", bars[index].end_at, f"break{index}") for index in range(30, 130, 2))
     retest = _retest(observations)
 
     rsi_values = [50.0] * 300

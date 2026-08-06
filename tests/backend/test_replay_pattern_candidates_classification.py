@@ -77,6 +77,74 @@ def _classify(candidate_id: str, created_by: str = "TEST-USER"):
     )
 
 
+def _store_backtest_with_overlap(
+    candidate_id: str, *, raw_event_count: int, discarded_for_overlap: int,
+    scenario: dict[str, object], hypothesis_id: str = "structure_break_long",
+    session_id: str = "rps_test", created_by: str = "TEST-USER",
+):
+    persisted = store_pattern_candidate_backtest(
+        candidate_id=candidate_id, actor=created_by, actor_role="operator",
+        horizon_bars=3, cost_parameters={},
+        result={
+            "raw_event_count": raw_event_count, "discarded_for_overlap": discarded_for_overlap,
+            "scenarios": [scenario],
+        },
+        fingerprint=f"sha256:{candidate_id}",
+    )
+    register_trial(
+        family_key=session_id, candidate_id=candidate_id, backtest_id=persisted.backtest_id,
+        hypothesis_id=hypothesis_id, actor=created_by,
+    )
+    return persisted
+
+
+def test_candidate_invalidated_for_leakage_when_purge_collapses_ample_raw_signal(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register("structure_break_long:leak")
+    scenario = _supportive_scenario(2.0)
+    scenario["effective_sample_size"] = 20  # below the reliability floor after purge
+    _store_backtest_with_overlap(
+        candidate.candidate_id, raw_event_count=40, discarded_for_overlap=15, scenario=scenario,
+    )
+    outcome = _classify(candidate.candidate_id)
+    assert outcome.candidate.lifecycle_state == "invalid_leakage"
+
+
+def test_candidate_stays_insufficient_evidence_when_raw_signal_was_never_ample(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register("structure_break_long:sparse")
+    scenario = {
+        "scenario": "normal", "total_cost_bps": 4.5, "effective_sample_size": 15,
+        "net_mean_return_percent": 2.0, "hit_rate_percent": 60.0,
+        "standardized_effect_size": None, "sample_standard_deviation": None,
+        "confidence_interval_low_percent": None, "confidence_interval_high_percent": None,
+        "status": "insufficient_evidence", "reason": "effective_sample_below_30",
+        "random_timing_baseline_sample_size": 0, "random_timing_baseline_mean_return_percent": None,
+        "beats_random_timing_baseline": None,
+        "single_feature_baseline_sample_size": 0, "single_feature_baseline_mean_return_percent": None,
+        "beats_single_feature_baseline": None,
+    }
+    # Raw signal itself was below the reliability floor (20 < 30) -- purging
+    # a handful of overlaps on top of that is beside the point; this is
+    # ordinary insufficient_evidence, not leakage-inflated evidence.
+    _store_backtest_with_overlap(
+        candidate.candidate_id, raw_event_count=20, discarded_for_overlap=5, scenario=scenario,
+    )
+    outcome = _classify(candidate.candidate_id)
+    assert outcome.candidate.lifecycle_state == "insufficient_evidence"
+
+
+def test_candidate_not_invalidated_when_nothing_was_purged(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register("structure_break_long:clean")
+    scenario = _supportive_scenario(2.0)
+    _store_backtest_with_overlap(
+        candidate.candidate_id, raw_event_count=40, discarded_for_overlap=0, scenario=scenario,
+    )
+    outcome = _classify(candidate.candidate_id)
+    assert outcome.candidate.lifecycle_state == "accepted_for_shadow"
+
+
 def test_first_ever_accepted_candidate_has_no_previous_comparison(isolated_database: Path) -> None:
     _prepare(isolated_database)
     candidate = _register("structure_break_long:a")

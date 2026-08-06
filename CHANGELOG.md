@@ -8,6 +8,48 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — `invalid_leakage` lifecycle state via overlap purge/embargo
+
+- A real, previously-unguarded statistical validity gap: backtest v1
+  counted every historical trigger event as an independent trade even when
+  two triggers' `[entry, entry + horizon_bars)` windows overlapped,
+  silently inflating the effective sample size and confidence interval
+  with correlated, near-duplicate observations. Genuine causal (future-
+  information) leakage is already structurally prevented in every detector
+  (the extensive "no lookahead" test suites exist for exactly this), so
+  there was nothing meaningful left to add there; overlap was the real gap
+  matching the Phase 3 contract's "overlapping horizons require purge/
+  embargo" requirement.
+- `pattern_candidate_backtest.py` gains `_purge_overlapping_events()`:
+  walks chronologically, discarding any event whose entry bar falls inside
+  the previously-kept event's `[entry, entry + horizon_bars)` window. Applied
+  unconditionally for every candidate (silently improves statistical
+  validity), not only when later flagged. `PatternCandidateBacktest` gains
+  `raw_event_count` and `discarded_for_overlap`.
+- `classify_replay_pattern_candidate` now checks: if the raw trigger count
+  was itself ample (>= `MIN_EFFECTIVE_SAMPLE`) but purging collapsed the
+  independent sample below the reliability floor, the outcome is
+  `invalid_leakage`, not `insufficient_evidence` -- the two mean different
+  things (evidence inflated by overlap vs. the pattern genuinely hasn't
+  fired enough times yet).
+- `invalid_leakage` added to `CLASSIFICATION_OUTCOMES` and
+  `ARCHIVABLE_STATES` in `pattern_candidate_repository.py`.
+  `BACKTEST_VERSION` bumped `1.4.0 -> 1.5.0`.
+- Frontend: `LIFECYCLE_LABELS` gains a label for the new state.
+- Verification: 2 new tests in `test_pattern_candidate_backtest.py`
+  covering purge behavior with exact expected counts; 2 existing baseline
+  tests re-tuned to space their synthetic events `horizon_bars` apart so
+  they aren't incidentally affected by the new purge; 1 new test in
+  `test_pattern_candidate_repository.py`; 3 new tests in
+  `test_replay_pattern_candidates_classification.py` covering the leakage
+  transition, the no-purge normal path, and the "raw signal was never
+  ample" case staying `insufficient_evidence`. Full backend regression:
+  `381 passed`. Frontend lint clean, production build succeeds, `10/10`
+  tests pass.
+- This layer creates no strategy, entry, risk sizing, or order; it both
+  improves statistical validity for every candidate and separately flags
+  evidence that was inflated by overlap.
+
 ### Added — `blocked_by_data_quality` lifecycle state
 
 - Implements one of the Phase 4 contract's pre-declared (migration `0005`

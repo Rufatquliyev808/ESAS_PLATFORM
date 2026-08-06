@@ -365,3 +365,20 @@ def test_blocked_by_data_quality_candidate_can_be_archived(isolated_database: Pa
         expected_state_version=blocked.state_version,
     )
     assert archived.lifecycle_state == "archived"
+
+
+def test_classify_accepts_invalid_leakage_and_it_is_archivable(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    _mark_evaluated(candidate.candidate_id)
+    evaluated = get_pattern_candidate(candidate.candidate_id)
+    classified = classify_pattern_candidate(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=evaluated.state_version, next_lifecycle_state="invalid_leakage",
+    )
+    assert classified.lifecycle_state == "invalid_leakage"
+    archived = archive_pattern_candidate(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=classified.state_version,
+    )
+    assert archived.lifecycle_state == "archived"
