@@ -1,5 +1,36 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — `blocked_by_data_quality` lifecycle vəziyyəti tətbiq edildi
+
+- Phase 4 müqaviləsinin əvvəlcədən deklarasiya edilmiş (migration `0005`-in
+  CHECK-i) amma məntiqsiz qalan son vəziyyətlərindən biri indi real işləyir:
+  bir namizədin **ilk** backtest cəhdindən əvvəl onun replay sessiyasının
+  keyfiyyət hesabatı yoxlanılır — `critical_count > 0`-dırsa, namizəd
+  `evaluated`-ə DEYİL, birbaşa `blocked_by_data_quality`-yə keçir və heç bir
+  backtest sübutu istehsal olunmur.
+- `pattern_candidate_repository.py`-a `block_pattern_candidate_for_data_quality()`
+  əlavə edildi — yalnız `registered`-dən əlçatandır (xam tick-lər və
+  keyfiyyət qaydaları dəyişməz olduğu üçün `evaluated`-ə çatmış namizəddə
+  yenidən yoxlamağa ehtiyac yoxdur). `ARCHIVABLE_STATES`-ə də əlavə edildi —
+  bloklanmış namizəd arxivləşdirilə bilir.
+- `replay_pattern_candidates.py`-nın `evaluate_replay_pattern_candidate_backtest`-i
+  indi `create_replay_quality_report(session_id=...)` çağırır (yalnız
+  namizəd hələ `registered`-dirsə) və kritik tapıntı aşkarlansa
+  `PatternCandidateBlockedByDataQualityError` atır. API-də bu, `409`
+  statusu ilə görünür (`POST .../backtest`).
+- Frontend: `LIFECYCLE_LABELS`-ə "Bloklanıb — məlumat keyfiyyəti kritik
+  tapıntı göstərir" əlavə edildi; bloklanmış sətirdə "Backtest et" düyməsi
+  gizlədilir (arxivləşdirmə düyməsi qalır).
+- Yoxlama: `test_pattern_candidate_repository.py`-a `5` yeni test (keçid,
+  səhv-vəziyyət rəddi, ownership/optimistic-lock, arxivləşdirmə); yeni
+  `test_replay_pattern_candidates_data_quality.py` (`3` test) — real DQ-005
+  (bid>ask) tapıntısı ilə uc-uca sübut (bloklanma, ikinci cəhdin rəddi, API
+  `409`) və kritik tapıntı olmadıqda normal axının pozulmadığı. Tam backend
+  regressiyası: `375 passed`. Frontend: lint təmiz, `10/10` test, production
+  build uğurlu.
+- Bu qat strategiya, giriş, risk ölçüsü və order yaratmır; yalnız etibarsız
+  məlumat üzərində statistik nəticə çıxarılmasının qarşısını alır.
+
 ## 2026-08-06 — Real production baza `0005`-`0009` migrasiyalarına köçürüldü
 
 - İstifadəçi frontend-də "Qeydə alınmış namizədlər" siyahısının `HTTP 500`

@@ -49,7 +49,7 @@ type PersistedPatternCandidate = {
   source_fingerprint: string;
   timeframe: string;
   parameters: Record<string, unknown>;
-  lifecycle_state: "registered" | "evaluated" | "accepted_for_shadow" | "rejected" | "insufficient_evidence" | "archived";
+  lifecycle_state: "registered" | "evaluated" | "accepted_for_shadow" | "rejected" | "insufficient_evidence" | "blocked_by_data_quality" | "archived";
   state_version: number;
   created_at: string;
   updated_at: string;
@@ -97,6 +97,7 @@ const LIFECYCLE_LABELS: Record<string, string> = {
   accepted_for_shadow: "SHADOW namizədi (sübut yetərlidir)",
   rejected: "Rədd edilib (sübut dəstəkləmir)",
   insufficient_evidence: "Nəticələndirilib — sübut yetərsizdir",
+  blocked_by_data_quality: "Bloklanıb — məlumat keyfiyyəti kritik tapıntı göstərir",
   archived: "Arxivləşdirilib",
 };
 
@@ -370,7 +371,7 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
                       <td>{LIFECYCLE_LABELS[candidate.lifecycle_state] ?? candidate.lifecycle_state}</td>
                       <td>{formatTime(candidate.created_at)}</td>
                       <td>
-                        {!supported ? <span className="pattern-candidate-time">v1-də dəstəklənmir</span> : candidate.lifecycle_state === "archived" ? "—" : (
+                        {!supported ? <span className="pattern-candidate-time">v1-də dəstəklənmir</span> : candidate.lifecycle_state === "archived" || candidate.lifecycle_state === "blocked_by_data_quality" ? "—" : (
                           <div className="pattern-candidate-backtest-cell">
                             <button type="button" className="secondary-button" disabled={backtestingId === candidate.candidate_id} onClick={() => void runBacktest(candidate)}>
                               {backtestingId === candidate.candidate_id ? "Hesablanır…" : backtest ? "Yenidən hesabla" : "Backtest et"}

@@ -11,6 +11,7 @@ from backend.app.database.pattern_candidate_repository import (
     PatternCandidateNotFoundError,
     PatternCandidateOwnershipError,
     archive_pattern_candidate,
+    block_pattern_candidate_for_data_quality,
     classify_pattern_candidate,
     get_latest_accepted_candidate_for_hypothesis,
     get_pattern_candidate,
@@ -301,3 +302,66 @@ def test_classify_enforces_ownership_and_optimistic_lock(isolated_database: Path
             candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
             expected_state_version=evaluated.state_version + 1, next_lifecycle_state="rejected",
         )
+
+
+def test_block_for_data_quality_transitions_registered_candidate(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    blocked = block_pattern_candidate_for_data_quality(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=candidate.state_version,
+    )
+    assert blocked.lifecycle_state == "blocked_by_data_quality"
+    assert blocked.state_version == candidate.state_version + 1
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM pattern_candidate_audit WHERE candidate_id = ? ORDER BY audit_id;",
+            (candidate.candidate_id,),
+        ).fetchall()
+    assert tuple(audit[-1]) == ("block_data_quality", "registered", "blocked_by_data_quality")
+
+
+def test_block_for_data_quality_rejects_non_registered_state(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    _mark_evaluated(candidate.candidate_id)
+    evaluated = get_pattern_candidate(candidate.candidate_id)
+    with pytest.raises(PatternCandidateConflictError):
+        block_pattern_candidate_for_data_quality(
+            candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=evaluated.state_version,
+        )
+
+
+def test_block_for_data_quality_enforces_ownership_and_optimistic_lock(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    with pytest.raises(PatternCandidateOwnershipError):
+        block_pattern_candidate_for_data_quality(
+            candidate_id=candidate.candidate_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=candidate.state_version,
+        )
+    with pytest.raises(PatternCandidateConflictError):
+        block_pattern_candidate_for_data_quality(
+            candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=candidate.state_version + 1,
+        )
+    with pytest.raises(PatternCandidateNotFoundError):
+        block_pattern_candidate_for_data_quality(
+            candidate_id="missing", actor="TEST-USER", actor_role="operator",
+            expected_state_version=0,
+        )
+
+
+def test_blocked_by_data_quality_candidate_can_be_archived(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    candidate = _register()
+    blocked = block_pattern_candidate_for_data_quality(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=candidate.state_version,
+    )
+    archived = archive_pattern_candidate(
+        candidate_id=candidate.candidate_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=blocked.state_version,
+    )
+    assert archived.lifecycle_state == "archived"

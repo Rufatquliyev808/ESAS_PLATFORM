@@ -19,6 +19,7 @@ class PatternCandidateConflictError(RuntimeError):
 
 ARCHIVABLE_STATES = frozenset({
     "registered", "evaluated", "accepted_for_shadow", "rejected", "insufficient_evidence",
+    "blocked_by_data_quality",
 })
 
 
@@ -392,6 +393,83 @@ def classify_pattern_candidate(
             VALUES (?, ?, ?, 'classify', 'evaluated', ?, ?);
             """,
             (normalized_candidate_id, normalized_actor, normalized_role, next_lifecycle_state, now),
+        )
+        result_row = connection.execute(
+            "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",
+            (normalized_candidate_id,),
+        ).fetchone()
+    return _row_to_candidate(result_row)
+
+
+def block_pattern_candidate_for_data_quality(
+    *,
+    candidate_id: str,
+    actor: str,
+    actor_role: str,
+    expected_state_version: int,
+) -> PersistedPatternCandidate:
+    """Move a "registered" candidate directly to blocked_by_data_quality
+    instead of evaluated.
+
+    Only reachable from "registered": raw ticks and the quality rules that
+    grade them are both immutable once written, so if the replay session's
+    quality report is clean the first time a backtest is attempted, it can
+    never later turn critical -- there is nothing to re-check once a
+    candidate has already reached "evaluated". The specific finding counts
+    that triggered this are not re-stored here -- they are already
+    deterministically reproducible from the replay session's own quality
+    report (`GET /api/v2/replay-sessions/{id}/quality-report`); the audit
+    action name itself is the persisted signal for why the transition
+    happened.
+    """
+    normalized_candidate_id = _required_text(candidate_id, "candidate_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        row = connection.execute(
+            "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",
+            (normalized_candidate_id,),
+        ).fetchone()
+        if row is None:
+            raise PatternCandidateNotFoundError("pattern candidate was not found")
+        if row["created_by"] != normalized_actor:
+            raise PatternCandidateOwnershipError(
+                "pattern candidate belongs to another user"
+            )
+        if row["state_version"] != expected_state_version:
+            raise PatternCandidateConflictError(
+                "pattern candidate changed since it was loaded"
+            )
+        if row["lifecycle_state"] != "registered":
+            raise PatternCandidateConflictError(
+                f"cannot block from state {row['lifecycle_state']}"
+            )
+
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        updated = connection.execute(
+            """
+            UPDATE pattern_candidates
+            SET lifecycle_state = 'blocked_by_data_quality',
+                state_version = state_version + 1,
+                updated_at = ?
+            WHERE candidate_id = ? AND state_version = ?;
+            """,
+            (now, normalized_candidate_id, expected_state_version),
+        )
+        if updated.rowcount != 1:
+            raise PatternCandidateConflictError(
+                "pattern candidate changed during transition"
+            )
+
+        connection.execute(
+            """
+            INSERT INTO pattern_candidate_audit
+            (candidate_id, actor, actor_role, action, previous_state, next_state, occurred_at)
+            VALUES (?, ?, ?, 'block_data_quality', 'registered', 'blocked_by_data_quality', ?);
+            """,
+            (normalized_candidate_id, normalized_actor, normalized_role, now),
         )
         result_row = connection.execute(
             "SELECT * FROM pattern_candidates WHERE candidate_id = ?;",

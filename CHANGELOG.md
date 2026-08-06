@@ -8,6 +8,42 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — `blocked_by_data_quality` lifecycle state
+
+- Implements one of the Phase 4 contract's pre-declared (migration `0005`
+  CHECK constraint) but previously unimplemented terminal lifecycle
+  states. Before a pattern candidate's first backtest attempt, its replay
+  session's quality report is now checked; if it has any `critical`
+  finding, the candidate moves straight to `blocked_by_data_quality`
+  instead of `evaluated`, and no backtest evidence is ever produced from
+  data that isn't trustworthy enough to draw a conclusion from.
+- `pattern_candidate_repository.py` gains
+  `block_pattern_candidate_for_data_quality()` -- reachable only from
+  `registered` (raw ticks and quality rules are both immutable, so a
+  session that passed once stays passed; there is nothing to re-check for
+  a candidate that already reached `evaluated`). `blocked_by_data_quality`
+  was added to `ARCHIVABLE_STATES` so a blocked candidate can still be
+  archived.
+- `evaluate_replay_pattern_candidate_backtest` now calls
+  `create_replay_quality_report()` (only when the candidate is still
+  `registered`) and raises `PatternCandidateBlockedByDataQualityError` on
+  a critical finding; the backtest endpoint maps this to `409`.
+- Frontend: `LIFECYCLE_LABELS` gains a label for the new state, and the
+  "Backtest et" button is hidden for a blocked candidate (matching the
+  existing `archived` treatment) -- this is the first change in several
+  increments to actually touch the frontend, since the user is looking
+  directly at this table.
+- Verification: 5 new tests in `test_pattern_candidate_repository.py`
+  (transition, wrong-state rejection, ownership/optimistic-lock,
+  archivability) and a new `test_replay_pattern_candidates_data_quality.py`
+  (3 tests) proving the gate end-to-end with a real DQ-005 (bid > ask)
+  finding: blocks on first attempt, rejects a second attempt, and the API
+  returns 409. Full backend regression: `375 passed`. Frontend lint clean,
+  production build succeeds, `10/10` tests pass.
+- This layer creates no strategy, entry, risk sizing, or order; it only
+  prevents drawing a statistical conclusion from data that is not
+  trustworthy.
+
 ### Added — Single-feature rule and previous-accepted-candidate baselines (Phase 3/4 baseline comparison complete, 4/4)
 
 - Completes the Phase 3/4 contract's four required baseline comparisons

@@ -13,6 +13,7 @@ from backend.app.database.pattern_candidate_backtest_repository import (
 from backend.app.database.pattern_candidate_repository import (
     PatternCandidateOwnershipError,
     PersistedPatternCandidate,
+    block_pattern_candidate_for_data_quality,
     classify_pattern_candidate,
     get_latest_accepted_candidate_for_hypothesis,
     get_pattern_candidate,
@@ -22,6 +23,7 @@ from backend.app.database.replay_session_repository import (
     ReplaySession,
     get_replay_session,
 )
+from backend.app.quality.report import create_replay_quality_report
 from backend.app.strategies.pattern_candidate import detect_pattern_candidates
 from backend.app.strategies.pattern_candidate_backtest import (
     ACCEPTED_FOR_SHADOW,
@@ -36,6 +38,10 @@ REPLAY_PATTERN_CANDIDATES_API_VERSION = "1.0.0"
 
 
 class PatternCandidateNotConfirmedError(RuntimeError):
+    pass
+
+
+class PatternCandidateBlockedByDataQualityError(RuntimeError):
     pass
 
 
@@ -171,6 +177,22 @@ def evaluate_replay_pattern_candidate_backtest(
     if candidate.created_by != actor:
         raise PatternCandidateOwnershipError("pattern candidate belongs to another user")
     session = get_replay_session(candidate.replay_session_id)
+
+    # Only checked on the first-ever backtest attempt: raw ticks and quality
+    # rules are both immutable, so a session that was clean once stays
+    # clean, and a candidate already "evaluated" has already passed this gate.
+    if candidate.lifecycle_state == "registered":
+        quality_report = create_replay_quality_report(session_id=session.session_id)
+        if quality_report.summary.critical_count > 0:
+            block_pattern_candidate_for_data_quality(
+                candidate_id=candidate.candidate_id, actor=actor, actor_role=actor_role,
+                expected_state_version=candidate.state_version,
+            )
+            raise PatternCandidateBlockedByDataQualityError(
+                f"replay session has {quality_report.summary.critical_count} critical "
+                "data-quality finding(s); candidate blocked before any backtest evidence was produced"
+            )
+
     parameters = candidate.parameters
     context = create_replay_analysis_context(
         session=session, timeframe=candidate.timeframe, ema_period=20, rsi_period=14, atr_period=14,

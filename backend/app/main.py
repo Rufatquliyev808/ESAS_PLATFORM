@@ -61,6 +61,7 @@ from backend.app.analysis.replay_analysis import (
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.strategies.replay_pattern_candidates import (
+    PatternCandidateBlockedByDataQualityError,
     PatternCandidateNotConfirmedError,
     classify_replay_pattern_candidate,
     create_replay_pattern_candidates,
@@ -642,6 +643,8 @@ def pattern_candidate_backtest_endpoint(
         raise HTTPException(status_code=403, detail=str(error)) from error
     except PatternCandidateBacktestUnsupportedError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    except PatternCandidateBlockedByDataQualityError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     except PatternCandidateConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except ReplayTransitionConflictError as error:
