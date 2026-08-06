@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReplayPanel } from "./replay-panel";
 import { PatternHypothesisRegistry } from "./pattern-hypothesis-registry";
 import { ShadowRunsPanel } from "./shadow-runs-panel";
+import { LiveTechnicalSummaryPanel } from "./live-technical-summary-panel";
 import { DashboardSidebar, SectionGuide, type DashboardSection } from "./dashboard-navigation";
 
 type Bridge = {
@@ -671,6 +672,9 @@ export default function Home() {
                     <p>{error ? "Backend hazırda əlçatan deyil; son uğurlu məlumat göstərilir." : queueCount === 0 && data.operational.tick_stream.status === "active" ? "Məlumat axını aktivdir və növbə boşdur. Texniki analiz üçün giriş məlumatı normal görünür." : "Məlumat axınında gecikmə və ya növbə var. Analiz nəticələrini şərh etməzdən əvvəl Canlı məlumat bölməsini yoxlayın."}</p>
                   </div>
                 </section>
+              )}
+              {activeSection === "results" && token && (
+                <LiveTechnicalSummaryPanel token={token} onUnauthorized={handleReplayUnauthorized} />
               )}
               {activeSection === "live" && (
                 <>

@@ -59,6 +59,7 @@ from backend.app.analysis.replay_analysis import (
     create_replay_technical_analysis,
 )
 from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
+from backend.app.analysis.live_analysis import create_live_technical_summary
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.strategies.replay_pattern_candidates import (
@@ -301,6 +302,26 @@ def operational_status(
     _: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     return get_operational_status()
+
+
+@app.get("/api/v2/live-technical-summary")
+def live_technical_summary(
+    symbol: str = Query(default="GOLD", min_length=1, max_length=64),
+    timeframe: str = Query(default="M1", pattern="^(S1|S10|M1|M5|M15|H1)$"),
+    ema_period: int = Query(default=20, ge=2, le=500),
+    rsi_period: int = Query(default=14, ge=2, le=500),
+    atr_period: int = Query(default=14, ge=2, le=500),
+    bar_limit: int = Query(default=100, ge=1, le=1_000),
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        analysis = create_live_technical_summary(
+            symbol=symbol, timeframe=timeframe, ema_period=ema_period,
+            rsi_period=rsi_period, atr_period=atr_period, bar_limit=bar_limit,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(analysis), "meta": {"api_version": "2"}}
 
 
 @app.get("/internal/replay/{session_id}/quality-report")

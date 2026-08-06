@@ -42,8 +42,8 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   `a502a70`, push edilib, CI yaşıl) — `shadow_theoretical_positions`
   cədvəli (migration `0010`), mövqe-səviyyəli risk limitləri. Gündəlik
   itki/drawdown şüurlu şəkildə kənarda saxlanılıb.
-- **Phase 9 SHADOW-a admin API + frontend əlavə edildi** (hələ commit
-  edilməyib) — istifadəçinin "çağıranı düzəldək" tələbinə cavab: 12 yeni
+- **Phase 9 SHADOW-a admin API + frontend əlavə edildi** (commit
+  `c380d08`, push edilib, CI yaşıl) — istifadəçinin "çağıranı düzəldək" tələbinə cavab: 12 yeni
   qorunan endpoint (`/api/v2/shadow-runs...`) + yeni `shadow-runs-panel.tsx`
   bölməsi (NƏZƏRİDİR banneri ilə). Canlı brauzerdə real qərar generatoru
   olmadan (əl ilə, admin kimi) tam sınandı: run yaradıldı → başladıldı →
@@ -53,7 +53,7 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   Backend `404 passed`, frontend lint/build/`11/11` test təmiz. Real
   bazaya toxunulmadı.
 - **Phase 3 statistik analiz başladı: pəncərə/resampling təməli + SA-001
-  gəlir seriyası** (hələ commit edilməyib) — Phase 4-ün namizəd
+  gəlir seriyası** (commit `7467f95`, push edilib, CI yaşıl) — Phase 4-ün namizəd
   lifecycle-ı əsasən tamamlandığı üçün istifadəçinin təsdiqi ilə Phase 3-ə
   keçildi. `bars.py`-a `S1`/`S10` (1s/10s) pəncərələri əlavə edildi (əvvəllər
   yalnız `M1/M5/M15/H1`). Yeni `return_series.py`: hər pəncərənin öz ilk/son
@@ -65,14 +65,25 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   (müqavilənin `POST /api/v2/statistical-analyses`-i) və frontend hələ
   əlavə edilmədi — ilk artım qəsdən kiçik saxlanıldı. Backend `418 passed`.
 - **Phase 3 SA-002 (volatilite) — pəncərə range-i, mütləq return, robust MAD**
-  (hələ commit edilməyib) — SA-001-in birbaşa davamı. Yeni `volatility.py`:
+  (commit `1173d53`, push edilib, CI yaşıl) — SA-001-in birbaşa davamı. Yeni `volatility.py`:
   `window_range_absolute`/`window_range_relative` (`high-low`, bütün
   bar-lar), `window_log_return_abs` (yalnız return-eligible pəncərələr),
   `robust_mad`. Tick-to-tick return std-i (contract-ın ayrıca bəndi) qəsdən
   kənarda saxlanıldı — yeni xam-tick keçidi tələb edir, ayrıca kiçik artım
   kimi planlaşdırılıb. `minimum_window_returns` parametri orkestrasiya
   qatında ümumi `minimum_sample_size`-a çevrildi.
-  `STATISTICAL_ANALYSIS_API_VERSION 1.1.0`. Backend `425 passed`.
+  `STATISTICAL_ANALYSIS_API_VERSION 1.1.0`.
+- **Əsas ekrana canlı indikator konsensusu paneli əlavə edildi** (hələ
+  commit edilməyib) — istifadəçinin TradingView-un texniki analiz
+  widget-inə bənzər görünüş istəyinə cavab, öz hesablamamızla (research-safe
+  etiketləmə ilə). Yeni `indicator_consensus.py` (RSI+EMA-dan Bullish/
+  Bearish/Neytral təsnifatı, TradingView-un 16 göstəricisinə qarşı qəsdən
+  2), yeni `live_analysis.py` (replay sessiyası TƏLƏB ETMİR, canlı pəncərə,
+  `reproducible: false`), yeni `GET /api/v2/live-technical-summary`
+  endpoint-i, yeni `live-technical-summary-panel.tsx` ("Nəticələr" əsas
+  ekranında, "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT TÖVSİYƏSİ DEYİL" banneri
+  ilə). Canlı brauzerdə tam sınandı (real bazaya toxunmadan). Backend
+  `435 passed`, frontend lint/build/`12/12` test təmiz.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -99,6 +110,10 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   versiyalanmış təqvim tələb edir), SA-007 (bazar rejimi namizədləri).
   Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
   və frontend paneli.
+- **Əsas ekranın canlı indikator konsensusu paneli tamamlandı** (RSI+EMA,
+  təfərrüat yuxarıda). Namizədlər: konsensusu daha çox indikatorla
+  genişləndirmək (Stochastic, CCI, ADX, MACD, əlavə MA dövrləri) — yalnız
+  istifadəçi ayrıca istəsə.
 
 ## Vizual yoxlama qeydi
 
@@ -110,7 +125,11 @@ toxunulmadı. Ətraflı: `docs/status/CURRENT_STATE.md`.
 ilə birlikdə canlı brauzerdə aşkarlanan `HTTP 500` xətasından yola çıxaraq
 tətbiq edildi və doğrulandı. Eyni gün, Phase 9 admin panelinin tam dövrü
 də (real bazaya toxunmadan, birdəfəlik test backend/frontend ilə) canlı
-brauzerdə sınandı.
+brauzerdə sınandı. Yenə eyni gün, əsas ekranın yeni canlı indikator
+konsensusu paneli (birdəfəlik test backend/frontend, sintetik GOLD
+tick-ləri ilə) canlı brauzerdə sınandı — düzgün RSI/EMA/konsensus
+nəticələri göstərildi. Real production backend/frontend (8000/3000)
+sınaq boyu toxunulmadan işlədi.
 
 ## Başlama şərti
 

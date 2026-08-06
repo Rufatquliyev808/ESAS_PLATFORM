@@ -92,38 +92,57 @@ Son yenilənmə: 2026-08-06
   log-return, tək-tick pəncərə return yaratmır, `insufficient_data` həddi),
   yeni `statistical_analysis.py` (orkestrasiya, dataset-drift qorumalı),
   yeni qorunan `GET .../statistical-analysis` endpoint-i.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-002 — pəncərə volatilitesi.**
-  SA-001-in birbaşa davamı. Ətraflı: `docs/status/CURRENT_STATE.md`.
-  Qısaca: yeni `volatility.py` (`compute_volatility()` — artıq qurulmuş
-  `return_series`-i və bar-ları girişi kimi qəbul edir, təkrar hesablama
-  yoxdur): `window_range_absolute`/`window_range_relative` (`high-low`,
-  bütün bar-lar, tək-tick pəncərələr də daxildir), `window_log_return_abs`
+- **Phase 3 SA-002 — pəncərə volatilitesi** (commit `1173d53`, PUSH
+  EDİLİB, CI yaşıl). SA-001-in birbaşa davamı. Yeni `volatility.py`
+  (`compute_volatility()` — artıq qurulmuş `return_series`-i və bar-ları
+  girişi kimi qəbul edir, təkrar hesablama yoxdur):
+  `window_range_absolute`/`window_range_relative` (`high-low`, bütün
+  bar-lar, tək-tick pəncərələr də daxildir), `window_log_return_abs`
   (yalnız return-eligible pəncərələr), `robust_mad`. **Tick-to-tick return
   std-i qəsdən kənarda saxlanıldı** — yeni xam-tick keçidi tələb edir
   (hazırkı bütün analiz modulları yalnız artıq qurulmuş bar-lar üzərində
   işləyir), ayrıca kiçik artım kimi planlaşdırılıb.
   `minimum_window_returns` orkestrasiya qatında ümumi
   `minimum_sample_size`-a çevrildi. `STATISTICAL_ANALYSIS_API_VERSION
-  1.0.0 → 1.1.0`. Backend `425 passed`. Frontend toxunulmayıb (qəsdən —
-  Phase 4-ün ilk artımlarında da eyni ardıcıllıq izlənilib). Async
-  job/persistence resursu (`POST /api/v2/statistical-analyses`) hələ əlavə
-  edilmədi.
+  1.0.0 → 1.1.0`.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Əsas ekrana canlı indikator konsensusu
+  paneli.** İstifadəçi TradingView-un "Texniki analiz" widget-inə (Al/Sat
+  konsensus gauge-ları) bənzər bir görünüş istədi; iki seçim təklif
+  edildi (TradingView widget-ini gömmək / öz hesablamamızı qurmaq) —
+  istifadəçi öz hesablamamızı seçdi. **Vacib:** "Al/Sat" dili platformanın
+  "yalnız tədqiqat" prinsipinə zidd olduğu üçün "Yuxarı meyl/Aşağı
+  meyl/Neytral" etiketləməsi seçildi, "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT
+  TÖVSİYƏSİ DEYİL" banneri ilə. **Arxitektur fərqi:** bu, sessiyada
+  indiyədək tikilmiş hər şeydən fərqli — əvvəlki analiz modulları
+  `completed` replay sessiyalarının sabit snapshot-u üzərində işləyirdi,
+  bu isə ilk dəfə **canlı, dəyişən** pəncərə üzərində (replay sessiyası
+  TƏLƏB ETMİR) işləyir. Yeni `indicator_consensus.py` (RSI+EMA-dan
+  Bullish/Bearish/Neytral təsnifatı — TradingView-un 16 göstəricisinə
+  qarşı qəsdən 2, `indicators.py`-a toxunmadan), yeni `live_analysis.py`
+  (`create_live_technical_summary()`, `lineage.reproducible: false`), yeni
+  `GET /api/v2/live-technical-summary` endpoint-i, yeni
+  `live-technical-summary-panel.tsx` ("Nəticələr" əsas ekranında, mövcud
+  5s polling konvensiyası ilə). Canlı brauzerdə tam sınandı (sintetik GOLD
+  tick-ləri, birdəfəlik test backend/frontend, real bazaya toxunmadan) —
+  düzgün RSI/EMA/konsensus nəticələri göstərildi. Backend `435 passed`,
+  frontend lint/build/`12/12` test təmiz.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
-  nəticələndirmə var.
+  nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
+  konsensusu paneli də var.
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `7467f95`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `1173d53`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
-  seriyası — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 SA-002 — pəncərə volatilitesi
-  artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
-  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
-  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
-  əhəmiyyətsiz) də qalıb.
+  seriyası, Phase 3 SA-002 volatilite — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Əsas ekranın canlı indikator konsensusu
+  paneli artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib.
+  AGENTS.md qaydasına görə commit/push istifadəçinin ayrıca açıq
+  təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest
+  qalıqları, untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -134,28 +153,37 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `425
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `435
   passed`.
-- Frontend: bu artımda (Phase 3 SA-002) toxunulmayıb — yeni sahə API
-  cavabında mövcuddur, amma UI-də göstərilmir, qəsdən (Phase 4-ün ilk
-  artımlarında da eyni ardıcıllıq). Əvvəlki artımda (Phase 9 admin API +
-  frontend) lint/build/`11/11` test təmiz keçmişdi.
+- Frontend: bu artımda (canlı indikator konsensusu paneli) lint təmiz,
+  `12/12` test, production build uğurlu.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
   düzəldilib; eyni gün Phase 9 admin panelinin tam dövrü də (birdəfəlik
   test backend/frontend ilə, real bazaya toxunmadan) canlı brauzerdə
-  sınanıb, bir real bug tapılıb düzəldilib. Phase 3 (SA-001/SA-002) üçün
-  UI hələ yoxdur, canlı brauzer yoxlaması tələb olunmur.
+  sınanıb, bir real bug tapılıb düzəldilib. Yenə eyni gün, əsas ekranın
+  yeni canlı indikator konsensusu paneli (sintetik GOLD tick-ləri,
+  birdəfəlik test backend/frontend ilə) canlı brauzerdə sınanıb — düzgün
+  RSI/EMA/konsensus nəticələri göstərilib. Sınaq zamanı avtomatlaşdırılmış
+  brauzer mühitinin `document.visibilityState`-i "hidden" olduğu üçün
+  (əvvəlki sessiyalarda da qeyd edilib) müvəqqəti override ilə tək təmiz
+  refresh tetiklənib; override-i silmədən saxlamaq test alətinin öz daxili
+  compositing yoxlamaları ilə toqquşaraq sürətli sorğu axınına səbəb oldu
+  (YALNIZ test artefaktı — köhnə `/status/operational` pollingi də eyni
+  cür təsirləndi, tətbiq kodunda problem yox idi; override silinən kimi
+  dərhal dayandı). Real production backend/frontend (8000/3000) sınaq
+  boyu toxunulmadan işlədi.
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002-nin böyük
-hissəsi (pəncərə volatilitesi) tamamlandı. Namizədlər
-(`docs/status/NEXT_TASK.md`): SA-002-nin qalan hissəsi (tick-to-tick
-return std-i), SA-003-SA-007 (spread, tick sürəti, tick-volume, sessiya,
-rejim), Phase 9-un qalan bölmələri (istəsə), job-queue-nun frontend səthi
-(istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
+Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002 (pəncərə
+volatilitesi) tamamlandı, əsas ekrana canlı indikator konsensusu paneli
+əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin qalan
+hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick sürəti,
+tick-volume, sessiya, rejim), canlı konsensusun daha çox indikatorla
+genişləndirilməsi, Phase 9-un qalan bölmələri (istəsə), job-queue-nun
+frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

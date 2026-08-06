@@ -1,5 +1,67 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Əsas ekrana canlı indikator konsensusu paneli əlavə edildi
+
+- İstifadəçi TradingView-un "Texniki analiz" widget-ini (osilator/hərəkətli
+  ortalama Al/Sat/Neytral konsensusu) göstərərək bunu ESAS-ın əsas ekranına
+  əlavə etməyi istədi. İki yanaşma təklif edildi (TradingView widget-ini
+  gömmək / öz hesablamamızı qurmaq); istifadəçi **öz hesablamamızı
+  quraq**-ı seçdi.
+- **Vacib sərhəd:** TradingView-un "Покупать/Продавать" (Al/Sat) dili
+  platformanın "yalnız tədqiqat, ticarət siqnalı deyil" prinsipinə birbaşa
+  ziddir (bütün mövcud modullar `interpretation:
+  "research_observation_not_trading_signal"` daşıyır, testlər "buy"/"sell"
+  sözlərinin olmadığını yoxlayır). Ona görə etiketləmə fərqli seçildi:
+  "Yuxarı meyl / Aşağı meyl / Neytral" (bullish_leaning/bearish_leaning/
+  neutral), "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT TÖVSİYƏSİ DEYİL" banneri ilə.
+- **Arxitektur fərqi:** bu, sessiyada indiyədək tikilmiş HƏR ŞEYDƏN
+  fərqlidir — əvvəlki bütün analiz modulları `completed` vəziyyətindəki
+  **replay sessiyalarının** sabit, fingerprint-lənmiş snapshot-u üzərində
+  işləyirdi (reproducibility üçün). Bu, ilk dəfə **canlı, dəyişən**
+  pəncərə üzərində işləyən analiz — real çağırışdan çağırışa fərqli nəticə
+  gözlənilir, ona görə heç bir dataset-drift qorumasına ehtiyac yoxdur
+  (əksinə, "dəyişməzlik" gözlənilmir).
+- Yeni `backend/app/analysis/indicator_consensus.py`:
+  `compute_indicator_consensus()` — artıq mövcud `IndicatorSetResult`-un
+  (RSI, EMA) son dəyərlərini götürüb Bullish/Bearish/Neytral təsnifatına
+  çevirir (RSI<30 → yuxarı meyl [oversold], RSI>70 → aşağı meyl
+  [overbought]; qiymət EMA-dan yuxarı/aşağı → uyğun meyl). Osilator/
+  hərəkətli-ortalama alt-cəmləri və ümumi konsensus hesablanır.
+  **Şüurlu şəkildə kiçik saxlanıldı:** TradingView-un 16 göstəricisinə
+  qarşı yalnız 2 (RSI + EMA) — Stochastic/CCI/ADX/MACD/SMA və s. hələ yox
+  (mövcud `indicators.py`-a toxunmadan, yalnız artıq test edilmiş RSI/EMA
+  üzərində), sonrakı artımlarda genişlənə bilər.
+- Yeni `backend/app/analysis/live_analysis.py`:
+  `create_live_technical_summary()` — replay sessiyası TƏLƏB ETMİR, birbaşa
+  `iter_tick_batches`-dən son N barlıq (bar_limit) canlı pəncərəni qurur
+  (`end_at = datetime.now(UTC)`), indikatorları hesablayır, konsensusu
+  çıxarır. `lineage.reproducible: false` açıq şəkildə qeyd olunur.
+- Yeni qorunan `GET /api/v2/live-technical-summary` endpoint-i
+  (`symbol`, `timeframe`, `ema_period`, `rsi_period`, `atr_period`,
+  `bar_limit` parametrləri).
+- Frontend: yeni `live-technical-summary-panel.tsx` — "Nəticələr" (defolt/
+  əsas) ekranına əlavə olundu, mövcud 5 saniyəlik səhifə-aktiv-olduqda
+  polling konvensiyası ilə (`page.tsx`-dəki eyni nümunə). 3 gauge kartı:
+  Osilatorlar (RSI), Ümumi, Hərəkətli ortalamalar (EMA).
+- **Canlı brauzerdə tam sınandı** (birdəfəlik test backend/frontend,
+  real bazaya toxunmadan): sintetik GOLD tick-ləri (360 ədəd, 30 dəqiqə)
+  scratch bazaya əlavə edildi, endpoint birbaşa `curl` ilə də
+  yoxlanıldı (düzgün RSI/EMA/konsensus nəticələri), sonra brauzerdə panel
+  düzgün göründü (real hesablanmış "Aşağı meyl"/"Neytral"/"Yuxarı meyl"
+  dəyərləri ilə). Sınaq zamanı avtomatlaşdırılmış brauzer mühitinin
+  `document.visibilityState`-i həmişə "hidden" olduğu üçün (bu sessiyada
+  əvvəllər də qeyd edilib) müvəqqəti/təhlükəsiz şəkildə override edilərək
+  tək təmiz refresh tetiklənidi — override-i uzun saxlamaq (silinmədən)
+  avtomatlaşdırılmış brauzerin öz daxili compositing/görünüş yoxlamaları
+  ilə toqquşaraq sürətli təkrar sorğu axınına səbəb oldu (bu, YALNIZ test
+  alətinin artefaktı idi — override silinən kimi ani şəkildə dayandı,
+  həm köhnə `/status/operational` pollingi, həm yeni panel eyni cür
+  təsirləndi, deməli tətbiq kodunda problem yox idi). Real production
+  backend/frontend (8000/3000) bütün sınaq boyu toxunulmadan işləməyə
+  davam etdi.
+- Backend `435 passed`. Frontend: lint təmiz, `12/12` test, production
+  build uğurlu.
+
 ## 2026-08-06 — Phase 3 SA-002: pəncərə range-i, mütləq return və robust MAD (volatilite)
 
 - İstifadəçinin tövsiyəsi ilə (SA-001-in birbaşa davamı olduğu üçün) SA-002

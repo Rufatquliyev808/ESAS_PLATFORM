@@ -8,6 +8,76 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Live indicator consensus panel on the main dashboard screen
+
+- User asked to add a view similar to TradingView's "Technical Analysis"
+  widget (an oscillator/moving-average Buy/Sell/Neutral consensus gauge)
+  to ESAS's main screen. Two approaches were discussed -- embedding
+  TradingView's own widget, or building our own equivalent computation --
+  and the user chose to build our own.
+- **Important boundary:** TradingView's "Покупать/Продавать" (Buy/Sell)
+  language directly conflicts with the platform's "research only, not a
+  trading signal" principle that every other module in this codebase
+  enforces (`interpretation: "research_observation_not_trading_signal"`
+  everywhere, tests asserting the absence of "buy"/"sell" wording). So the
+  labeling was changed to neutral, observational language --
+  "bullish_leaning" / "bearish_leaning" / "neutral" -- with a mandatory
+  "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT TÖVSİYƏSİ DEYİL" (this is a research
+  observation, not a trading recommendation) banner on the panel.
+- **Architectural departure from everything else built this session:**
+  every prior analysis module operated on a `completed` replay session's
+  fixed, fingerprinted snapshot (for reproducibility). This is the first
+  analysis to run over a **live, constantly-changing** rolling window --
+  no replay session is required at all, and repeated calls are expected
+  to differ as new ticks arrive, so there is no dataset-drift guard (the
+  opposite of every prior module).
+- New `backend/app/analysis/indicator_consensus.py`:
+  `compute_indicator_consensus()` classifies the latest RSI and EMA
+  readings from an already-computed `IndicatorSetResult` (RSI < 30 ->
+  bullish-leaning/oversold, > 70 -> bearish-leaning/overbought; close
+  above/below EMA -> the corresponding lean), then counts oscillator vs.
+  moving-average sub-totals and an overall consensus. Deliberately scoped
+  to 2 indicators (RSI, EMA) rather than TradingView's ~16, reusing the
+  already-tested `indicators.py` module unchanged; more indicators
+  (Stochastic, CCI, ADX, MACD, additional MAs) are a future increment.
+- New `backend/app/analysis/live_analysis.py`:
+  `create_live_technical_summary()` builds bars directly from
+  `iter_tick_batches` for the most recent `bar_limit` window ending at
+  `datetime.now(UTC)` -- no `ReplaySession` involved -- then computes
+  indicators and the consensus. The response's `lineage.reproducible` is
+  explicitly `false`, with a note explaining why.
+- New protected `GET /api/v2/live-technical-summary` endpoint (`symbol`,
+  `timeframe`, `ema_period`, `rsi_period`, `atr_period`, `bar_limit` query
+  params).
+- Frontend: new `live-technical-summary-panel.tsx`, added to the default
+  "Nəticələr" (results) screen, polling every 5s following the exact
+  pattern already used by the main dashboard's own operational-status
+  polling. Three gauge cards: oscillators (RSI), overall, moving averages
+  (EMA).
+- Verified live in the browser end-to-end (synthetic GOLD ticks in a
+  disposable scratch database, temporary backend/frontend, real
+  production database and services never touched): confirmed correct
+  RSI/EMA computation via direct API call, then confirmed the panel
+  renders the same classifications correctly on the dashboard. During
+  verification, the automated browser's `document.visibilityState` was
+  (as in earlier sessions) always `"hidden"`, which blocks the panel's
+  polling gate exactly like it blocks the main dashboard's own polling;
+  briefly overriding it to trigger one clean fetch confirmed correct
+  rendering, and leaving the override in place (rather than restoring it)
+  produced a rapid request loop -- but this reproduced identically on the
+  *pre-existing, already-shipped* `/status/operational` polling as well,
+  confirming it was an artifact of the override interacting with the
+  automated browser's own internal visibility polling, not a bug in
+  either the new panel or existing code. Real production services on
+  ports 8000/3000 ran undisturbed throughout.
+- Verification: new `test_indicator_consensus.py` (7 tests) and
+  `test_live_technical_summary_api.py` (3 tests). New
+  `frontend/tests/live-technical-summary-ui.test.mjs` source-text guard
+  (matching the `shadow-runs-ui.test.mjs` convention) asserting the panel
+  keeps its research-only banner and never uses buy/sell/order/position-
+  size language. Full backend regression: `435 passed`. Frontend lint
+  clean, `12/12` tests, production build clean.
+
 ### Added — Phase 3 SA-002: window range, absolute return magnitude, robust MAD (volatility)
 
 - Direct continuation of SA-001: three of the contract's four descriptive
