@@ -84,6 +84,16 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   ekranında, "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT TÖVSİYƏSİ DEYİL" banneri
   ilə). Canlı brauzerdə tam sınandı (real bazaya toxunmadan). Backend
   `435 passed`, frontend lint/build/`12/12` test təmiz.
+- **Canlı konsensus 5 yeni osilatorla genişləndirildi** (hələ commit
+  edilməyib) — istifadəçinin "Osilatorları genişlət" seçiminə cavab. Yeni
+  `oscillators.py` (`indicators.py`-a toxunmadan): Stochastic %K(14,3),
+  CCI(20), Williams %R(14), MACD(12,26,9), ADX(14)+DI/-DI (Wilder üsulu,
+  `indicators.py`-dəki ATR/RSI hamarlama nümunəsi ilə eyni). Osilator sayı
+  1-dən (yalnız RSI) 6-ya çıxdı. `CONSENSUS_VERSION 2.0.0`,
+  `LIVE_ANALYSIS_API_VERSION 1.1.0`. Frontend-də hər qrup üçün detallı
+  cədvəl (göstərici/dəyər/meyl) əlavə edildi. Canlı brauzerdə tam sınandı
+  (real bazaya toxunmadan) — 6 osilator da düzgün göründü. Backend
+  `449 passed`, frontend lint/build/`12/12` test təmiz.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -110,10 +120,11 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   versiyalanmış təqvim tələb edir), SA-007 (bazar rejimi namizədləri).
   Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
   və frontend paneli.
-- **Əsas ekranın canlı indikator konsensusu paneli tamamlandı** (RSI+EMA,
-  təfərrüat yuxarıda). Namizədlər: konsensusu daha çox indikatorla
-  genişləndirmək (Stochastic, CCI, ADX, MACD, əlavə MA dövrləri) — yalnız
-  istifadəçi ayrıca istəsə.
+- **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
+  (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
+  (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları
+  genişləndirmək (SMA, əlavə EMA/SMA dövrləri — TradingView-da 8 MA var,
+  bizdə 1) — yalnız istifadəçi ayrıca istəsə.
 
 ## Vizual yoxlama qeydi
 
@@ -129,7 +140,11 @@ brauzerdə sınandı. Yenə eyni gün, əsas ekranın yeni canlı indikator
 konsensusu paneli (birdəfəlik test backend/frontend, sintetik GOLD
 tick-ləri ilə) canlı brauzerdə sınandı — düzgün RSI/EMA/konsensus
 nəticələri göstərildi. Real production backend/frontend (8000/3000)
-sınaq boyu toxunulmadan işlədi.
+sınaq boyu toxunulmadan işlədi. Yenə eyni gün, konsensus paneli 5 yeni
+osilatorla (Stochastic, CCI, Williams %R, MACD, ADX) genişləndirildikdən
+sonra da (55 dəqiqəlik sintetik GOLD tick-ləri, bütün 6 osilator "ready"
+olsun deyə) yenidən canlı brauzerdə sınandı — düzgün nəticələr, konsol
+xətası yox, real bazaya toxunulmadı.
 
 ## Başlama şərti
 

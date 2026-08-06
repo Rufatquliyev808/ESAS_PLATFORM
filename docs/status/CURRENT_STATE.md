@@ -1,5 +1,64 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-06 — Canlı indikator konsensusu 5 yeni osilatorla genişləndirildi
+
+- İstifadəçi TradingView şəklini yenidən göstərərək canlı konsensus panelini
+  daha da yaxınlaşdırmağı istədi; təklif edilən seçimlərdən "Osilatorları
+  genişlət"i seçdi. Əvvəlki artımda yalnız RSI var idi (TradingView-un 11
+  osilatoruna qarşı 1) — indi 6 osilator var: RSI, Stochastic %K(14,3),
+  CCI(20), Williams %R(14), MACD(12,26,9), ADX(14) (+DI/-DI ilə).
+- Yeni `backend/app/analysis/oscillators.py`: `indicators.py`-a TOXUNMADAN
+  (Phase 4-ün stabil, geniş istifadə olunan `IndicatorSetResult`-u
+  qorunur), tamamilə ayrı, yalnız bu konsensus üçün lazım olan 5 yeni
+  osilator hesablaması:
+  - `calculate_stochastic_k()` — xam %K(period) `smoothing` pəncərəsi
+    üzərində SMA ilə hamarlanır; sıfır-range pəncərə `50.0` (neytral
+    orta nöqtə) qaytarır, xəta atmır.
+  - `calculate_cci()` — Commodity Channel Index; sıfır mean-deviation
+    (flat bazar) `0.0` (artıq CCI-nin öz neytral dəyəri) qaytarır.
+  - `calculate_williams_r()` — sıfır-range pəncərə `-50.0` (orta nöqtə).
+  - `calculate_macd()` — sürətli/yavaş EMA fərqi + siqnal xətti (siqnalın
+    öz EMA-sı yalnız MACD xətti artıq hazır olan nöqtələr üzərində
+    hesablanır).
+  - `calculate_adx()` — Wilder-in klassik üsulu (`indicators.py`-dəki
+    ATR/RSI hamarlama nümunəsi ilə eyni), +DI/-DI ilə birlikdə.
+  Bütün funksiyalar causal (yalnız bağlanmış barlar), deterministik
+  fingerprint daşıyır, `insufficient_data`/`ready` konvensiyasını izləyir.
+- `backend/app/analysis/indicator_consensus.py`: `compute_indicator_consensus()`
+  indi `oscillators: OscillatorSetResult` parametri də qəbul edir (məcburi).
+  Yeni təsnifat qaydaları: Stochastic/CCI/Williams %R — RSI ilə eyni
+  oversold/overbought şablonu (ortaq `_classify_below_oversold_above_overbought()`
+  helper-i ilə); MACD — xətt siqnaldan yuxarı/aşağı; **ADX xüsusidir** —
+  ADX tənhaca istiqamət göstərmir (yalnız trend gücünü ölçür), ona görə
+  yalnız `ADX>25` (trend mövcuddur) VƏ +DI/-DI müqayisəsi ilə birlikdə
+  meyl təyin edilir, əks halda (zəif trend) neytral sayılır — bu, sənədli
+  şəkildə izah olunub. `CONSENSUS_VERSION 1.0.0 → 2.0.0` (oscillators
+  tuple 1-dən 6-ya çıxdı).
+- `backend/app/analysis/live_analysis.py`: yeni `build_oscillator_set()`
+  çağırışı əlavə edildi, nəticə `oscillators` sahəsi kimi cavaba əlavə
+  olundu (hər 8 seriyanın xam dəyərləri: stochastic_k, cci, adx, plus_di,
+  minus_di, macd_line, macd_signal, williams_r), lineage-ə
+  `oscillator_fingerprint`/`oscillator_package_version` əlavə edildi.
+  `LIVE_ANALYSIS_API_VERSION 1.0.0 → 1.1.0`.
+- Frontend: `live-technical-summary-panel.tsx`-ə hər osilator/hərəkətli-
+  ortalama qrupu üçün detallı cədvəl (`IndicatorTable`) əlavə edildi —
+  TradingView-un "Осцилляторы >" açılan cədvəlinə bənzər (göstərici adı,
+  dəyər, meyl pill-i), mövcud `.status-pill`/`tone-*` konvensiyası ilə.
+  Gauge kart başlıqları "(RSI)"/"(EMA)"-dan sadə "Osilatorlar"/"Hərəkətli
+  ortalamalar"-a dəyişdi (indi çoxlu göstərici əhatə edir).
+- **Canlı brauzerdə tam sınandı** (55 dəqiqəlik sintetik GOLD tick-ləri —
+  bütün 6 osilator "ready" olsun deyə MACD-in `slow(26)+signal(9)=35`
+  bar tələbini qarşılamaq üçün əvvəlki 30 dəqiqədən artırıldı —
+  birdəfəlik test backend/frontend, real bazaya toxunmadan): endpoint
+  birbaşa `curl` ilə yoxlanıldı (6 osilator da düzgün hesablanıb
+  təsnifləndi), sonra brauzerdə panel — 3 gauge kartı VƏ hər ikisinin
+  detallı cədvəli — dəqiq eyni dəyərlərlə göründü. Konsol xətası yoxdu,
+  sorğu axını təmiz idi (əvvəlki artımın override-artefaktından
+  öyrənilərək bu dəfə override dərhal silindi). Real production
+  backend/frontend (8000/3000) toxunulmadan işlədi.
+- Backend `449 passed`. Frontend: lint təmiz, `12/12` test, production
+  build uğurlu.
+
 ## 2026-08-06 — Əsas ekrana canlı indikator konsensusu paneli əlavə edildi
 
 - İstifadəçi TradingView-un "Texniki analiz" widget-ini (osilator/hərəkətli

@@ -44,6 +44,20 @@ const LEAN_TONE: Record<LeanStatus, string> = {
   insufficient_data: "info",
 };
 
+const INDICATOR_LABELS: Record<string, string> = {
+  rsi: "RSI (14)",
+  stochastic_k: "Stochastic %K (14,3)",
+  cci: "CCI (20)",
+  williams_r: "Williams %R (14)",
+  macd: "MACD (12,26,9)",
+  adx: "ADX (14)",
+};
+
+function indicatorLabel(id: string): string {
+  if (id.startsWith("ema.close.")) return `EMA (${id.split(".").pop()})`;
+  return INDICATOR_LABELS[id] ?? id;
+}
+
 function GaugeCard({ title, summary }: { title: string; summary: ConsensusSummary }) {
   return (
     <article className="live-consensus-gauge">
@@ -57,6 +71,37 @@ function GaugeCard({ title, summary }: { title: string; summary: ConsensusSummar
         <span>Yuxarı meyl: {summary.bullish_leaning_count}</span>
       </div>
     </article>
+  );
+}
+
+function IndicatorTable({ title, items }: { title: string; items: IndicatorLean[] }) {
+  return (
+    <div className="live-consensus-table">
+      <p className="eyebrow">{title}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Göstərici</th>
+            <th>Dəyər</th>
+            <th>Meyl</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.indicator_id}>
+              <td>{indicatorLabel(item.indicator_id)}</td>
+              <td>{item.value == null ? "—" : item.value.toFixed(2)}</td>
+              <td>
+                <span className={`status-pill tone-${LEAN_TONE[item.status]}`}>
+                  <span className="status-dot" aria-hidden="true" />
+                  {LEAN_LABELS[item.status]}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -123,9 +168,13 @@ export function LiveTechnicalSummaryPanel({
       ) : (
         <>
           <div className="live-consensus-grid">
-            <GaugeCard title="Osilatorlar (RSI)" summary={summary.consensus.oscillator_summary} />
+            <GaugeCard title="Osilatorlar" summary={summary.consensus.oscillator_summary} />
             <GaugeCard title="Ümumi" summary={summary.consensus.overall_summary} />
-            <GaugeCard title="Hərəkətli ortalamalar (EMA)" summary={summary.consensus.moving_average_summary} />
+            <GaugeCard title="Hərəkətli ortalamalar" summary={summary.consensus.moving_average_summary} />
+          </div>
+          <div className="live-consensus-tables">
+            <IndicatorTable title="Osilatorlar" items={summary.consensus.oscillators} />
+            <IndicatorTable title="Hərəkətli ortalamalar" items={summary.consensus.moving_averages} />
           </div>
           <p className="card-detail">
             {summary.symbol} · {summary.timeframe} · son yenilənmə{" "}

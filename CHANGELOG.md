@@ -8,6 +8,66 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Expand the live consensus panel with 5 more oscillators (Stochastic, CCI, Williams %R, MACD, ADX)
+
+- Direct follow-up to the live indicator consensus panel: the user
+  re-shared the TradingView reference image and asked to continue closing
+  the gap (TradingView shows 11 oscillators, the first cut only had RSI).
+  Chose to expand oscillators first.
+- New `backend/app/analysis/oscillators.py`, deliberately kept separate
+  from `indicators.py` (which stays untouched -- it's shared, stable
+  infrastructure used across Phase 4's detectors, and none of them need
+  these new oscillators): `calculate_stochastic_k()` (slow %K, SMA-
+  smoothed raw %K; a zero-range window returns the neutral midpoint 50.0
+  rather than dividing by zero), `calculate_cci()` (zero mean-deviation
+  returns 0.0, CCI's own neutral value), `calculate_williams_r()` (zero-
+  range midpoint -50.0), `calculate_macd()` (fast/slow EMA difference plus
+  a signal EMA computed only over the already-ready MACD values),
+  `calculate_adx()` (classic Wilder method, matching the same smoothing
+  style already used for ATR/RSI in `indicators.py`, returning ADX along
+  with its +DI/-DI components). All causal (closed bars only),
+  deterministic, versioned, following the existing `indicators.py`
+  conventions (ready/insufficient_data points, per-module fingerprinting).
+- `backend/app/analysis/indicator_consensus.py`: `compute_indicator_consensus()`
+  now takes a required `oscillators: OscillatorSetResult` parameter.
+  Stochastic/CCI/Williams %R reuse a new shared
+  `_classify_below_oversold_above_overbought()` helper (same oversold/
+  overbought shape as RSI). MACD: bullish-leaning when the line is above
+  its signal, bearish-leaning when below. **ADX is handled specially**: it
+  measures trend *strength*, not direction, so a lean is only assigned
+  when ADX is above the trending threshold (25) *and* +DI/-DI disagree in
+  a clear direction; a weak trend (ADX <= 25) is reported neutral
+  regardless of +DI/-DI, which is documented in the code. Oscillator count
+  went from 1 to 6; `CONSENSUS_VERSION` `1.0.0 -> 2.0.0`.
+- `backend/app/analysis/live_analysis.py`: now also calls
+  `build_oscillator_set()` and exposes the raw oscillator series in a new
+  `oscillators` response field, with `oscillator_fingerprint` /
+  `oscillator_package_version` added to `lineage`.
+  `LIVE_ANALYSIS_API_VERSION` `1.0.0 -> 1.1.0`.
+- Frontend: `live-technical-summary-panel.tsx` gained a detail table per
+  group (oscillators, moving averages) below the gauge cards -- indicator
+  name, value, and a lean pill -- similar in spirit to TradingView's
+  expandable indicator tables, reusing the existing `.status-pill`/
+  `tone-*` styling.
+- Verified live in the browser end-to-end again (55 minutes of synthetic
+  GOLD ticks this time, up from 30, so MACD's `slow(26) + signal(9) = 35`
+  bar requirement is comfortably met and all 6 oscillators reach "ready"):
+  confirmed correct values via a direct API call, then confirmed the
+  panel renders the same six-row oscillator table and one-row moving-
+  average table correctly. This time the browser-visibility override used
+  for triggering a manual refresh was removed immediately after use
+  (rather than left in place, which is what caused the request-loop
+  artifact during the previous panel's verification) -- no request storm,
+  no console errors. Real production services on ports 8000/3000 ran
+  undisturbed throughout.
+- Verification: `test_oscillators.py` (12 tests, including hand-verified
+  exact values for CCI, Williams %R, and a constant-case MACD series) and
+  updated `test_indicator_consensus.py` (now covers all 6 oscillators,
+  including a dedicated MACD-crossover and weak-ADX-is-neutral test).
+  Updated `test_live_technical_summary_api.py` for the new response
+  shape. Full backend regression: `449 passed`. Frontend lint clean,
+  `12/12` tests, production build clean.
+
 ### Added — Live indicator consensus panel on the main dashboard screen
 
 - User asked to add a view similar to TradingView's "Technical Analysis"

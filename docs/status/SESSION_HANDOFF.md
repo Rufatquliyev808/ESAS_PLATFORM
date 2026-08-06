@@ -105,41 +105,48 @@ Son yenilənmə: 2026-08-06
   `minimum_window_returns` orkestrasiya qatında ümumi
   `minimum_sample_size`-a çevrildi. `STATISTICAL_ANALYSIS_API_VERSION
   1.0.0 → 1.1.0`.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Əsas ekrana canlı indikator konsensusu
-  paneli.** İstifadəçi TradingView-un "Texniki analiz" widget-inə (Al/Sat
-  konsensus gauge-ları) bənzər bir görünüş istədi; iki seçim təklif
-  edildi (TradingView widget-ini gömmək / öz hesablamamızı qurmaq) —
-  istifadəçi öz hesablamamızı seçdi. **Vacib:** "Al/Sat" dili platformanın
-  "yalnız tədqiqat" prinsipinə zidd olduğu üçün "Yuxarı meyl/Aşağı
-  meyl/Neytral" etiketləməsi seçildi, "TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT
-  TÖVSİYƏSİ DEYİL" banneri ilə. **Arxitektur fərqi:** bu, sessiyada
+- **Əsas ekrana canlı indikator konsensusu paneli** (commit `c2f559e`,
+  PUSH EDİLİB, CI yaşıl). İstifadəçi TradingView-un "Texniki analiz"
+  widget-inə (Al/Sat konsensus gauge-ları) bənzər bir görünüş istədi; iki
+  seçim təklif edildi (TradingView widget-ini gömmək / öz hesablamamızı
+  qurmaq) — istifadəçi öz hesablamamızı seçdi. **Vacib:** "Al/Sat" dili
+  platformanın "yalnız tədqiqat" prinsipinə zidd olduğu üçün "Yuxarı
+  meyl/Aşağı meyl/Neytral" etiketləməsi seçildi, "TƏDQİQAT MÜŞAHİDƏSİDİR —
+  TİCARƏT TÖVSİYƏSİ DEYİL" banneri ilə. **Arxitektur fərqi:** bu, sessiyada
   indiyədək tikilmiş hər şeydən fərqli — əvvəlki analiz modulları
   `completed` replay sessiyalarının sabit snapshot-u üzərində işləyirdi,
   bu isə ilk dəfə **canlı, dəyişən** pəncərə üzərində (replay sessiyası
-  TƏLƏB ETMİR) işləyir. Yeni `indicator_consensus.py` (RSI+EMA-dan
-  Bullish/Bearish/Neytral təsnifatı — TradingView-un 16 göstəricisinə
-  qarşı qəsdən 2, `indicators.py`-a toxunmadan), yeni `live_analysis.py`
-  (`create_live_technical_summary()`, `lineage.reproducible: false`), yeni
-  `GET /api/v2/live-technical-summary` endpoint-i, yeni
-  `live-technical-summary-panel.tsx` ("Nəticələr" əsas ekranında, mövcud
-  5s polling konvensiyası ilə). Canlı brauzerdə tam sınandı (sintetik GOLD
-  tick-ləri, birdəfəlik test backend/frontend, real bazaya toxunmadan) —
-  düzgün RSI/EMA/konsensus nəticələri göstərildi. Backend `435 passed`,
-  frontend lint/build/`12/12` test təmiz.
+  TƏLƏB ETMİR) işləyir. Yeni `indicator_consensus.py`, yeni
+  `live_analysis.py` (`create_live_technical_summary()`,
+  `lineage.reproducible: false`), yeni `GET /api/v2/live-technical-summary`
+  endpoint-i, yeni `live-technical-summary-panel.tsx` ("Nəticələr" əsas
+  ekranında, mövcud 5s polling konvensiyası ilə). İlk versiyada yalnız
+  RSI+EMA var idi (TradingView-un 16 göstəricisinə qarşı qəsdən 2).
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Canlı konsensus 5 yeni osilatorla
+  genişləndirildi.** İstifadəçi TradingView şəklini yenidən göstərərək
+  davam etməyi istədi; "Osilatorları genişlət" seçildi. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `oscillators.py`
+  (`indicators.py`-a TOXUNMADAN — Stochastic %K, CCI, Williams %R, MACD,
+  ADX+DI/-DI, Wilder üsulu ilə). Osilator sayı 1-dən 6-ya çıxdı.
+  `CONSENSUS_VERSION 2.0.0`, `LIVE_ANALYSIS_API_VERSION 1.1.0`. Frontend-ə
+  hər qrup üçün detallı cədvəl əlavə edildi. Canlı brauzerdə tam sınandı
+  (55 dəqiqəlik sintetik tick-lər — bütün 6 osilator "ready" olsun deyə).
+  Backend `449 passed`, frontend lint/build/`12/12` test təmiz.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
-  konsensusu paneli də var.
+  konsensusu paneli də var (6 osilator + 1 hərəkətli ortalama).
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `1173d53`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `c2f559e`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
-  seriyası, Phase 3 SA-002 volatilite — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Əsas ekranın canlı indikator konsensusu
-  paneli artımı (kod + testlər + sənədlər), yuxarıda təsvir edilib.
+  seriyası, Phase 3 SA-002 volatilite, əsas ekranın canlı indikator
+  konsensusu paneli (RSI+EMA) — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Canlı konsensusun 5 yeni osilatorla
+  genişləndirilməsi (kod + testlər + sənədlər), yuxarıda təsvir edilib.
   AGENTS.md qaydasına görə commit/push istifadəçinin ayrıca açıq
   təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest
   qalıqları, untracked, əhəmiyyətsiz) də qalıb.
@@ -153,9 +160,9 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `435
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `449
   passed`.
-- Frontend: bu artımda (canlı indikator konsensusu paneli) lint təmiz,
+- Frontend: bu artımda (5 yeni osilator + detallı cədvəllər) lint təmiz,
   `12/12` test, production build uğurlu.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
@@ -173,17 +180,23 @@ Son yenilənmə: 2026-08-06
   (YALNIZ test artefaktı — köhnə `/status/operational` pollingi də eyni
   cür təsirləndi, tətbiq kodunda problem yox idi; override silinən kimi
   dərhal dayandı). Real production backend/frontend (8000/3000) sınaq
-  boyu toxunulmadan işlədi.
+  boyu toxunulmadan işlədi. Eyni gün, konsensus paneli 5 yeni osilatorla
+  genişləndirildikdən sonra da (55 dəqiqəlik sintetik tick-lər, override-i
+  bu dəfə dərhal silmə intizamı ilə) yenidən canlı brauzerdə sınanıb —
+  bütün 6 osilator + EMA cədvəldə düzgün göründü, konsol xətası yox,
+  sorğu axını təmiz idi.
 
 ## Növbəti mərhələ
 
 Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002 (pəncərə
 volatilitesi) tamamlandı, əsas ekrana canlı indikator konsensusu paneli
-əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin qalan
-hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick sürəti,
-tick-volume, sessiya, rejim), canlı konsensusun daha çox indikatorla
-genişləndirilməsi, Phase 9-un qalan bölmələri (istəsə), job-queue-nun
-frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
+əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD,
+ADX) genişləndirildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin
+qalan hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick
+sürəti, tick-volume, sessiya, rejim), hərəkətli ortalamaların
+genişləndirilməsi (SMA, əlavə dövrlər), Phase 9-un qalan bölmələri
+(istəsə), job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca
+təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

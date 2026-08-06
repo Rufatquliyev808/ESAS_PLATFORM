@@ -62,10 +62,16 @@ def test_live_technical_summary_is_protected_and_research_only(isolated_database
     assert data["symbol"] == "GOLD"
     assert data["timeframe"] == "M1"
     assert data["interpretation"] == "research_observation_not_trading_signal"
+    assert data["api_version"] == "1.1.0"
     assert data["lineage"]["bar_count"] == 3
     assert data["lineage"]["reproducible"] is False
+    assert data["lineage"]["oscillator_fingerprint"].startswith("sha256:")
+    assert set(data["oscillators"].keys()) == {
+        "stochastic_k", "cci", "adx", "plus_di", "minus_di", "macd_line", "macd_signal", "williams_r",
+    }
     consensus = data["consensus"]
-    assert consensus["version"] == "1.0.0"
+    assert consensus["version"] == "2.0.0"
+    assert len(consensus["oscillators"]) == 6
     assert consensus["interpretation"] == "research_observation_not_trading_signal"
     assert consensus["overall_summary"]["overall_lean"] in {
         "bullish_leaning", "bearish_leaning", "neutral", "insufficient_data",
