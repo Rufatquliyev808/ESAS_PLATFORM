@@ -1,6 +1,6 @@
 # ESAS Platform — Sessiya handoff
 
-Son yenilənmə: 2026-08-06
+Son yenilənmə: 2026-08-07
 
 ## Başlanğıc
 
@@ -122,16 +122,45 @@ Son yenilənmə: 2026-08-06
   endpoint-i, yeni `live-technical-summary-panel.tsx` ("Nəticələr" əsas
   ekranında, mövcud 5s polling konvensiyası ilə). İlk versiyada yalnız
   RSI+EMA var idi (TradingView-un 16 göstəricisinə qarşı qəsdən 2).
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Canlı konsensus 5 yeni osilatorla
-  genişləndirildi.** İstifadəçi TradingView şəklini yenidən göstərərək
-  davam etməyi istədi; "Osilatorları genişlət" seçildi. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `oscillators.py`
-  (`indicators.py`-a TOXUNMADAN — Stochastic %K, CCI, Williams %R, MACD,
-  ADX+DI/-DI, Wilder üsulu ilə). Osilator sayı 1-dən 6-ya çıxdı.
-  `CONSENSUS_VERSION 2.0.0`, `LIVE_ANALYSIS_API_VERSION 1.1.0`. Frontend-ə
-  hər qrup üçün detallı cədvəl əlavə edildi. Canlı brauzerdə tam sınandı
-  (55 dəqiqəlik sintetik tick-lər — bütün 6 osilator "ready" olsun deyə).
-  Backend `449 passed`, frontend lint/build/`12/12` test təmiz.
+- **Canlı konsensus 5 yeni osilatorla genişləndirildi** (commit `9b033df`,
+  PUSH EDİLİB, CI yaşıl). İstifadəçi TradingView şəklini yenidən göstərərək
+  davam etməyi istədi; "Osilatorları genişlət" seçildi. Yeni
+  `oscillators.py` (`indicators.py`-a TOXUNMADAN — Stochastic %K, CCI,
+  Williams %R, MACD, ADX+DI/-DI, Wilder üsulu ilə). Osilator sayı 1-dən
+  6-ya çıxdı. `CONSENSUS_VERSION 2.0.0`, `LIVE_ANALYSIS_API_VERSION 1.1.0`.
+  Frontend-ə hər qrup üçün detallı cədvəl əlavə edildi. Canlı brauzerdə
+  tam sınandı (55 dəqiqəlik sintetik tick-lər).
+- **GitHub Actions genış miqyaslı fasilə yaşadı** (2026-08-06, `15:22`-dən
+  `~20:00` UTC-ə qədər, githubstatus.com-da rəsmi təsdiqlənib) — `9b033df`
+  push edildikdən sonra CI run dəfələrlə "queued"/"cancelled" arasında
+  ilişib qaldı (bizim koddan asılı olmayan GitHub-tərəfli infrastruktur
+  problemi). Fasilə bitdikdən sonra köhnə run "zombi" vəziyyətdə qaldı
+  (həm "queued" göstərir, həm "completed"/"already running" deyirdi) —
+  boş commit (`54b0137`, kod dəyişikliyi yoxdur, yalnız təmiz CI run
+  tetiklədi) ilə həll edildi, CI yaşıl oldu.
+- **Real production backend/frontend yenidən başladıldı** (2026-08-07,
+  istifadəçinin ekran görüntüsündə "Canlı texniki analiz alına bilmədi"
+  xətası göstərməsindən sonra) — kök səbəb: real backend prosesi yeni
+  `/api/v2/live-technical-summary` endpoint-i əlavə edilməzdən ƏVVƏL işə
+  salınmışdı, kod dəyişikliyi restart olmadan yüklənmir. `tools/stop-
+  local-platform.ps1` → `tools/start-local-platform.ps1` ilə düzgün
+  ssenari izlənildi (MT5 Bridge FIFO buferi tick itkisinin qarşısını
+  aldı). Restart sonrası endpoint `404`-dən `401`-ə keçdi (kodun
+  yükləndiyini təsdiqləyir), istifadəçi səhifəni yenilədikdən sonra panel
+  düzgün işləməyə başladı.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Likvidlik-səviyyəsi reaksiya statistikası
+  (yalnız backend).** İstifadəçi çox-taymfreym likvidlik + reaksiya
+  statistikası + "özü öyrənən sistem" + canlı "alış/satış gözlənilir"
+  siqnalı + jurnal istədi. **"Alış/satış" dili rədd edildi** (platformanın
+  "yalnız tədqiqat" prinsipinə zidd, bu, əslində Phase 8 — hələ "PLANNED"
+  — mövzusudur); istifadəçi tədqiqat dilini (yuxarı/aşağı meyl) və ilk
+  addım kimi yalnız backend/backtest statistikasını təsdiqlədi. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: `bars.py`-a `M30/H4/D1`
+  (`BAR_BUILDER_VERSION 1.2.0`), yeni `liquidity_reaction.py` — mövcud
+  `liquidity_sweep.py`-ın pool-larını girişi kimi qəbul edir, hər toxunuşu
+  `reversed`/`continued`/`ambiguous` təsnifləndirir (purge/embargo ilə),
+  `buy_side`/`sell_side` üçün ayrı 95% etibar intervallı statistika.
+  Backend `462 passed`. Hələ API/UI yoxdur.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
@@ -139,17 +168,18 @@ Son yenilənmə: 2026-08-06
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `c2f559e`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `54b0137`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
   seriyası, Phase 3 SA-002 volatilite, əsas ekranın canlı indikator
-  konsensusu paneli (RSI+EMA) — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Canlı konsensusun 5 yeni osilatorla
-  genişləndirilməsi (kod + testlər + sənədlər), yuxarıda təsvir edilib.
-  AGENTS.md qaydasına görə commit/push istifadəçinin ayrıca açıq
-  təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest
-  qalıqları, untracked, əhəmiyyətsiz) də qalıb.
+  konsensusu paneli (RSI+EMA), 5 yeni osilator, boş CI-düzəliş commit-i —
+  hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Likvidlik-səviyyəsi reaksiya
+  statistikası (yalnız backend, kod + testlər + sənədlər), yuxarıda
+  təsvir edilib. AGENTS.md qaydasına görə commit/push istifadəçinin
+  ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki
+  sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -160,10 +190,11 @@ Son yenilənmə: 2026-08-06
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `449
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `462
   passed`.
-- Frontend: bu artımda (5 yeni osilator + detallı cədvəllər) lint təmiz,
-  `12/12` test, production build uğurlu.
+- Frontend: bu artımda (likvidlik reaksiya statistikası, yalnız backend)
+  toxunulmayıb. Əvvəlki artımda (5 yeni osilator + detallı cədvəllər)
+  lint təmiz, `12/12` test, production build uğurlu idi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
@@ -191,12 +222,14 @@ Son yenilənmə: 2026-08-06
 Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002 (pəncərə
 volatilitesi) tamamlandı, əsas ekrana canlı indikator konsensusu paneli
 əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD,
-ADX) genişləndirildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin
-qalan hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick
-sürəti, tick-volume, sessiya, rejim), hərəkətli ortalamaların
-genişləndirilməsi (SMA, əlavə dövrlər), Phase 9-un qalan bölmələri
-(istəsə), job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca
-təsdiqi tələb olunur.
+ADX) genişləndirildi, likvidlik-səviyyəsi reaksiya statistikası (yalnız
+backend) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): likvidlik
+reaksiyasının çox-taymfreym orkestrasiyası/canlı UI/özü-öyrənən sistem/
+jurnal davamı, SA-002-nin qalan hissəsi (tick-to-tick return std-i),
+SA-003-SA-007 (spread, tick sürəti, tick-volume, sessiya, rejim),
+hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), Phase 9-un
+qalan bölmələri (istəsə), job-queue-nun frontend səthi (istəsə).
+İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

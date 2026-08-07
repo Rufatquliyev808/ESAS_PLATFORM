@@ -57,12 +57,12 @@ def test_builds_deterministic_mid_ohlc_and_lineage() -> None:
     assert (bar.first_event_id, bar.last_event_id) == ("event:1", "event:3")
 
 
-@pytest.mark.parametrize("timeframe", ["S1", "S10", "M1", "M5", "M15", "H1"])
+@pytest.mark.parametrize("timeframe", ["S1", "S10", "M1", "M5", "M15", "M30", "H1", "H4", "D1"])
 def test_supports_initial_timeframes(timeframe: str) -> None:
     result = build(
         [tick("event:1", timedelta(seconds=1), bid=100, ask=102)],
         timeframe=timeframe,
-        end_at=BASE_TIME + timedelta(hours=1),
+        end_at=BASE_TIME + timedelta(days=2),
     )
     assert result.timeframe == timeframe
     assert len(result.bars) == 1

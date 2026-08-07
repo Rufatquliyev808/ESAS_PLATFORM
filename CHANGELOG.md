@@ -8,6 +8,59 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Liquidity-level reaction backtest statistics (backend only, no API/UI yet)
+
+- User asked for a much larger feature: multi-timeframe (30m/1h/4h/1d)
+  liquidity levels with trend direction, a self-learning system that finds
+  which indicator readings best predict whether price reverses or breaks
+  through a level, a live signal saying "buy/sell expected" in literal
+  terms, and a journal of those signals with entry price/points moved.
+- **Declined the literal "buy/sell expected" framing**: it directly
+  conflicts with the platform's research-only positioning enforced
+  everywhere else in this codebase (every module carries
+  `interpretation: "research_observation_not_trading_signal"`; tests
+  assert the absence of buy/sell language). This request is, in
+  substance, Phase 8 (Decision/Risk Layer) territory -- still `PLANNED`
+  in the roadmap, coming after Phase 5-7. Confirmed with the user: the
+  live indicator will use research language (bullish/bearish-leaning,
+  historical reliability percentage) instead, and the first increment is
+  backend/backtest statistics only, with no API or UI yet.
+- `backend/app/analysis/bars.py`: added `M30` (1800s), `H4` (14400s), `D1`
+  (86400s) timeframes for the requested 30m/1h/4h/1d granularities (`H1`
+  already existed). `BAR_BUILDER_VERSION` `1.1.0 -> 1.2.0`.
+- New `backend/app/analysis/liquidity_reaction.py`:
+  `compute_liquidity_reaction_statistics(bars, pools, ...)` takes the
+  `LiquidityPool` tuple already built by the existing
+  `liquidity_sweep.py` (no pool-building logic duplicated). Unlike
+  `liquidity_sweep.py`'s narrower "confirmed sweep" definition (which by
+  construction only records touches that already reversed), this looks at
+  *every* touch of a pool level and classifies the forward outcome over
+  `horizon_bars`: `reversed` (price closes back on the approach side),
+  `continued` (price closes through to the far side), or `ambiguous`
+  (neither move clears `reaction_threshold_bps` -- excluded from the
+  directional percentage rather than counted as either outcome).
+  Overlapping touches of the same pool are purged with a `horizon_bars`
+  embargo, matching the purge/embargo convention already used for
+  pattern-candidate backtests. `buy_side` (resistance, approached from
+  below) and `sell_side` (support, approached from above) pools are
+  reported separately, each with a reversed-percentage and a 95%
+  confidence interval computed as a binomial proportion
+  (`p +/- 1.96 * sqrt(p(1-p)/n)`), gated on a minimum sample of 30
+  directional touches (`insufficient_data` below that).
+- Deliberately out of scope for this increment: running this across all
+  four timeframes at once, a live "lean" indicator on the dashboard, the
+  "self-learning" search over indicator-reading combinations (which will
+  need its own multiple-testing correction, since it implies running many
+  trials), and the signal journal UI. All planned as separate follow-up
+  increments.
+- Verification: new `test_liquidity_reaction.py` (10 tests) covering
+  buy_side reversal/continuation/ambiguous classification, sell_side
+  bounce/breakdown, purge/embargo, the insufficient-data/completed sample
+  threshold, fingerprint determinism, unsafe-parameter rejection, and an
+  empty pool list as a valid input. `test_analysis_bars.py`'s parametrized
+  timeframe test now also covers `M30`/`H4`/`D1`. Full backend regression:
+  `462 passed`. Frontend untouched.
+
 ### Added — Expand the live consensus panel with 5 more oscillators (Stochastic, CCI, Williams %R, MACD, ADX)
 
 - Direct follow-up to the live indicator consensus panel: the user

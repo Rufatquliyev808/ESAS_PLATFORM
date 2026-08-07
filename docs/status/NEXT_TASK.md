@@ -94,6 +94,17 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   cədvəl (göstərici/dəyər/meyl) əlavə edildi. Canlı brauzerdə tam sınandı
   (real bazaya toxunmadan) — 6 osilator da düzgün göründü. Backend
   `449 passed`, frontend lint/build/`12/12` test təmiz.
+- **Likvidlik-səviyyəsi reaksiya statistikası (yalnız backend)** (hələ
+  commit edilməyib) — istifadəçinin çox-taymfreym likvidlik + reaksiya
+  statistikası + "özü öyrənən sistem" + canlı siqnal + jurnal istəyinə
+  cavab. **Canlı "alış/satış" dili platformanın prinsipinə zidd olduğu
+  üçün rədd edildi** — tədqiqat dili ilə qurulacaq (yuxarı/aşağı meyl,
+  tarixi faiz), və ilk addım kimi yalnız backend/backtest statistikası
+  seçildi. `bars.py`-a `M30/H4/D1` əlavə edildi. Yeni
+  `liquidity_reaction.py`: mövcud `liquidity_sweep.py`-ın pool-larını
+  girişi kimi qəbul edir, hər toxunuşu `reversed`/`continued`/`ambiguous`
+  təsnifləndirir (purge/embargo ilə), `buy_side`/`sell_side` üçün ayrı
+  95% etibar intervallı reversed-faiz statistikası. Backend `462 passed`.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -125,6 +136,16 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları
   genişləndirmək (SMA, əlavə EMA/SMA dövrləri — TradingView-da 8 MA var,
   bizdə 1) — yalnız istifadəçi ayrıca istəsə.
+- **Likvidlik-səviyyəsi reaksiya statistikası** — yalnız backend/backtest
+  hazırdır (təfərrüat yuxarıda), hələ API/UI yoxdur. Namizədlər (bu
+  hipotezin özünün davamı, istifadəçinin öz təsvir etdiyi sıra ilə):
+  1) çox-taymfreym orkestrasiyası (30m/1h/4h/1d eyni vaxtda), 2) canlı
+  meyl göstəricisi (tədqiqat dili ilə, "alış/satış" sözü olmadan) əsas
+  ekran panelinə əlavə, 3) "özü öyrənən sistem" — müxtəlif indikator
+  kombinasiyalarının hansının daha yüksək tarixi reversed-faizi verdiyini
+  tapmaq (multiple-testing düzəlişi tələb edəcək, çoxlu sınaq aparılacağı
+  üçün), 4) jurnal/tarixçə UI-si (giriş vaxtı/qiyməti, neçə point
+  hərəkət, nəticə). Hər addım istifadəçinin ayrıca təsdiqi ilə.
 
 ## Vizual yoxlama qeydi
 

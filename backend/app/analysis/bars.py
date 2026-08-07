@@ -8,14 +8,17 @@ import math
 from backend.app.database.tick_replay_repository import ReplayTick
 
 
-BAR_BUILDER_VERSION = "1.1.0"
+BAR_BUILDER_VERSION = "1.2.0"
 TIMEFRAME_SECONDS = {
     "S1": 1,
     "S10": 10,
     "M1": 60,
     "M5": 300,
     "M15": 900,
+    "M30": 1800,
     "H1": 3600,
+    "H4": 14400,
+    "D1": 86400,
 }
 
 

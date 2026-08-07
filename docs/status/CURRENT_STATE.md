@@ -1,5 +1,49 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Likvidlik-səviyyəsi reaksiya statistikası (backend, hələ UI/API yoxdur)
+
+- İstifadəçi çox-taymfreym likvidlik səviyyələri + reaksiya statistikası +
+  "özü öyrənən sistem" + canlı "alış/satış gözlənilir" siqnalı + jurnal
+  istədi. **Vacib sərhəd:** "alış/satış gözlənilir" dili platformanın
+  "yalnız tədqiqat, siqnal deyil" prinsipinə birbaşa zidddir — istifadəçiyə
+  aydınlaşdırıldı ki, bu, əslində Phase 8 (Decision/Risk Layer, hələ
+  "PLANNED") mövzusudur, roadmap-da Phase 5-7-dən sonra gəlir. İstifadəçi
+  təsdiqlədi: canlı göstərici **tədqiqat dili ilə** ("yuxarı/aşağı meyl",
+  tarixi etibarlılıq faizi ilə), "alış/satış" sözləri olmadan qurulacaq, VƏ
+  ilk artım kimi **yalnız backend/backtest statistikası** (hələ UI/API
+  yoxdur) seçildi.
+- `backend/app/analysis/bars.py`-a `M30` (1800s), `H4` (14400s), `D1`
+  (86400s) əlavə edildi (istifadəçinin istədiyi 30m/1h/4h/1d dəstəyi üçün
+  — `H1` artıq var idi). `BAR_BUILDER_VERSION 1.1.0 → 1.2.0`.
+- Yeni `backend/app/analysis/liquidity_reaction.py`:
+  `compute_liquidity_reaction_statistics(bars, pools, ...)` — mövcud
+  `liquidity_sweep.py`-ın **artıq qurduğu** `LiquidityPool`-ları girişi
+  kimi qəbul edir (təkrar pool-tikmə yoxdur). Hər dəfə qiymət bir pool
+  səviyyəsinə TOXUNDUQDA (yalnız artıq `liquidity_sweep.py`-ın filtrlədiyi
+  "təsdiqlənmiş sweep" alt-çoxluğu deyil — bütün toxunuşlar), `horizon_bars`
+  irəli baxaraq nəticəni təsnifləndirir: **`reversed`** (qiymət yaxınlaşdığı
+  tərəfə geri bağlanır) vs **`continued`** (qiymət səviyyədən keçib digər
+  tərəfə bağlanır) vs **`ambiguous`** (heç biri `reaction_threshold_bps`
+  həddini keçmir — nə "geri qayıtdı" sayılır, nə "keçdi", statistikadan
+  kənarlaşdırılır). Üst-üstə düşən toxunuşlar `horizon_bars` embargo ilə
+  təmizlənir (Phase 4-ün `_purge_overlapping_events()` konvensiyası ilə
+  eyni). `buy_side` (müqavimət, aşağıdan yaxınlaşma) və `sell_side`
+  (dəstək, yuxarıdan yaxınlaşma) ayrı hesablanır — hər biri üçün
+  `reversed_percent` + 95% etibar intervalı (binomial proporsiya CI:
+  `p ± 1.96*sqrt(p(1-p)/n)`, `n≥30` həddi ilə, `insufficient_data`
+  aşağıda).
+- **Şüurlu şəkildə kənarda qalıb (növbəti artımlara saxlanılıb):** çox-
+  taymfreym orkestrasiyası (30m/1h/4h/1d-ni birlikdə çağıran API),
+  "özü öyrənən sistem" (hansı indikator kombinasiyası daha yaxşı proqnoz
+  verir), canlı "meyl" göstəricisi, jurnal/tarixçə UI-si. Bunların hamısı
+  bu backtest statistikası əsasında qurulacaq, amma hələ toxunulmayıb.
+- Yoxlama: yeni `test_liquidity_reaction.py` (`10` test — buy_side
+  reversal/continuation/ambiguous, sell_side reversal/continuation, purge/
+  embargo, `insufficient_data`/`completed` həddi, fingerprint determinizmi,
+  təhlükəsiz parametr rəddi, boş pool siyahısının etibarlı giriş olması).
+  `test_analysis_bars.py`-ın parametrized testi `M30/H4/D1`-i də əhatə
+  etdi. Tam backend regressiyası: `462 passed`. Frontend toxunulmayıb.
+
 ## 2026-08-06 — Canlı indikator konsensusu 5 yeni osilatorla genişləndirildi
 
 - İstifadəçi TradingView şəklini yenidən göstərərək canlı konsensus panelini
