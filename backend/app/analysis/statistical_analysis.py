@@ -4,6 +4,7 @@ from datetime import datetime
 from backend.app.analysis.bars import TIMEFRAME_SECONDS, build_closed_mid_bars
 from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
 from backend.app.analysis.return_series import compute_return_series
+from backend.app.analysis.spread import compute_spread_statistics
 from backend.app.analysis.volatility import compute_volatility
 from backend.app.database.replay_session_repository import (
     ReplaySession,
@@ -13,7 +14,7 @@ from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
 
 
-STATISTICAL_ANALYSIS_API_VERSION = "1.1.0"
+STATISTICAL_ANALYSIS_API_VERSION = "1.2.0"
 MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000
 
 
@@ -28,6 +29,7 @@ class ReplayStatisticalAnalysis:
     lineage: dict[str, object]
     return_series: dict[str, object]
     volatility: dict[str, object]
+    spread: dict[str, object]
     interpretation: str = "research_observation_not_trading_signal"
     api_version: str = STATISTICAL_ANALYSIS_API_VERSION
 
@@ -39,7 +41,7 @@ def _timestamp(value: str) -> datetime:
 def create_replay_statistical_analysis(
     *, session: ReplaySession, timeframe: str, minimum_sample_size: int = 30,
 ) -> ReplayStatisticalAnalysis:
-    """Build deterministic, causal descriptive statistics (Phase 3 SA-001, SA-002)."""
+    """Build deterministic, causal descriptive statistics (Phase 3 SA-001, SA-002, SA-003)."""
     if session.state != "completed":
         raise ReplayTransitionConflictError("Replay session is not completed")
     if timeframe not in TIMEFRAME_SECONDS:
@@ -82,6 +84,11 @@ def create_replay_statistical_analysis(
         bar_fingerprint=bar_result.fingerprint,
         minimum_sample=minimum_sample_size,
     )
+    spread = compute_spread_statistics(
+        bar_result.bars,
+        bar_fingerprint=bar_result.fingerprint,
+        minimum_sample=minimum_sample_size,
+    )
 
     return ReplayStatisticalAnalysis(
         session_id=session.session_id,
@@ -102,7 +109,10 @@ def create_replay_statistical_analysis(
             "return_series_fingerprint": return_series.fingerprint,
             "volatility_version": volatility.version,
             "volatility_fingerprint": volatility.fingerprint,
+            "spread_version": spread.version,
+            "spread_fingerprint": spread.fingerprint,
         },
         return_series=asdict(return_series),
         volatility=asdict(volatility),
+        spread=asdict(spread),
     )

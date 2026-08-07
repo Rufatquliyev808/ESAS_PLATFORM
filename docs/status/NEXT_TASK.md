@@ -127,6 +127,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   sonunda məcburi "Bu, gələcək proqnoz deyil" xəbərdarlığı (source-text
   guard testi ilə kilidlənib). Canlı brauzerdə tam sınandı. Backend
   `474 passed`, frontend lint/build/`13/13` test təmiz.
+- **Phase 3 SA-003 — spread davranışı** (hələ commit edilməyib) —
+  istifadəçi əsas Phase 3 xəttinə qayıtmağı istədi. Yeni `spread.py`
+  (mövcud `bars.py` spread_min/max/mean-dan, yeni xam-tick keçidi
+  tələb olunmadı) — say/orta/median/std/min/maks/p05/p25/p75/p95/p99
+  (mütləq və nisbi bps). `spread_points` şüurlu buraxılıb (metadata
+  yoxdur). `statistical_analysis.py`-a inteqrasiya,
+  `STATISTICAL_ANALYSIS_API_VERSION 1.2.0`. Backend `480 passed`.
+  Frontend toxunulmayıb (bu endpoint-in hələ UI-si yoxdur).
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -146,13 +154,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
 - **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
-  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi, təfərrüat yuxarıda).
-  Növbəti namizədlər: SA-002-nin qalan hissəsi (tick-to-tick return std-i —
-  yeni xam-tick keçidi tələb edir), SA-003 (spread davranışı), SA-004
-  (tick sürəti), SA-005 (tick-volume), SA-006 (sessiya müqayisəsi —
+  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi + SA-003 spread
+  davranışı, təfərrüat yuxarıda). Növbəti namizədlər: SA-002-nin qalan
+  hissəsi (tick-to-tick return std-i — yeni xam-tick keçidi tələb edir),
+  SA-004 (tick sürəti), SA-005 (tick-volume), SA-006 (sessiya müqayisəsi —
   versiyalanmış təqvim tələb edir), SA-007 (bazar rejimi namizədləri).
   Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
-  və frontend paneli.
+  və frontend paneli (hazırkı SA-001/SA-002/SA-003-ün heç birinin UI-si
+  yoxdur).
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

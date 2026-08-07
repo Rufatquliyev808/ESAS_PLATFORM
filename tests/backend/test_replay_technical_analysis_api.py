@@ -411,12 +411,13 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     data = first.json()["data"]
     assert data["session_id"] == session.session_id
     assert data["timeframe"] == "M1"
-    assert data["api_version"] == "1.1.0"
+    assert data["api_version"] == "1.2.0"
     assert data["interpretation"] == "research_observation_not_trading_signal"
     assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
     assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
     assert data["lineage"]["return_series_fingerprint"].startswith("sha256:")
     assert data["lineage"]["volatility_fingerprint"].startswith("sha256:")
+    assert data["lineage"]["spread_fingerprint"].startswith("sha256:")
     series = data["return_series"]
     assert series["status"] == "completed"
     assert series["n_total"] == 3
@@ -433,6 +434,12 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     assert volatility["robust_mad_status"] == "completed"
     assert volatility["robust_mad"] is not None and volatility["robust_mad"] >= 0
     assert volatility["interpretation"] == "research_observation_not_trading_signal"
+    spread = data["spread"]
+    assert spread["window_spread_absolute"]["status"] == "completed"
+    assert spread["window_spread_absolute"]["n_total"] == 3
+    assert spread["window_spread_absolute"]["minimum"] is not None
+    assert spread["window_spread_relative_bps"]["status"] == "completed"
+    assert spread["interpretation"] == "research_observation_not_trading_signal"
     with get_connection() as connection:
         after = connection.execute(
             "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
@@ -464,6 +471,9 @@ def test_statistical_analysis_api_defaults_to_insufficient_data_below_minimum_sa
     assert volatility["window_range_absolute"]["status"] == "insufficient_data"
     assert volatility["robust_mad_status"] == "insufficient_data"
     assert volatility["robust_mad"] is None
+    spread = data["spread"]
+    assert spread["window_spread_absolute"]["status"] == "insufficient_data"
+    assert spread["window_spread_absolute"]["mean"] is None
 
 
 def test_statistical_analysis_api_enforces_owner_completed_state_and_safe_parameters(

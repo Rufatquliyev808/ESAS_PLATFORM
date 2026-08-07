@@ -177,17 +177,29 @@ Son yenilənmə: 2026-08-07
   alına bilmədi" gördü (eyni kök səbəb: yeni `/api/v2/liquidity-overview`
   endpoint-i restart-dan əvvəl əlavə edilmişdi). Eyni təhlükəsiz stop/start
   ssenari izlənildi, `404` → `401`-ə keçdi.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Tarixi hərəkət diapazonu (excursion
-  range).** İstifadəçi "gələcəyi proqnoz etmək" istədi ("filan nöqtədən
-  filan nöqtəyə qədər gözlənilir") — **eyni sərhəd üçüncü dəfə izah
-  edildi**, tədqiqat-dilli (backward-looking) versiya seçildi. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `ExcursionDistribution`
-  (`reversed`/`continued` üçün ayrı, median/p25/p75/p90, `n≥30`),
-  `ReactionStatistics`-ə əlavə edildi (`REACTION_VERSION 1.2.0`).
-  Frontend-də hər cümlənin sonunda məcburi "Bu, gələcək proqnoz deyil"
-  xəbərdarlığı, source-text guard testi ilə kilidlənib. Canlı brauzerdə
-  tam sınandı. Backend `474 passed`, frontend lint/build/`13/13` test
-  təmiz.
+- **Tarixi hərəkət diapazonu (excursion range)** (commit `e30f22a`, PUSH
+  EDİLİB, CI yaşıl). İstifadəçi "gələcəyi proqnoz etmək" istədi ("filan
+  nöqtədən filan nöqtəyə qədər gözlənilir") — **eyni sərhəd üçüncü dəfə
+  izah edildi**, tədqiqat-dilli (backward-looking) versiya seçildi. Yeni
+  `ExcursionDistribution` (`reversed`/`continued` üçün ayrı, median/p25/
+  p75/p90, `n≥30`), `ReactionStatistics`-ə əlavə edildi. Frontend-də hər
+  cümlənin sonunda məcburi "Bu, gələcək proqnoz deyil" xəbərdarlığı,
+  source-text guard testi ilə kilidlənib.
+- **Real production backend/frontend ÜÇÜNCÜ dəfə yenidən başladıldı**
+  (2026-08-07, istifadəçinin sadə "restart et" tələbi ilə) — excursion
+  range dəyişikliyi mövcud `/api/v2/liquidity-overview` cavab formasını
+  dəyişdiyi üçün restart lazım idi. Eyni təhlükəsiz ssenari, `401`
+  təsdiqləndi.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-003 — spread davranışı.**
+  İstifadəçi "sistemin ümumi düzəlişinə qaldığımız yerdən davam edək"
+  dedi — TradingView/likvidlik işi yan iş idi, əsas xətt (Phase 3)
+  seçilib davam etdirildi. Ətraflı: `docs/status/CURRENT_STATE.md`.
+  Qısaca: yeni `spread.py` — mövcud `bars.py` `spread_min`/`max`/`mean`-
+  dan (yeni xam-tick keçidi tələb OLUNMADI), say/orta/median/std/min/
+  maks/p05/p25/p75/p95/p99 (mütləq və nisbi bps). `spread_points` şüurlu
+  buraxılıb (point/digit metadata yoxdur). `statistical_analysis.py`-a
+  inteqrasiya (`STATISTICAL_ANALYSIS_API_VERSION 1.2.0`). Backend
+  `480 passed`. Frontend toxunulmayıb (bu endpoint-in hələ UI-si yoxdur).
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
@@ -196,19 +208,20 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `11f47ee`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `e30f22a`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
   seriyası, Phase 3 SA-002 volatilite, əsas ekranın canlı indikator
   konsensusu paneli (RSI+EMA), 5 yeni osilator, boş CI-düzəliş commit-i,
   likvidlik-səviyyəsi reaksiya statistikası (yalnız backend), likvidlik
-  sisteminin qalan 3 addımı — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Tarixi hərəkət diapazonu (excursion
-  range — kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
-  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
-  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
-  əhəmiyyətsiz) də qalıb.
+  sisteminin qalan 3 addımı, tarixi hərəkət diapazonu — hamısı push
+  edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 SA-003 — spread davranışı (kod
+  + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına görə
+  commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi qovluqda
+  `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz)
+  də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -219,10 +232,11 @@ Son yenilənmə: 2026-08-07
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `474
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `480
   passed`.
-- Frontend: bu artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13`
-  test, production build uğurlu.
+- Frontend: bu artımda (Phase 3 SA-003, yalnız backend) toxunulmayıb.
+  Əvvəlki artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13` test,
+  production build uğurlu idi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
@@ -262,18 +276,19 @@ Son yenilənmə: 2026-08-07
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası) və SA-002 (pəncərə
-volatilitesi) tamamlandı, əsas ekrana canlı indikator konsensusu paneli
-əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD,
-ADX) genişləndirildi, likvidlik-səviyyəsi reaksiya statistikasının
-istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
-canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
-range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin
-qalan hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick
-sürəti, tick-volume, sessiya, rejim), hərəkətli ortalamaların
-genişləndirilməsi (SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə
-şərtlər, Phase 9-un qalan bölmələri (istəsə), job-queue-nun frontend
-səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
+Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası), SA-002 (pəncərə
+volatilitesi) və SA-003 (spread davranışı) tamamlandı; əsas ekrana canlı
+indikator konsensusu paneli əlavə edildi və 5 yeni osilatorla (Stochastic,
+CCI, Williams %R, MACD, ADX) genişləndirildi; likvidlik-səviyyəsi reaksiya
+statistikasının istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym,
+seqmentasiya, canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət
+diapazonu (excursion range) əlavə edildi. Namizədlər
+(`docs/status/NEXT_TASK.md`): SA-002-nin qalan hissəsi (tick-to-tick
+return std-i), SA-004-SA-007 (tick sürəti, tick-volume, sessiya, rejim),
+hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
+seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri (istəsə),
+job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb
+olunur.
 
 ## Təhlükəsizlik
 

@@ -8,6 +8,33 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-003: spread behaviour
+
+- Returns to the main Phase 3 roadmap track after the TradingView-inspired
+  live consensus/liquidity side work. SA-003 is the next logical section
+  after SA-002 (volatility).
+- New `backend/app/analysis/spread.py`: `compute_spread_statistics()`
+  reuses the per-window `spread_min`/`spread_max`/`spread_mean` that
+  `bars.py` already computes causally from raw ticks -- no new raw-tick
+  pass needed. Treats each window's own `spread_mean` (absolute, and
+  relative to that window's close, in bps) as one population point, then
+  reports count/mean/median/std-dev/min/max/p05/p25/p75/p95/p99 across all
+  windows (gated on `n >= 30`, `insufficient_data` below that).
+  Deliberately omits `spread_points` (the point/digit-denominated variant)
+  since the platform has no confirmed symbol point/digit metadata source
+  and the contract explicitly says not to fabricate it.
+- Wired into the existing `statistical_analysis.py` orchestrator alongside
+  SA-001/SA-002 (same `GET .../statistical-analysis` endpoint, same
+  `minimum_sample_size` parameter). `STATISTICAL_ANALYSIS_API_VERSION`
+  `1.1.0 -> 1.2.0`.
+- Frontend untouched, matching the SA-001/SA-002 precedent -- this
+  endpoint still has no UI at all.
+- Verification: new `test_spread.py` (6 tests, including hand-verified
+  exact percentile values for a 30-window fixture and a relative-spread
+  scaling check). `test_replay_technical_analysis_api.py` updated for the
+  new `spread` field and `api_version`. Full backend regression:
+  `480 passed`.
+
 ### Added — Historical excursion range for liquidity reactions (research-safe answer to a forecast request)
 
 - The user asked, a third time in this liquidity-feature arc, for

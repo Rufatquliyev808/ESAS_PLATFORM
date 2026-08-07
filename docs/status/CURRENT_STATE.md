@@ -1,5 +1,33 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-003: spread davranışı
+
+- İstifadəçi "sistemin ümumi düzəlişinə qaldığımız yerdən davam edək"
+  dedi — TradingView-dan ilhamlanan canlı konsensus/likvidlik paneli
+  (indi bitmiş) əlavə/yan iş idi; əsas xətt Phase 3-dür. SA-003 (spread
+  davranışı) seçildi — SA-002-dən sonra roadmap-ın növbəti məntiqi addımı.
+- Yeni `backend/app/analysis/spread.py`: `compute_spread_statistics()` —
+  `bars.py`-ın ARTIQ hər pəncərə üçün causal olaraq saxladığı
+  `spread_min`/`spread_max`/`spread_mean`-dan istifadə edir (yeni xam-tick
+  keçidi TƏLƏB OLUNMADI). Hər pəncərənin öz `spread_mean`-ini (mütləq, VƏ
+  `spread_mean/close*10000` ilə bps-lə nisbi) populyasiya nöqtəsi kimi
+  götürüb, bütün pəncərələr üzərində say/orta/median/std/min/maks/
+  p05/p25/p75/p95/p99 hesablayır (`n≥30` həddi, aşağıda `insufficient_data`).
+  **Şüurlu şəkildə buraxılıb:** `spread_points` (point/digit-lə ölçülən
+  variant) — platformada təsdiqlənmiş simvol point/digit metadata mənbəyi
+  yoxdur, müqavilə bunu "yoxdursa uydurulmur" deyə açıq qadağan edir.
+- `statistical_analysis.py`-a inteqrasiya: SA-001/SA-002 ilə eyni
+  orkestratora (`create_replay_statistical_analysis`) əlavə edildi, yeni
+  `spread` sahəsi. `STATISTICAL_ANALYSIS_API_VERSION 1.1.0 → 1.2.0`.
+- Frontend toxunulmayıb (bu endpoint-in hələ UI-si yoxdur — SA-001/SA-002
+  artımlarında da eyni ardıcıllıq izlənilib).
+- Yoxlama: yeni `test_spread.py` (`6` test — 30 nümunəlik əl ilə
+  yoxlanmış persentillər (p05/p25/p75/p95/p99 dəqiq hesablanıb),
+  `insufficient_data` həddi, nisbi spread-in qiymətlə düzgün miqyaslanması,
+  boş giriş, fingerprint determinizmi, təhlükəsiz parametr rəddi).
+  `test_replay_technical_analysis_api.py` yeniləndi (`api_version 1.2.0`,
+  `spread` sahəsi). Tam backend regressiyası: `480 passed`.
+
 ## 2026-08-07 — Tarixi hərəkət diapazonu (excursion range) — "proqnoz" tələbinin tədqiqat-dilli qarşılığı
 
 - İstifadəçi (real backend/frontend restart edilib jurnal göstərildikdən
