@@ -8,6 +8,41 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-004: tick speed and interval
+
+- Continues the main Phase 3 roadmap track after SA-003 (spread behaviour).
+- New `backend/app/analysis/tick_rate.py`: `compute_tick_rate_statistics()`
+  is the first Phase 3 module that reads raw ticks directly (all prior
+  SA-00x modules only consumed already-built `bars.py` bars). Counts EVERY
+  tick with a parseable timestamp, deliberately without `bars.py`'s
+  positive-bid/ask validity filter -- arrival rate is a property of the
+  feed, not of price quality, and the contract warns not to equate tick
+  rate with liquidity or trade volume.
+  - `window_tick_count` / `window_ticks_per_second`: one population point
+    per epoch-aligned window (same window definition as `bars.py`),
+    aggregated the same way SA-003 aggregates per-window spread.
+  - `interval_seconds`: gap between canonically-ordered consecutive ticks,
+    aggregated across the whole requested range (not re-bucketed per
+    window -- a single window rarely has enough ticks for its own
+    percentile to be meaningful).
+  - `same_timestamp_tick_count`: count of zero-second gaps.
+  - `total_window_count` / `populated_window_count` / `empty_window_count`
+    always reported, independent of the `minimum_sample` gate.
+    Deliberately omits a separate "partial boundary window" count in this
+    first increment (documented in the module docstring).
+- Wired into `statistical_analysis.py` alongside SA-001/002/003 (new
+  `tick_rate` field, second `iter_tick_batches` pass since the bar-building
+  generator is already consumed). `STATISTICAL_ANALYSIS_API_VERSION`
+  `1.2.0 -> 1.3.0`.
+- Frontend untouched, same precedent as SA-001/002/003.
+- Verification: new `test_tick_rate.py` (8 tests -- hand-verified interval
+  percentiles reusing SA-003's 30-value fixture shape, window bucketing,
+  empty-window counting, same-timestamp counting, out-of-range exclusion,
+  fingerprint determinism, unsafe-parameter rejection).
+  `test_replay_technical_analysis_api.py` updated for the new `tick_rate`
+  field and `api_version` in both the completed and insufficient-data
+  cases. Full backend regression: `488 passed`.
+
 ### Added — Phase 3 SA-003: spread behaviour
 
 - Returns to the main Phase 3 roadmap track after the TradingView-inspired

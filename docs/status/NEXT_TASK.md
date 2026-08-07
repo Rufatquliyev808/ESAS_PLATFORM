@@ -127,14 +127,28 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   sonunda məcburi "Bu, gələcək proqnoz deyil" xəbərdarlığı (source-text
   guard testi ilə kilidlənib). Canlı brauzerdə tam sınandı. Backend
   `474 passed`, frontend lint/build/`13/13` test təmiz.
-- **Phase 3 SA-003 — spread davranışı** (hələ commit edilməyib) —
-  istifadəçi əsas Phase 3 xəttinə qayıtmağı istədi. Yeni `spread.py`
-  (mövcud `bars.py` spread_min/max/mean-dan, yeni xam-tick keçidi
-  tələb olunmadı) — say/orta/median/std/min/maks/p05/p25/p75/p95/p99
+- **Phase 3 SA-003 — spread davranışı** (commit `ae03635`, push edilib, CI
+  yaşıl) — istifadəçi əsas Phase 3 xəttinə qayıtmağı istədi. Yeni
+  `spread.py` (mövcud `bars.py` spread_min/max/mean-dan, yeni xam-tick
+  keçidi tələb olunmadı) — say/orta/median/std/min/maks/p05/p25/p75/p95/p99
   (mütləq və nisbi bps). `spread_points` şüurlu buraxılıb (metadata
   yoxdur). `statistical_analysis.py`-a inteqrasiya,
   `STATISTICAL_ANALYSIS_API_VERSION 1.2.0`. Backend `480 passed`.
   Frontend toxunulmayıb (bu endpoint-in hələ UI-si yoxdur).
+- **Phase 3 SA-004 — tick sürəti/interval** (hələ commit edilməyib) —
+  istifadəçinin "SA-004 (tövsiyə)" seçimi ilə. Yeni `tick_rate.py` —
+  Phase 3-də İLK dəfə xam tick-lər üzərində birbaşa işləyən modul (əvvəlki
+  SA-001/002/003 yalnız `bars.py`-ın artıq qurduğu bar-lar üzərində
+  işləyirdi). `bars.py`-ın bid/ask etibarlılıq filtrini QƏSDƏN tətbiq etmir
+  — tick sürəti qiymət keyfiyyətindən deyil, feed-in özündən asılıdır.
+  Say/saniyə başına tick (pəncərə üzrə, `bars.py` ilə eyni epoch-aligned
+  pəncərə tərifi), ardıcıl tick interval-larının median/p95/p99/maks-ı
+  (bütün aralıq üzrə, pəncərə-üzrə deyil), eyni-timestamp tick sayı,
+  boş/dolu/ümumi pəncərə sayı (hər zaman göstərilir, minimum_sample
+  həddindən asılı olmadan). `statistical_analysis.py`-a inteqrasiya
+  (ikinci `iter_tick_batches` keçidi ilə), yeni `tick_rate` sahəsi,
+  `STATISTICAL_ANALYSIS_API_VERSION 1.2.0 → 1.3.0`. Yeni `test_tick_rate.py`
+  (8 test). Tam backend regressiyası: `488 passed`. Frontend toxunulmayıb.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -155,13 +169,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
 - **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
   SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi + SA-003 spread
-  davranışı, təfərrüat yuxarıda). Növbəti namizədlər: SA-002-nin qalan
-  hissəsi (tick-to-tick return std-i — yeni xam-tick keçidi tələb edir),
-  SA-004 (tick sürəti), SA-005 (tick-volume), SA-006 (sessiya müqayisəsi —
-  versiyalanmış təqvim tələb edir), SA-007 (bazar rejimi namizədləri).
+  davranışı + SA-004 tick sürəti, təfərrüat yuxarıda). Növbəti namizədlər:
+  SA-002-nin qalan hissəsi (tick-to-tick return std-i — indi SA-004-ün
+  xam-tick keçidi ilə paylaşıla bilər), SA-005 (tick-volume — eyni xam-tick
+  keçidi), SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb edir),
+  SA-007 (bazar rejimi namizədləri — əvvəlki SA-002/003/004/005-dən asılı).
   Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
-  və frontend paneli (hazırkı SA-001/SA-002/SA-003-ün heç birinin UI-si
-  yoxdur).
+  və frontend paneli (hazırkı SA-001/SA-002/SA-003/SA-004-ün heç birinin
+  UI-si yoxdur).
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

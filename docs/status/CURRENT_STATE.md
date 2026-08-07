@@ -1,5 +1,51 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-004: tick sürəti və interval
+
+- İstifadəçi "platformanı qaldığımız yerdən düzəldək" dedi — SA-003-dən
+  sonra Phase 3-ün növbəti addımı olaraq seçim təklif edildi, istifadəçi
+  **SA-004 (tick sürəti)**-ni seçdi (tövsiyə edilən seçim idi: SA-005
+  eyni xam-tick keçidini tələb edir, SA-006 versiyalanmış təqvim tələb
+  edir — daha böyük iş, SA-007 əvvəlki SA-002-005-dən asılıdır).
+- Yeni `backend/app/analysis/tick_rate.py`: `compute_tick_rate_statistics()`
+  — Phase 3-də **İLK dəfə** xam tick-lər üzərində birbaşa işləyən modul
+  (SA-001/002/003-ün hamısı yalnız `bars.py`-ın artıq qurduğu bar-lar
+  üzərində işləyirdi, çünki bu, mid-price seriyası tələb edirdi). Tick
+  sürəti isə qiymət keyfiyyətindən asılı deyil (feed-in özünün xüsusiyyəti),
+  ona görə `bars.py`-ın bid/ask müsbətlik/etibarlılıq filtri **qəsdən
+  tətbiq edilmir** — parse oluna bilən timestamp-i olan HƏR tick sayılır.
+  - `window_tick_count` / `window_ticks_per_second`: hər dolu pəncərənin
+    (bars.py ilə eyni epoch-aligned pəncərə tərifi) öz tick sayı/saniyə
+    başına tick-i bir populyasiya nöqtəsi kimi, SA-003-ün pəncərə-üzrə
+    spread aqreqasiyası ilə eyni konvensiya.
+  - `interval_seconds`: kanonik sıralanmış ardıcıl tick-lər arasındakı
+    fərq (saniyə), **bütün sorğu aralığı üzrə** aqreqasiya edilir (pəncərə-
+    üzrə deyil — tək pəncərədə adətən öz persentili üçün kifayət qədər
+    tick olmur).
+  - `same_timestamp_tick_count`: sıfır-saniyəlik fərqlərin sayı.
+  - `total_window_count` / `populated_window_count` / `empty_window_count`
+    — həmişə göstərilir, `minimum_sample` həddindən asılı deyil. **Şüurlu
+    şəkildə buraxılıb:** ayrıca "qismən sərhəd pəncərəsi" sayı (modulun öz
+    docstring-ində izah olunub — epoch-aligned pəncərələmə artıq
+    `start_at`/`end_at` ilə kəsilən pəncərəni digərləri kimi eyni cür
+    rəftar edir, `bars.py` da eyni şeyi edir).
+- `statistical_analysis.py`-a inteqrasiya: SA-001/002/003 ilə eyni
+  orkestratora əlavə edildi, yeni `tick_rate` sahəsi. Bar-qurma
+  generator-u artıq istehlak olunduğu üçün ikinci ayrıca
+  `iter_tick_batches` keçidi əlavə edildi (liquidity_overview.py-ın hər
+  taymfreym üçün ayrıca sorğu konvensiyası ilə eyni yanaşma).
+  `STATISTICAL_ANALYSIS_API_VERSION 1.2.0 → 1.3.0`.
+- Frontend toxunulmayıb (SA-001/002/003-lə eyni ardıcıllıq — bu endpoint-in
+  hələ UI-si yoxdur).
+- Yoxlama: yeni `test_tick_rate.py` (`8` test — SA-003-ün 30-qiymətlik
+  fixture formasını təkrar istifadə edən əl ilə yoxlanmış interval
+  persentilləri, pəncərə bucketing-i, boş pəncərə sayımı, eyni-timestamp
+  sayımı, aralıqdan kənar tick-lərin xaric edilməsi, fingerprint
+  determinizmi, təhlükəsiz parametr rəddi).
+  `test_replay_technical_analysis_api.py` yeniləndi (`api_version 1.3.0`,
+  `tick_rate` sahəsi, həm `completed` həm `insufficient_data` hallarında).
+  Tam backend regressiyası: `488 passed`.
+
 ## 2026-08-07 — Phase 3 SA-003: spread davranışı
 
 - İstifadəçi "sistemin ümumi düzəlişinə qaldığımız yerdən davam edək"
