@@ -5,6 +5,7 @@ import { ReplayPanel } from "./replay-panel";
 import { PatternHypothesisRegistry } from "./pattern-hypothesis-registry";
 import { ShadowRunsPanel } from "./shadow-runs-panel";
 import { LiveTechnicalSummaryPanel } from "./live-technical-summary-panel";
+import { LiquidityOverviewPanel } from "./liquidity-overview-panel";
 import { DashboardSidebar, SectionGuide, type DashboardSection } from "./dashboard-navigation";
 
 type Bridge = {
@@ -675,6 +676,9 @@ export default function Home() {
               )}
               {activeSection === "results" && token && (
                 <LiveTechnicalSummaryPanel token={token} onUnauthorized={handleReplayUnauthorized} />
+              )}
+              {activeSection === "results" && token && (
+                <LiquidityOverviewPanel token={token} onUnauthorized={handleReplayUnauthorized} />
               )}
               {activeSection === "live" && (
                 <>

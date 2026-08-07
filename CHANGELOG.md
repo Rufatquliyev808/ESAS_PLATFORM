@@ -8,6 +8,70 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Liquidity system: multi-timeframe overview, indicator-segment search, live panel, journal
+
+- Direct continuation of the liquidity-reaction backtest increment. The
+  user asked to complete the remaining three steps (multi-timeframe
+  orchestration, a live indicator, a "self-learning" search over which
+  indicator readings predict reactions best, and a journal) in one pass
+  without pausing for per-step confirmation. The research-only framing
+  agreed on previously (no literal buy/sell language) carried through
+  unchanged.
+- New `backend/app/analysis/liquidity_reaction_segments.py` (the "self-
+  learning" piece): `find_indicator_segments()` checks five fixed
+  conditions at each touch bar (RSI/Stochastic oversold or overbought,
+  ADX trending) against already-computed `indicators.py`/`oscillators.py`
+  readings (matched via a new `ReactionEvent.bar_index` field --
+  `REACTION_VERSION` `1.0.0 -> 1.1.0`), and reports each condition's
+  historical reversed-percentage against the unconditional baseline.
+  Because five conditions are tested against the same event set, each
+  segment's confidence interval uses a Bonferroni-corrected alpha
+  (`(1 - confidence_level) / 5`) rather than the plain 95% used for the
+  baseline -- otherwise scanning enough conditions would eventually turn
+  up a "significant" one by chance. A condition only counts as exceeding
+  the baseline when its corrected CI floor is still above the baseline's
+  point estimate.
+- New `backend/app/analysis/liquidity_overview.py` (multi-timeframe
+  orchestration): `create_liquidity_overview()` processes `M30/H1/H4/D1`
+  together, live (no replay session, same architecture as
+  `live_analysis.py`) -- for each timeframe: builds bars, runs
+  `market_structure` for a trend label, `liquidity_sweep` for pools, the
+  nearest resistance/support level to the current price (with distance in
+  bps), the reaction backtest, and the indicator segments. New protected
+  `GET /api/v2/liquidity-overview` endpoint (`symbol`, `horizon_bars`,
+  `reaction_threshold_bps`).
+- Frontend: new `liquidity-overview-panel.tsx` on the "Nəticələr" (results)
+  screen, below the live consensus panel. Each timeframe gets a card:
+  trend pill, current price, nearest resistance/support (points and bps),
+  a research-language reaction sentence ("historically reverses X% of the
+  time, 95% CI ..." -- no "buy/sell expected"), a list of indicator
+  segments that historically exceeded baseline, and a **journal**
+  (`<details>`, last 30 touches: time, level, outcome, points moved) --
+  this is the literal answer to the user's journal request, and needed no
+  new backend infrastructure at all, since the existing `ReactionEvent`
+  data already carries everything a journal entry needs. Deliberately
+  polls every 90s (not 5s like the live consensus panel) plus a manual
+  refresh button, since this endpoint recomputes the full four-timeframe
+  backtest on every call (~1.4s against real data).
+- Verified live in the browser end-to-end (15 days of oscillating
+  synthetic GOLD ticks -- 21,600 ticks, needed because a pure trend never
+  revisits the same historical level -- disposable backend/frontend, real
+  production database and services untouched): confirmed meaningful
+  results via direct API call (e.g. M30 buy_side: 834 touches, 57.7%
+  reversed; an RSI-overbought segment reaching 84.7% against that 57.7%
+  baseline), then confirmed the panel renders all four timeframe cards,
+  segment lists, and a 30-row journal correctly, with no console errors
+  and no request storm (this time the panel's own refresh button was
+  clicked directly via JS rather than toggling `document.visibilityState`,
+  avoiding the loop artifact seen during the earlier consensus-panel
+  verification). D1 correctly showed `insufficient_data` (only 15 daily
+  bars in the synthetic dataset).
+- Verification: new `test_liquidity_reaction_segments.py` (5 tests),
+  `test_liquidity_overview.py` (3 tests) and `test_liquidity_overview_api.py`
+  (2 tests). New `frontend/tests/liquidity-overview-ui.test.mjs` source-text
+  guard. Full backend regression: `472 passed`. Frontend lint clean,
+  `13/13` tests, production build clean.
+
 ### Added — Liquidity-level reaction backtest statistics (backend only, no API/UI yet)
 
 - User asked for a much larger feature: multi-timeframe (30m/1h/4h/1d)

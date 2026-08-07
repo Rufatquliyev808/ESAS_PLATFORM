@@ -1,5 +1,63 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Likvidlik sisteminin qalan 3 addımı: çox-taymfreym UI, özü-öyrənən seqmentasiya, jurnal
+
+- İstifadəçi əvvəlki artımdan sonra "1-dən başlayaq, soruşma, hamısını
+  edək" dedi — yəni bütün 4 addımı (çox-taymfreym orkestrasiyası, canlı UI,
+  özü-öyrənən sistem, jurnal) ara-sıra təsdiq soruşmadan ardıcıl tamamlamaq
+  tapşırığı. Tədqiqat dili (yuxarı/aşağı meyl, "alış/satış" yox) qaydası
+  eyni qaldı.
+- Yeni `backend/app/analysis/liquidity_reaction_segments.py`
+  (**"özü öyrənən sistem"**): `find_indicator_segments()` — hər toxunma
+  anındakı RSI/Stochastic/ADX oxusunu (artıq mövcud `indicators.py`/
+  `oscillators.py`-dan, `ReactionEvent.bar_index` ilə uyğunlaşdırılır) 5
+  sabit şərtlə (`rsi_oversold/overbought`, `stochastic_oversold/overbought`,
+  `adx_trending`) yoxlayır, hər şərtin tarixi geri-qayıtma faizini bazaya
+  qarşı müqayisə edir. **5 şərt eyni məlumat üzərində sınandığı üçün**
+  Bonferroni-düzəlişli etibar intervalı istifadə olunur
+  (`alpha=(1-0.95)/5`, `NormalDist().inv_cdf`) — düzəlişsiz sınaqda təsadüfən
+  "əhəmiyyətli" görünən şərt tapmaq riski aradan qalxır. Şərt yalnız
+  düzəlişli CI-nın aşağı sərhədi bazanın nöqtə qiymətindən yuxarı olduqda
+  "bazadan üstündür" sayılır. `ReactionEvent`-ə `bar_index` sahəsi əlavə
+  edildi (`REACTION_VERSION 1.0.0 → 1.1.0`).
+- Yeni `backend/app/analysis/liquidity_overview.py`
+  (**çox-taymfreym orkestrasiyası**): `create_liquidity_overview()` — 4
+  taymfreymi (`M30/H1/H4/D1`) paralel emal edir, hər biri üçün canlı bar
+  qurur (replay sessiyası tələb etmir, `live_analysis.py` ilə eyni
+  arxitektur), `market_structure` → trend (`bullish`/`bearish`/`neutral`),
+  `liquidity_sweep` → pool-lar → ən yaxın müqavimət/dəstək (cari qiymətdən
+  məsafə bps-lə), `liquidity_reaction` → reaksiya statistikası,
+  `liquidity_reaction_segments` → seqment nəticələri. Yeni qorunan
+  `GET /api/v2/liquidity-overview` endpoint-i (`symbol`, `horizon_bars`,
+  `reaction_threshold_bps`).
+- Frontend: yeni `liquidity-overview-panel.tsx` — "Nəticələr" əsas
+  ekranında, `live-technical-summary-panel`-in altında. Hər taymfreym üçün
+  kart: trend pill-i, cari qiymət, ən yaxın müqavimət/dəstək (point və bps
+  ilə), tədqiqat dilli reaksiya cümləsi ("tarixən X% geri qayıdıb, 95% CI
+  ...", "alış/satış gözlənilir" YOXDUR), bazadan üstün seqmentlərin siyahısı
+  (yalnız `exceeds_baseline=true` olanlar göstərilir), və **jurnal**
+  (`<details>`, son 30 toxunma: vaxt, səviyyə, nəticə, point/bps) —
+  istifadəçinin "jurnalı olsun" tələbinin dəqiq qarşılığı, yeni backend
+  infrastrukturu tələb etmədi (mövcud `ReactionEvent`-lərin özü artıq bu
+  məlumatı daşıyır). **Qəsdən 5 saniyəlik deyil, 90 saniyəlik polling** +
+  manual "Yenilə" düyməsi — bu endpoint hər çağırışda 4 taymfreymin tam
+  backtest statistikasını yenidən hesablayır (real datada ~1.4s), 5s
+  polling mənasız yük olardı.
+- **Canlı brauzerdə tam sınandı** (15 günlük, ossilasiya edən sintetik
+  GOLD tick-ləri — 21,600 tick, birdəfəlik test backend/frontend, real
+  bazaya toxunmadan): endpoint birbaşa yoxlanıldı — M30/H1/H4 üçün
+  mənalı nəticələr (məs. M30 buy_side: 834 toxunma, 57.7% geri qayıtma,
+  RSI-overbought seqmenti 84.7%-ə çatır; H4 sell_side: 100% geri qayıtma,
+  n=35), D1 düzgün `insufficient_data` (yalnız 15 bar). Brauzerdə bütün 4
+  kart, seqment siyahıları və jurnal (30 sətir, vaxt/qiymət/nəticə/point
+  ilə) düzgün göründü, konsol xətası yox, sorğu axını təmiz (4 sorğu,
+  storm yox — əvvəlki artımdan öyrənilmiş dərs tətbiq edildi: panelin öz
+  "Yenilə" düyməsi JS-lə birbaşa klikləndi, `visibilityState` override-i
+  istifadə edilmədi). Real production backend/frontend (8000/3000) sınaq
+  boyu toxunulmadan işlədi.
+- Backend `472 passed`. Frontend: lint təmiz, `13/13` test, production
+  build uğurlu.
+
 ## 2026-08-07 — Likvidlik-səviyyəsi reaksiya statistikası (backend, hələ UI/API yoxdur)
 
 - İstifadəçi çox-taymfreym likvidlik səviyyələri + reaksiya statistikası +

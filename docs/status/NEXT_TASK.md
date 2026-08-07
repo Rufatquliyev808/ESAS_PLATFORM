@@ -105,6 +105,20 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   girişi kimi qəbul edir, hər toxunuşu `reversed`/`continued`/`ambiguous`
   təsnifləndirir (purge/embargo ilə), `buy_side`/`sell_side` üçün ayrı
   95% etibar intervallı reversed-faiz statistikası. Backend `462 passed`.
+- **Likvidlik sisteminin qalan 3 addımı (çox-taymfreym, özü-öyrənən
+  seqmentasiya, jurnal)** (hələ commit edilməyib) — istifadəçinin "1-dən
+  başlayaq, soruşma, hamısını edək" tapşırığına cavab, ardıcıl təsdiqsiz
+  tamamlandı. Yeni `liquidity_reaction_segments.py` (RSI/Stochastic/ADX
+  şərtləri üzrə Bonferroni-düzəlişli seqment statistikası), yeni
+  `liquidity_overview.py` (4 taymfreymin orkestrasiyası, trend + ən yaxın
+  səviyyələr + reaksiya + seqmentlər), yeni `GET
+  /api/v2/liquidity-overview` endpoint-i, yeni
+  `liquidity-overview-panel.tsx` ("Nəticələr" ekranında, 90s polling,
+  jurnal daxil — jurnal üçün yeni backend infrastrukturu tələb olunmadı,
+  mövcud `ReactionEvent`-lər artıq bu məlumatı daşıyır). Canlı brauzerdə
+  tam sınandı (15 günlük ossilasiya edən sintetik data, real bazaya
+  toxunmadan). Backend `472 passed`, frontend lint/build/`13/13` test
+  təmiz.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -136,16 +150,18 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları
   genişləndirmək (SMA, əlavə EMA/SMA dövrləri — TradingView-da 8 MA var,
   bizdə 1) — yalnız istifadəçi ayrıca istəsə.
-- **Likvidlik-səviyyəsi reaksiya statistikası** — yalnız backend/backtest
-  hazırdır (təfərrüat yuxarıda), hələ API/UI yoxdur. Namizədlər (bu
-  hipotezin özünün davamı, istifadəçinin öz təsvir etdiyi sıra ilə):
-  1) çox-taymfreym orkestrasiyası (30m/1h/4h/1d eyni vaxtda), 2) canlı
-  meyl göstəricisi (tədqiqat dili ilə, "alış/satış" sözü olmadan) əsas
-  ekran panelinə əlavə, 3) "özü öyrənən sistem" — müxtəlif indikator
-  kombinasiyalarının hansının daha yüksək tarixi reversed-faizi verdiyini
-  tapmaq (multiple-testing düzəlişi tələb edəcək, çoxlu sınaq aparılacağı
-  üçün), 4) jurnal/tarixçə UI-si (giriş vaxtı/qiyməti, neçə point
-  hərəkət, nəticə). Hər addım istifadəçinin ayrıca təsdiqi ilə.
+- **Likvidlik-səviyyəsi reaksiya statistikası — istifadəçinin təsvir
+  etdiyi 4 addımın hamısı tamamlandı**: 1) çox-taymfreym orkestrasiyası
+  (M30/H1/H4/D1), 2) canlı meyl göstəricisi (tədqiqat dili ilə, əsas
+  ekranda), 3) "özü öyrənən sistem" (indikator seqmentasiyası, Bonferroni
+  düzəlişli), 4) jurnal (son 30 toxunma, vaxt/qiymət/nəticə/point).
+  Namizədlər (yalnız istifadəçi ayrıca istəsə): daha çox indikator şərti
+  seqmentasiyaya əlavə etmək (hazırda 5: RSI/Stochastic oversold-
+  overbought, ADX trending), taymfreym-üzrə sazlanabilir `horizon_bars`/
+  `reaction_threshold_bps` UI-də, real production bazada faktiki nə qədər
+  tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
+  olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
+  `insufficient_data` kimi göstərilir, xəta vermir).
 
 ## Vizual yoxlama qeydi
 
@@ -166,6 +182,14 @@ osilatorla (Stochastic, CCI, Williams %R, MACD, ADX) genişləndirildikdən
 sonra da (55 dəqiqəlik sintetik GOLD tick-ləri, bütün 6 osilator "ready"
 olsun deyə) yenidən canlı brauzerdə sınandı — düzgün nəticələr, konsol
 xətası yox, real bazaya toxunulmadı.
+
+2026-08-07: likvidlik sisteminin qalan 3 addımı (çox-taymfreym UI, özü-
+öyrənən seqmentasiya, jurnal) tamamlandıqdan sonra canlı brauzerdə
+sınandı (15 günlük ossilasiya edən sintetik GOLD tick-ləri, birdəfəlik
+test backend/frontend ilə) — 4 taymfreym kartı, seqment siyahıları və
+30-sətirlik jurnal düzgün göründü, konsol xətası yox, sorğu axını təmiz.
+Real production backend/frontend (8000/3000) sınaq boyu toxunulmadan
+işlədi.
 
 ## Başlama şərti
 

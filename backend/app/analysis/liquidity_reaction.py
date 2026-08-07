@@ -7,7 +7,7 @@ from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.liquidity_sweep import LiquidityPool
 
 
-REACTION_VERSION = "1.0.0"
+REACTION_VERSION = "1.1.0"
 Z_95 = 1.96
 MIN_EFFECTIVE_SAMPLE = 30
 REVERSED = "reversed"
@@ -24,6 +24,7 @@ class ReactionEvent:
     pool_side: str
     pool_level: float
     touched_at: str
+    bar_index: int
     outcome: str
     excursion_bps: float | None
 
@@ -109,7 +110,7 @@ def _events_for_pool(
         outcome, excursion = _classify_touch_outcome(
             bars, index, pool, threshold_bps=threshold_bps, horizon_bars=horizon_bars,
         )
-        events.append(ReactionEvent(pool.side, pool.level, bar.end_at, outcome, excursion))
+        events.append(ReactionEvent(pool.side, pool.level, bar.end_at, index, outcome, excursion))
         embargo_until_index = index + 1 + horizon_bars
         index = embargo_until_index
     return events

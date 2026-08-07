@@ -60,6 +60,7 @@ from backend.app.analysis.replay_analysis import (
 )
 from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
 from backend.app.analysis.live_analysis import create_live_technical_summary
+from backend.app.analysis.liquidity_overview import create_liquidity_overview
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
 from backend.app.strategies.pattern_hypothesis_registry import get_pattern_hypothesis_registry
 from backend.app.strategies.replay_pattern_candidates import (
@@ -322,6 +323,22 @@ def live_technical_summary(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(analysis), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/liquidity-overview")
+def liquidity_overview(
+    symbol: str = Query(default="GOLD", min_length=1, max_length=64),
+    horizon_bars: int = Query(default=20, ge=1, le=200),
+    reaction_threshold_bps: float = Query(default=5.0, gt=0, le=500),
+    _: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        overview = create_liquidity_overview(
+            symbol=symbol, horizon_bars=horizon_bars, reaction_threshold_bps=reaction_threshold_bps,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(overview), "meta": {"api_version": "2"}}
 
 
 @app.get("/internal/replay/{session_id}/quality-report")

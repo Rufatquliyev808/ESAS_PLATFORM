@@ -569,6 +569,20 @@ footer p { margin: 0; }
 .live-consensus-table td { padding: 6px; border-bottom: 1px solid var(--line); }
 @media (max-width: 800px) { .live-consensus-grid { grid-template-columns: 1fr; } .live-consensus-tables { grid-template-columns: 1fr; } }
 
+/* Multi-timeframe liquidity-level reaction overview -- backtest-heavy, slow-polling. */
+.liquidity-overview { margin-top: 18px; }
+.liquidity-overview-actions { display: flex; align-items: center; gap: 10px; }
+.liquidity-overview-actions button { border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; background: white; font: inherit; font-weight: 700; cursor: pointer; }
+.liquidity-timeframe-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.liquidity-timeframe-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fbfdfc; }
+.liquidity-timeframe-card .eyebrow { font-size: 14px; }
+.liquidity-segment-list { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+.liquidity-journal { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.liquidity-journal summary { cursor: pointer; font-weight: 700; font-size: 13px; }
+.liquidity-journal ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow-y: auto; }
+.liquidity-journal li { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--line); padding: 4px 0; }
+@media (max-width: 800px) { .liquidity-timeframe-grid { grid-template-columns: 1fr; } .liquidity-journal li { grid-template-columns: 1fr 1fr; } }
+
 /* Section-based dashboard navigation keeps one learning topic in focus. */
 .dashboard-shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
 .dashboard-sidebar { position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: rgba(255,255,255,.94); box-shadow: 0 14px 32px rgba(15,44,34,.07); }
