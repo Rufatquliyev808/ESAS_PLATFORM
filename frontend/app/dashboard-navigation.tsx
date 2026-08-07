@@ -5,6 +5,7 @@ export type DashboardSection =
   | "live"
   | "replay"
   | "technical"
+  | "statistics"
   | "structure"
   | "liquidity"
   | "bos-choch"
@@ -27,6 +28,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "live", title: "Canlı məlumat", description: "Tick, Bridge və növbə", group: "Ümumi" },
   { id: "replay", title: "Replay sessiyaları", description: "Tarixi məlumatın seçimi", group: "Araşdırma" },
   { id: "technical", title: "Texniki göstəricilər", description: "Qiymət, EMA, RSI və ATR", group: "Araşdırma" },
+  { id: "statistics", title: "Statistik analiz", description: "Gəlir, volatilite, spread, tick, rejim (Phase 3)", group: "Araşdırma" },
   { id: "structure", title: "Bazar strukturu", description: "HH, HL, LH və LL", group: "Qiymət davranışı" },
   { id: "liquidity", title: "Likvidlik", description: "Süpürülmə və geri alınma", group: "Qiymət davranışı" },
   { id: "bos-choch", title: "BOS / CHoCH", description: "Qırılma və istiqamət dəyişikliyi", group: "Qiymət davranışı" },

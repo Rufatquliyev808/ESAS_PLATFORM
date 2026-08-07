@@ -1,5 +1,51 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-001-SA-007 üçün frontend panel
+
+- İstifadəçi seçdi: "Frontend panel (tövsiyə)" — SA-001-SA-007 tamamlandıqdan
+  sonra heç birinin UI-si olmadığı üçün bu, async job resursundan və digər
+  "yalnız istəsə" namizədlərdən üstün tutuldu.
+- Yeni `frontend/app/statistical-analysis-panel.tsx`: mövcud
+  `technical-analysis-panel.tsx`/`replay-panel.tsx` axınının eyni
+  konvensiyası (replay sessiyası seçimi → tamamlanmış sessiya tələbi →
+  forma + nəticə kartları). Yeni "Statistik analiz" menyu bəndi
+  (`dashboard-navigation.tsx`-də "Araşdırma" qrupunda, "Texniki
+  göstəricilər"-in yanında).
+  - Forma: vaxt çərçivəsi (S1-D1) + minimum nümunə həddi.
+  - 7 kart: SA-001 (gəlir seriyası), SA-002 (volatilite — range/log-return/
+    tick-to-tick return/robust MAD), SA-003 (spread), SA-004 (tick sürəti),
+    SA-005 (tick-volume + flag cədvəli), SA-007 (rejim cədvəli, "ixtiyari
+    ad" xəbərdarlığı ilə), SA-006 (UTC saat cədvəli, `calendar_unavailable`
+    məhdudiyyəti + "adlandırılmış sessiya deyil" xəbərdarlığı ilə).
+  - Mövcud `.analysis-card`/`.analysis-controls`/`.research-pill`/
+    `.table-wrap` CSS-indən istifadə edir — yeni CSS əlavə edilmədi.
+- **Canlı brauzerdə tam sınandı** (birdəfəlik scratch backend port 8001-də
+  + scratch SQLite bazası, birdəfəlik frontend port 5173-də, real
+  production backend/frontend 8000/3000 toxunulmadan): 1,100 sintetik
+  GOLD tick (3s aralıqla, 55 dəqiqə, ossilasiya edən qiymət, dəyişən
+  volume/flags) bazaya əlavə edildi, backend-in öz repository
+  funksiyaları ilə (create→start→run_max_speed_replay) real `completed`
+  replay sessiyası yaradıldı. Brauzerdə daxil olundu, "Statistik analiz"
+  bölməsi açıldı:
+  - Defolt M5-də (11 pəncərə, defolt minimum 30-dan az): bütün
+    pəncərə-əsaslı bölmələr düzgün `insufficient_data`, AMMA tick-səviyyəli
+    metriklər (tick-to-tick return, tick interval) öz 1,099-nöqtəlik
+    nümunəsi ilə düzgün `completed` — bu, dizaynın tam gözlədiyi
+    fərqləndirmədir.
+  - M1-ə keçdikdə (55 pəncərə): bütün 7 bölmə `completed`, real
+    hesablanmış dəyərlərlə — 8 fərqli rejim (nisbətləri tam 100%-ə
+    cəmlənir), flag cədvəli sintetik məlumatdakı 977/123 bölgüsünə dəqiq
+    uyğun, tək UTC 08:00 saat qrupu real 95% etibar intervalı ilə.
+  - Konsol xətası yox, sorğu axını təmiz (hər vaxt-çərçivəsi dəyişikliyinə
+    bir sorğu, storm yox).
+- Yoxlama: yeni `tests/statistical-analysis-ui.test.mjs` (mənbə-mətn
+  qoruması — TƏDQİQAT banneri, buy/sell dili yox, rejim/sessiya
+  xəbərdarlıqları mövcud, bütün 7 SA-00x işarəsi mövcud).
+  `tests/dashboard-navigation.test.mjs` yeni bölmə üçün yeniləndi.
+  Frontend: lint təmiz, `14/14` test, production build uğurlu.
+- **Bu artımla Phase 3-ün SA-001-SA-007 müqaviləsi HƏM backend HƏM
+  frontend baxımından tam əhatə olunur.**
+
 ## 2026-08-07 — Phase 3 SA-006: sessiya müqayisəsi (təqvim-yoxdur deqradasiya rejimi) — SA-001-SA-007 tamamlandı
 
 - İstifadəçi "davam et" dedi. SA-007-dən sonra qalan yeganə Phase 3

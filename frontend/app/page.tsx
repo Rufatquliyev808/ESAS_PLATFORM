@@ -476,6 +476,12 @@ export default function Home() {
       impact: "EMA istiqaməti, RSI momentumu, ATR isə GOLD-un dəyişkənliyini izah edir. Birlikdə kontekst verir, təkbaşına əməliyyat qərarı vermir.",
       evidence: "Yalnız bağlanmış barlardan EMA, RSI və ATR hesablanır; warm-up nöqtələri və hesablama izi ayrıca göstərilir.",
     },
+    statistics: {
+      title: "Statistik analiz (Phase 3)",
+      metric: "Gəlir · volatilite · spread · tick",
+      impact: "GOLD-un tarixi qiymət/tick davranışını təsviri şəkildə xarakterizə edir — pəncərə gəliri, dəyişkənliyi, spread-i, tick sürəti/həcmi, dataset-daxili rejim qrupları və UTC saat müqayisəsi. Heç biri gələcək qiyməti proqnozlaşdırmır.",
+      evidence: "SA-001-SA-007 müqaviləsinin 7 bölməsi eyni bağlanmış barlardan və xam tick-lərdən, causal (yalnız keçmiş məlumat) şəkildə hesablanır; hər bölmənin öz nümunə sayı və `insufficient_data` həddi var.",
+    },
     structure: {
       title: "Bazar strukturu",
       metric: "HH · HL · LH · LL",
@@ -552,6 +558,11 @@ export default function Home() {
       "Tamamlanmış replay sessiyasının seçildiyini yoxlayın.",
       "EMA, RSI və ATR dövrlərini seçib analizi hesablayın.",
       "Rəqəmləri birlikdə şərh edin; heç biri təkbaşına siqnal deyil.",
+    ],
+    statistics: [
+      "Vaxt çərçivəsini və minimum nümunə həddini seçib analizi hesablayın.",
+      "Hər bölmənin öz nümunə sayına və `insufficient_data` işarəsinə baxın.",
+      "Rejim adlarını və UTC saat qruplarını təsviri məlumat kimi oxuyun, ticarət qərarı üçün istifadə etməyin.",
     ],
     structure: [
       "HH/HL və LH/LL ardıcıllığını müqayisə edin.",
@@ -878,7 +889,7 @@ export default function Home() {
           </section>
                 </>
               )}
-              {(["replay", "technical", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies", "pattern-candidates"] as DashboardSection[]).includes(activeSection) && (
+              {(["replay", "technical", "statistics", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies", "pattern-candidates"] as DashboardSection[]).includes(activeSection) && (
           <ReplayPanel
             view={activeSection}
             token={token}

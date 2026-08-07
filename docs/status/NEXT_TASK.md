@@ -225,9 +225,21 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   regressiyası: `516 passed`. Frontend toxunulmayıb.
 
 **Phase 3-ün SA-001-SA-007 müqaviləsi indi tam əhatə olunub** (SA-006
-təqvim-yoxdur deqradasiya rejimində). Qalan: async job/persistence
-resursu (`POST /api/v2/statistical-analyses`) və frontend paneli (heç
-bir SA-00x-in hələ UI-si yoxdur).
+təqvim-yoxdur deqradasiya rejimində) **VƏ frontend paneli əlavə edildi**
+(commit hələ göndərilməyib) — istifadəçinin "frontend panel (tövsiyə)"
+seçimi ilə. Yeni `statistical-analysis-panel.tsx`: "Araşdırma" qrupunda
+yeni "Statistik analiz" bölməsi (mövcud replay-session-seçimi axını ilə),
+form (vaxt çərçivəsi + minimum nümunə) + 7 SA bölməsinin hər biri üçün
+kart (status/n/orta/median/std/aralıq). Canlı brauzerdə tam sınandı
+(birdəfəlik scratch backend/DB, 1,100 sintetik tick, real replay
+sessiyası tamamlanana qədər işlədilib): M5-də (11 pəncərə) pəncərə-əsaslı
+bölmələr düzgün `insufficient_data`, tick-səviyyəli metriklər (tick-return,
+interval) öz nümunəsi ilə `completed`; M1-də (55 pəncərə) bütün 7 bölmə
+`completed`, real dəyərlər (8 rejim, 100%-ə cəmlənən nisbətlər, dəqiq
+flag/UTC-saat cədvəlləri). Konsol xətası yox, sorğu storm-u yox. Yeni
+`statistical-analysis-ui.test.mjs`. Frontend: lint təmiz, `14/14` test,
+build uğurlu. Qalan: async job/persistence resursu
+(`POST /api/v2/statistical-analyses`) — yalnız istifadəçi ayrıca istəsə.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -246,17 +258,16 @@ bir SA-00x-in hələ UI-si yoxdur).
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
-- **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi tam əhatə olunub**
-  (pəncərə/resampling təməli + SA-001 gəlir seriyası + SA-002 pəncərə
-  volatilitesi (tick-to-tick return std-i daxil) + SA-003 spread
-  davranışı + SA-004 tick sürəti + SA-005 tick-volume/flags + SA-006
-  sessiya müqayisəsi (təqvim-yoxdur deqradasiya rejimi) + SA-007 bazar
-  rejimi namizədləri, təfərrüat yuxarıda). Namizədlər (yalnız istifadəçi
-  ayrıca istəsə): real versiyalanmış simvol/broker təqvimi qurulsa SA-006
-  "rəsmi" rejimə keçirilə bilər; async job/persistence resursu
-  (`POST /api/v2/statistical-analyses`) və frontend paneli (hazırkı
-  SA-001-SA-007-in heç birinin UI-si yoxdur) — bunlar Phase 3-ün qalan
-  əsas işidir.
+- **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi VƏ frontend
+  paneli tam əhatə olunub** (pəncərə/resampling təməli + SA-001 gəlir
+  seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return std-i
+  daxil) + SA-003 spread davranışı + SA-004 tick sürəti + SA-005
+  tick-volume/flags + SA-006 sessiya müqayisəsi (təqvim-yoxdur deqradasiya
+  rejimi) + SA-007 bazar rejimi namizədləri + `statistical-analysis-panel.tsx`,
+  təfərrüat yuxarıda). Namizədlər (yalnız istifadəçi ayrıca istəsə): real
+  versiyalanmış simvol/broker təqvimi qurulsa SA-006 "rəsmi" rejimə
+  keçirilə bilər; async job/persistence resursu
+  (`POST /api/v2/statistical-analyses`).
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

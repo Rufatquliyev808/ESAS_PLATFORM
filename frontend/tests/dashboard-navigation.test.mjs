@@ -26,6 +26,7 @@ test("dashboard opens the results section by default", () => {
 test("sidebar exposes educational section guidance", () => {
   assert.match(navigation, /Nəticələr/);
   assert.match(navigation, /Texniki göstəricilər/);
+  assert.match(navigation, /Statistik analiz/);
   assert.match(navigation, /Strategiya müqayisəsi/);
   assert.match(navigation, /GOLD-a mümkün təsiri/);
   assert.match(navigation, /<summary>Nəyə əsaslanır\?<\/summary>/);
@@ -35,6 +36,7 @@ test("large analysis areas render independently", () => {
   assert.match(replay, /view === "replay"/);
   assert.match(replay, /view === "strategies"/);
   assert.match(replay, /view === "pattern-candidates"/);
+  assert.match(replay, /view === "statistics"/);
   assert.match(analysis, /view === "technical"/);
   assert.match(analysis, /view === "structure"/);
   assert.match(analysis, /view === "liquidity"/);

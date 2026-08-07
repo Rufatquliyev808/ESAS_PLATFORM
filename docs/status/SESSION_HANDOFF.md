@@ -246,32 +246,46 @@ Son yenilənmə: 2026-08-07
   `create_replay_quality_report()`-dan. `STATISTICAL_ANALYSIS_API_VERSION
   1.5.0 → 1.6.0`. Yeni `test_regime_candidates.py` (7 test). Backend
   `507 passed`.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-006 — sessiya müqayisəsi
-  (təqvim-yoxdur deqradasiya rejimi) — SA-001-SA-007 tamamlandı.**
-  İstifadəçi "davam et" dedi; SA-006 yeganə qalan namizəd idi. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: müqavilə versiyalanmış
-  simvol/broker təqvimi tələb edir, AMMA təqvim olmadıqda öz açıq
-  deqradasiya rejimini müəyyənləşdirir (yalnız UTC saat dilimləri,
-  "London/NY" adlandırılmadan, `calendar_unavailable` işarəsi ilə) —
-  platformada real təqvim olmadığı üçün MƏHZ bu rejim tətbiq edildi,
-  uydurma təqvim qurulmadı. Yeni `session_comparison.py`: pəncərələri xam
-  UTC saatına (0-23) görə qruplaşdırır, hər qrup üçün return orta/median/
-  std + 95% CI, nümunə sayı, orta nisbi range — yeni xam-tick keçidi YOX.
-  `calendar_unavailable: true` + məhdudiyyət mətni HƏR CAVABDA mövcuddur.
-  `statistical_analysis.py`-a inteqrasiya (yeni `sessions` sahəsi),
-  `STATISTICAL_ANALYSIS_API_VERSION 1.6.0 → 1.7.0`. Yeni
-  `test_session_comparison.py` (9 test). Tam backend regressiyası:
-  `516 passed`. Frontend toxunulmayıb. **Bu ilə Phase 3-ün SA-001-SA-007
-  müqaviləsi tam əhatə olunur.**
+- **Phase 3 SA-006 — sessiya müqayisəsi (təqvim-yoxdur deqradasiya
+  rejimi) — SA-001-SA-007 tamamlandı** (commit `78ad3ab`, PUSH EDİLİB, CI
+  yaşıl). İstifadəçi "davam et" dedi; SA-006 yeganə qalan namizəd idi.
+  Müqavilə versiyalanmış simvol/broker təqvimi tələb edir, AMMA təqvim
+  olmadıqda öz açıq deqradasiya rejimini müəyyənləşdirir (yalnız UTC saat
+  dilimləri, "London/NY" adlandırılmadan, `calendar_unavailable` işarəsi
+  ilə) — platformada real təqvim olmadığı üçün MƏHZ bu rejim tətbiq
+  edildi, uydurma təqvim qurulmadı. Yeni `session_comparison.py`:
+  pəncərələri xam UTC saatına (0-23) görə qruplaşdırır, hər qrup üçün
+  return orta/median/std + 95% CI, nümunə sayı, orta nisbi range — yeni
+  xam-tick keçidi YOX. `STATISTICAL_ANALYSIS_API_VERSION 1.6.0 → 1.7.0`.
+  Yeni `test_session_comparison.py` (9 test). Backend `516 passed`.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Frontend panel Phase 3 SA-001-SA-007
+  üçün.** İstifadəçi "Frontend panel (tövsiyə)" seçdi — heç bir SA-00x-in
+  UI-si yox idi. Ətraflı: `docs/status/CURRENT_STATE.md`. Qısaca: yeni
+  `statistical-analysis-panel.tsx` ("Araşdırma" qrupunda yeni "Statistik
+  analiz" bölməsi, mövcud replay-session-seçimi axını ilə) — forma (vaxt
+  çərçivəsi + minimum nümunə) + 7 SA bölməsi üçün kart. **Canlı brauzerdə
+  tam sınandı** (birdəfəlik scratch backend port 8001 + scratch SQLite,
+  birdəfəlik frontend port 5173, real production 8000/3000 toxunulmadan):
+  1,100 sintetik tick, real `completed` replay sessiyası
+  (create→start→run_max_speed_replay). M5-də (11 pəncərə) pəncərə-əsaslı
+  bölmələr düzgün `insufficient_data`, tick-səviyyəli metriklər öz
+  nümunəsi ilə `completed`; M1-də (55 pəncərə) bütün 7 bölmə `completed`,
+  real dəyərlər (8 rejim 100%-ə cəmlənir, flag cədvəli 977/123 dəqiq
+  uyğun). Konsol xətası yox, sorğu storm-u yox. Yeni
+  `statistical-analysis-ui.test.mjs`. Frontend: lint təmiz, `14/14` test,
+  build uğurlu. **Bu ilə Phase 3-ün SA-001-SA-007 müqaviləsi HƏM backend
+  HƏM frontend baxımından tam əhatə olunur.**
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
   konsensusu paneli (6 osilator + 1 hərəkətli ortalama) VƏ çox-taymfreym
   likvidlik icmalı paneli (tarixi hərəkət diapazonu daxil) də var.
+  "Araşdırma" qrupunda indi yeni "Statistik analiz" bölməsi də var (Phase
+  3 SA-001-SA-007, replay-session-seçimi axını ilə).
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `5037783`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `78ad3ab`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
@@ -281,13 +295,13 @@ Son yenilənmə: 2026-08-07
   sisteminin qalan 3 addımı, tarixi hərəkət diapazonu, Phase 3 SA-003
   spread davranışı, Phase 3 SA-004 tick sürəti, Phase 3 SA-005
   tick-volume/flags, Phase 3 SA-002 tamamlanması (tick-to-tick return
-  std), Phase 3 SA-007 bazar rejimi namizədləri — hamısı push edilib,
-  CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 SA-006 — sessiya müqayisəsi
-  (təqvim-yoxdur deqradasiya rejimi) (kod + testlər + sənədlər), yuxarıda
-  təsvir edilib. AGENTS.md qaydasına görə commit/push istifadəçinin
-  ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki
-  sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
+  std), Phase 3 SA-007 bazar rejimi namizədləri, Phase 3 SA-006 sessiya
+  müqayisəsi — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 SA-001-SA-007 üçün frontend
+  panel (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
+  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini
+  gözləyir. İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları,
+  untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -300,9 +314,10 @@ Son yenilənmə: 2026-08-07
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
   qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `516
   passed`.
-- Frontend: bu artımda (Phase 3 SA-006, yalnız backend) toxunulmayıb.
-  Əvvəlki artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13` test,
-  production build uğurlu idi.
+- Backend bu artımda (Phase 3 SA-001-SA-007 frontend paneli, yalnız
+  frontend) toxunulmayıb, `516 passed` dəyişməz qalır.
+- Frontend: bu artımla (statistical-analysis-panel.tsx) lint təmiz,
+  `14/14` test, production build uğurlu.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
@@ -339,28 +354,55 @@ Son yenilənmə: 2026-08-07
   metodu ilə, storm yox) — hər cümlənin sonunda "Bu, gələcək proqnoz
   deyil" xəbərdarlığı düzgün göründü, real hesablanan median/p25/p75
   dəyərləri dəqiq eyni mətnlə render olundu, konsol xətası yox.
+- 2026-08-07 (davamı): Phase 3 SA-001-SA-007 frontend paneli canlı
+  brauzerdə tam sınandı — bu dəfə tamamlanmış REPLAY SESSİYASI tələb
+  edən ilk panel yoxlaması, ona görə fərqli quraşdırma istifadə edildi:
+  birdəfəlik scratch backend (port 8001, ayrıca SQLite bazası) + 1,100
+  sintetik GOLD tick (3s aralıqla, 55 dəqiqə) + backend-in öz repository
+  funksiyaları ilə (`create_replay_session`→`transition_replay_session`
+  ("start")→`run_max_speed_replay`) real `completed` sessiya yaradıldı —
+  bu, `_prepare()` pytest fixture-larının eyni ardıcıllığıdır, UI-dən
+  DEYİL. Birdəfəlik frontend (port 5173, `NEXT_PUBLIC_ESAS_API_URL`
+  scratch backend-ə yönləndirilib) ilə daxil olundu, "Statistik analiz"
+  bölməsi açıldı: defolt M5-də (11 pəncərə, defolt minimum 30-dan az)
+  pəncərə-əsaslı bölmələr düzgün `insufficient_data`, AMMA tick-səviyyəli
+  metriklər (tick-return, interval) öz 1,099-nöqtəlik nümunəsi ilə düzgün
+  `completed` — bu, backend-in dizayn etdiyi fərqləndirmənin frontend-də
+  də düzgün göründüyünü sübut edir. M1-ə keçdikdə (55 pəncərə, forma
+  seçici React controlled-component olduğu üçün JS-lə native value
+  setter + `change`/submit event-ləri ilə dəyişdirildi — `read_page`
+  aksesibilite ağacı bu səhifədə form elementlərinə çatmadan kəsildiyi
+  üçün) bütün 7 bölmə `completed`, real dəyərlərlə — 8 fərqli rejim
+  (nisbətlər tam 100%-ə cəmlənir), flag cədvəli sintetik datadakı
+  977/123 bölgüsünə dəqiq uyğun, tək UTC 08:00 saat qrupu real 95%
+  etibar intervalı ilə. Konsol xətası yox, sorğu axını təmiz (hər
+  vaxt-çərçivəsi dəyişikliyinə bir sorğu, storm yox). Scratch backend/
+  frontend prosesləri PID ilə dayandırıldı, scratch SQLite faylı silindi.
+  Real production backend/frontend (8000/3000) sınaq boyu toxunulmadan
+  işlədi.
 
 ## Növbəti mərhələ
 
 Seçilməyib. **Phase 3-ün SA-001-SA-007 statistik analiz müqaviləsi indi
-tam əhatə olunub**: SA-001 (gəlir seriyası), SA-002 (pəncərə volatilitesi,
-tick-to-tick return std-i daxil), SA-003 (spread davranışı), SA-004 (tick
-sürəti/interval), SA-005 (tick-volume/flags), SA-006 (sessiya müqayisəsi,
-təqvim-yoxdur deqradasiya rejimində — yalnız UTC saat dilimləri,
-adlandırılmış sessiya yox) və SA-007 (bazar rejimi namizədləri); əsas
-ekrana canlı indikator konsensusu paneli əlavə edildi və 5 yeni osilatorla
-(Stochastic, CCI, Williams %R, MACD, ADX) genişləndirildi;
-likvidlik-səviyyəsi reaksiya statistikasının istifadəçinin təsvir etdiyi 4
-addımı da (çox-taymfreym, seqmentasiya, canlı UI, jurnal) tamamlandı,
-üzərinə tarixi hərəkət diapazonu (excursion range) əlavə edildi.
-Namizədlər (`docs/status/NEXT_TASK.md`, hamısı yalnız istifadəçi ayrıca
-istəsə): real versiyalanmış broker təqvimi qurulsa SA-006-nı "rəsmi"
-rejimə keçirmək, async job/persistence resursu
-(`POST /api/v2/statistical-analyses`) və frontend paneli (heç bir
-SA-00x-in hələ UI-si yoxdur) — bunlar Phase 3-ün qalan əsas işidir,
-hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
-seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri, job-queue-nun
-frontend səthi. İstifadəçinin ayrıca təsdiqi tələb olunur.
+HƏM backend HƏM frontend baxımından tam əhatə olunub**: SA-001 (gəlir
+seriyası), SA-002 (pəncərə volatilitesi, tick-to-tick return std-i
+daxil), SA-003 (spread davranışı), SA-004 (tick sürəti/interval), SA-005
+(tick-volume/flags), SA-006 (sessiya müqayisəsi, təqvim-yoxdur
+deqradasiya rejimində — yalnız UTC saat dilimləri, adlandırılmış sessiya
+yox) və SA-007 (bazar rejimi namizədləri) — bütün 7 bölmə üçün yeni
+`statistical-analysis-panel.tsx` ("Statistik analiz" bölməsi, canlı
+brauzerdə tam sınanıb); əsas ekrana canlı indikator konsensusu paneli
+əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD,
+ADX) genişləndirildi; likvidlik-səviyyəsi reaksiya statistikasının
+istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
+canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
+range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`, hamısı
+yalnız istifadəçi ayrıca istəsə): real versiyalanmış broker təqvimi
+qurulsa SA-006-nı "rəsmi" rejimə keçirmək, async job/persistence resursu
+(`POST /api/v2/statistical-analyses`), hərəkətli ortalamaların
+genişləndirilməsi (SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə
+şərtlər, Phase 9-un qalan bölmələri, job-queue-nun frontend səthi.
+İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

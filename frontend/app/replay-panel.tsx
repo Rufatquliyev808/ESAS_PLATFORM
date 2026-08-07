@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { TechnicalAnalysisPanel } from "./technical-analysis-panel";
+import { StatisticalAnalysisPanel } from "./statistical-analysis-panel";
 import { StrategyComparisonPanel } from "./strategy-comparison-panel";
 import { PatternCandidatesPanel } from "./pattern-candidates-panel";
 import type { DashboardSection } from "./dashboard-navigation";
@@ -197,6 +198,8 @@ export function ReplayPanel({ token, onUnauthorized, view, onOpenReplay }: { tok
           <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && view === "pattern-candidates" &&
           <PatternCandidatesPanel key={`pattern-candidates-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
+        {selected?.state === "completed" && view === "statistics" &&
+          <StatisticalAnalysisPanel key={`statistics-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest", "fvg"].includes(view) &&
           <TechnicalAnalysisPanel key={`technical-${selected.session_id}`} view={view as Exclude<ReplayView, "replay" | "strategies">} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
       </>

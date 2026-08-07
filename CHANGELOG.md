@@ -8,6 +8,53 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Frontend panel for Phase 3 SA-001-SA-007
+
+- SA-001 through SA-007 had no UI at all until now (each increment
+  deliberately shipped backend-only, matching the rest of Phase 4's early
+  pattern). The user asked for a frontend panel now that the whole
+  contract is covered.
+- New `frontend/app/statistical-analysis-panel.tsx`: a new "Statistik
+  analiz" menu item under "Araşdırma" (`replay-panel.tsx`'s existing
+  per-replay-session-analysis flow, alongside "Texniki göstəricilər" --
+  same session picker, same "select a completed session" precondition).
+  A single form (timeframe, minimum sample size) fetches
+  `GET .../statistical-analysis` and renders one card per SA section:
+  return series, volatility (including the tick-to-tick return and
+  robust MAD), spread, tick rate, tick volume (with a flag-combination
+  table), regime candidates (with the "labels are arbitrary, not
+  comparable across runs" disclaimer inline), and session comparison
+  (with the `calendar_unavailable` limitation and "not a named session"
+  disclaimer inline). Every distribution reports its own status/n/mean/
+  median/std/range, so a viewer can see at a glance which sections
+  cleared `minimum_sample_size` and which did not -- reusing the existing
+  `.analysis-card`/`.analysis-controls`/`.research-pill`/`.table-wrap`
+  styling, no new CSS needed.
+- Wired through `dashboard-navigation.tsx` (new `"statistics"` section)
+  and `page.tsx` (section guide/steps, inclusion in the replay-scoped
+  route list).
+- **Verified live in browser** (disposable scratch backend on port 8001 +
+  scratch SQLite DB + disposable frontend on port 5173, real production
+  backend/frontend on 8000/3000 untouched throughout): seeded 1,100
+  synthetic GOLD ticks (3s apart, 55 minutes, oscillating price, varying
+  volume/flags), created and ran a real completed replay session through
+  the backend's own repository functions, then logged into the frontend
+  and opened the new section. At the default M5 timeframe (11 windows,
+  below the default 30-sample minimum) every window-level section
+  correctly showed `insufficient_data` while the tick-level metrics
+  (tick-to-tick return, tick interval) still completed from their own
+  1,099-gap sample -- exactly the intended distinction. Switching to M1
+  (55 windows) made every section `completed` with correct real numbers:
+  8 distinct regimes summing to 100% confidence share, a flag-combination
+  table matching the exact 977/123 split in the seeded data, a single UTC
+  08:00 session bucket with a real 95% CI. No console errors, no request
+  storm (one fetch per timeframe change).
+- Verification: new `tests/statistical-analysis-ui.test.mjs` (source-text
+  guard -- research banner, no buy/sell language, regime-label and
+  session-bucket disclaimers present, all seven SA-00x markers present).
+  `tests/dashboard-navigation.test.mjs` updated for the new section.
+  Frontend: lint clean, `14/14` test, production build successful.
+
 ### Added — Phase 3 SA-006: session comparison (calendar-unavailable degraded mode)
 
 - Completes Phase 3's SA-001 through SA-007 statistical-analysis
