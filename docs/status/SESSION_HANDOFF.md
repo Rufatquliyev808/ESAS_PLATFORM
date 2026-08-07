@@ -234,21 +234,35 @@ Son yenilənmə: 2026-08-07
   `VOLATILITY_VERSION 1.0.0 → 1.1.0`. `STATISTICAL_ANALYSIS_API_VERSION
   1.4.0 → 1.5.0`. `test_volatility.py` yeniləndi + 4 yeni test. Backend
   `500 passed`.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-007 — bazar rejimi
-  namizədləri.** İstifadəçi "davam et" dedi; SA-006 (sessiya) vs SA-007
+- **Phase 3 SA-007 — bazar rejimi namizədləri** (commit `5037783`, PUSH
+  EDİLİB, CI yaşıl). İstifadəçi "davam et" dedi; SA-006 (sessiya) vs SA-007
   seçimi təklif edildi (SA-006 versiyalanmış təqvim tələb edir — daha
-  böyük iş), istifadəçi SA-007-ni seçdi. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `regime_candidates.py` —
+  böyük iş), istifadəçi SA-007-ni seçdi. Yeni `regime_candidates.py` —
   hər pəncərəni artıq mövcud 4 feature (volatilite/spread/tick-sürəti —
   dataset-daxili median split ilə low/high, universal hədd YOX; return
   istiqaməti — up/down/flat/unknown) üzrə neytral, leksikoqrafik sıralı
   `regime_N` etiketinə təsnifləndirir (iqtisadi ad YOX, rejim etiketləri
   fərqli icralar arasında sabit deyil). `data_quality_status` real
-  `create_replay_quality_report()`-dan (bütün pəncərələrə eyni tətbiq
-  olunur). Yeni xam-tick keçidi tələb etmir. `statistical_analysis.py`-a
-  inteqrasiya (yeni `regimes` sahəsi), `STATISTICAL_ANALYSIS_API_VERSION
-  1.5.0 → 1.6.0`. Yeni `test_regime_candidates.py` (7 test). Tam backend
-  regressiyası: `507 passed`. Frontend toxunulmayıb.
+  `create_replay_quality_report()`-dan. `STATISTICAL_ANALYSIS_API_VERSION
+  1.5.0 → 1.6.0`. Yeni `test_regime_candidates.py` (7 test). Backend
+  `507 passed`.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-006 — sessiya müqayisəsi
+  (təqvim-yoxdur deqradasiya rejimi) — SA-001-SA-007 tamamlandı.**
+  İstifadəçi "davam et" dedi; SA-006 yeganə qalan namizəd idi. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: müqavilə versiyalanmış
+  simvol/broker təqvimi tələb edir, AMMA təqvim olmadıqda öz açıq
+  deqradasiya rejimini müəyyənləşdirir (yalnız UTC saat dilimləri,
+  "London/NY" adlandırılmadan, `calendar_unavailable` işarəsi ilə) —
+  platformada real təqvim olmadığı üçün MƏHZ bu rejim tətbiq edildi,
+  uydurma təqvim qurulmadı. Yeni `session_comparison.py`: pəncərələri xam
+  UTC saatına (0-23) görə qruplaşdırır, hər qrup üçün return orta/median/
+  std + 95% CI, nümunə sayı, orta nisbi range — yeni xam-tick keçidi YOX.
+  `calendar_unavailable: true` + məhdudiyyət mətni HƏR CAVABDA mövcuddur.
+  `statistical_analysis.py`-a inteqrasiya (yeni `sessions` sahəsi),
+  `STATISTICAL_ANALYSIS_API_VERSION 1.6.0 → 1.7.0`. Yeni
+  `test_session_comparison.py` (9 test). Tam backend regressiyası:
+  `516 passed`. Frontend toxunulmayıb. **Bu ilə Phase 3-ün SA-001-SA-007
+  müqaviləsi tam əhatə olunur.**
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
@@ -257,7 +271,7 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `ef06731`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `5037783`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
@@ -267,12 +281,13 @@ Son yenilənmə: 2026-08-07
   sisteminin qalan 3 addımı, tarixi hərəkət diapazonu, Phase 3 SA-003
   spread davranışı, Phase 3 SA-004 tick sürəti, Phase 3 SA-005
   tick-volume/flags, Phase 3 SA-002 tamamlanması (tick-to-tick return
-  std) — hamısı push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 SA-007 — bazar rejimi
-  namizədləri (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
-  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
-  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
-  əhəmiyyətsiz) də qalıb.
+  std), Phase 3 SA-007 bazar rejimi namizədləri — hamısı push edilib,
+  CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 SA-006 — sessiya müqayisəsi
+  (təqvim-yoxdur deqradasiya rejimi) (kod + testlər + sənədlər), yuxarıda
+  təsvir edilib. AGENTS.md qaydasına görə commit/push istifadəçinin
+  ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/` (əvvəlki
+  sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -283,9 +298,9 @@ Son yenilənmə: 2026-08-07
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `507
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `516
   passed`.
-- Frontend: bu artımda (Phase 3 SA-007, yalnız backend) toxunulmayıb.
+- Frontend: bu artımda (Phase 3 SA-006, yalnız backend) toxunulmayıb.
   Əvvəlki artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13` test,
   production build uğurlu idi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
@@ -327,21 +342,25 @@ Son yenilənmə: 2026-08-07
 
 ## Növbəti mərhələ
 
-Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası), SA-002 (pəncərə
-volatilitesi, tick-to-tick return std-i daxil, tam tamamlandı), SA-003
-(spread davranışı), SA-004 (tick sürəti/interval), SA-005
-(tick-volume/flags) və SA-007 (bazar rejimi namizədləri) tamamlandı; əsas
+Seçilməyib. **Phase 3-ün SA-001-SA-007 statistik analiz müqaviləsi indi
+tam əhatə olunub**: SA-001 (gəlir seriyası), SA-002 (pəncərə volatilitesi,
+tick-to-tick return std-i daxil), SA-003 (spread davranışı), SA-004 (tick
+sürəti/interval), SA-005 (tick-volume/flags), SA-006 (sessiya müqayisəsi,
+təqvim-yoxdur deqradasiya rejimində — yalnız UTC saat dilimləri,
+adlandırılmış sessiya yox) və SA-007 (bazar rejimi namizədləri); əsas
 ekrana canlı indikator konsensusu paneli əlavə edildi və 5 yeni osilatorla
 (Stochastic, CCI, Williams %R, MACD, ADX) genişləndirildi;
 likvidlik-səviyyəsi reaksiya statistikasının istifadəçinin təsvir etdiyi 4
 addımı da (çox-taymfreym, seqmentasiya, canlı UI, jurnal) tamamlandı,
 üzərinə tarixi hərəkət diapazonu (excursion range) əlavə edildi.
-Namizədlər (`docs/status/NEXT_TASK.md`): SA-006 (sessiya müqayisəsi —
-versiyalanmış simvol/broker təqvimi tələb edir, daha böyük iş), hərəkətli
-ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
-seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri (istəsə),
-job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb
-olunur.
+Namizədlər (`docs/status/NEXT_TASK.md`, hamısı yalnız istifadəçi ayrıca
+istəsə): real versiyalanmış broker təqvimi qurulsa SA-006-nı "rəsmi"
+rejimə keçirmək, async job/persistence resursu
+(`POST /api/v2/statistical-analyses`) və frontend paneli (heç bir
+SA-00x-in hələ UI-si yoxdur) — bunlar Phase 3-ün qalan əsas işidir,
+hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
+seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri, job-queue-nun
+frontend səthi. İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

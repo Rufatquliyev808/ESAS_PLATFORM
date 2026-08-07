@@ -186,7 +186,8 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   `bars.py`-ın mid-price etibarlılıq filtri tətbiq edilir.
   `VOLATILITY_VERSION 1.0.0 → 1.1.0`. `STATISTICAL_ANALYSIS_API_VERSION
   1.4.0 → 1.5.0`. Backend `500 passed`.
-- **Phase 3 SA-007 — bazar rejimi namizədləri** (hələ commit edilməyib) —
+- **Phase 3 SA-007 — bazar rejimi namizədləri** (commit `5037783`, push
+  edilib, CI yaşıl) —
   istifadəçinin seçimi: SA-006 (sessiya müqayisəsi) əvəzinə SA-007
   (versiyalanmış təqvim tələb etmir, artıq tamamlanmış SA-001/002/003
   üzərində qurulur, yeni xam-tick keçidi tələb etmir). Yeni
@@ -205,6 +206,28 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   `test_regime_candidates.py` (7 test — əl ilə yoxlanmış 4-kvadrant
   fixture, median split, leksikoqrafik regime təyini). Tam backend
   regressiyası: `507 passed`. Frontend toxunulmayıb.
+- **Phase 3 SA-006 — sessiya müqayisəsi (təqvim-yoxdur deqradasiya
+  rejimi)** (hələ commit edilməyib) — Phase 3-ün SA-001-SA-007
+  müqaviləsini tamamlayır. Müqavilə versiyalanmış simvol/broker təqvimi
+  (timezone, DST, həftəsonu/bayram, üst-üstə düşən sessiya prioriteti)
+  tələb edir, AMMA təqvim olmadıqda açıq deqradasiya rejimi TƏYİN EDİR:
+  yalnız UTC saat dilimləri, əsla "London/NY" kimi adlandırılmadan,
+  `calendar_unavailable` işarəsi ilə. Platformada belə təqvim yoxdur, ona
+  görə bu artım məhz bu deqradasiya rejimini tətbiq edir (uydurma təqvim
+  QURULMADI). Yeni `session_comparison.py`: pəncərələri `start_at`-ın xam
+  UTC saatına (0-23) görə qruplaşdırır, hər qrup üçün return orta/median/
+  std + orta üzərində 95% etibar intervalı, nümunə sayı, orta nisbi range
+  (volatilite proksi) — hamısı artıq mövcud `bars.py`/`return_series.py`
+  nəticəsindən, yeni xam-tick keçidi YOX. `calendar_unavailable: true` +
+  məhdudiyyət mətni HƏMİŞƏ cavabda olur. `statistical_analysis.py`-a
+  inteqrasiya (yeni `sessions` sahəsi), `STATISTICAL_ANALYSIS_API_VERSION
+  1.6.0 → 1.7.0`. Yeni `test_session_comparison.py` (9 test). Tam backend
+  regressiyası: `516 passed`. Frontend toxunulmayıb.
+
+**Phase 3-ün SA-001-SA-007 müqaviləsi indi tam əhatə olunub** (SA-006
+təqvim-yoxdur deqradasiya rejimində). Qalan: async job/persistence
+resursu (`POST /api/v2/statistical-analyses`) və frontend paneli (heç
+bir SA-00x-in hələ UI-si yoxdur).
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -223,17 +246,17 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
-- **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
-  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return
-  std-i daxil, tam tamamlandı) + SA-003 spread davranışı + SA-004 tick
-  sürəti + SA-005 tick-volume/flags + SA-007 bazar rejimi namizədləri,
-  təfərrüat yuxarıda). Növbəti namizəd: SA-006 (sessiya müqayisəsi —
-  versiyalanmış simvol/broker təqvimi tələb edir: timezone, DST,
-  həftəsonu/bayram, üst-üstə düşən sessiya prioriteti — daha böyük,
-  yeni infrastruktur tələb edən iş, ayrıca dizayn qərarları lazımdır).
-  Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
-  və frontend paneli (hazırkı SA-001/SA-002/SA-003/SA-004/SA-005/SA-007-in
-  heç birinin UI-si yoxdur).
+- **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi tam əhatə olunub**
+  (pəncərə/resampling təməli + SA-001 gəlir seriyası + SA-002 pəncərə
+  volatilitesi (tick-to-tick return std-i daxil) + SA-003 spread
+  davranışı + SA-004 tick sürəti + SA-005 tick-volume/flags + SA-006
+  sessiya müqayisəsi (təqvim-yoxdur deqradasiya rejimi) + SA-007 bazar
+  rejimi namizədləri, təfərrüat yuxarıda). Namizədlər (yalnız istifadəçi
+  ayrıca istəsə): real versiyalanmış simvol/broker təqvimi qurulsa SA-006
+  "rəsmi" rejimə keçirilə bilər; async job/persistence resursu
+  (`POST /api/v2/statistical-analyses`) və frontend paneli (hazırkı
+  SA-001-SA-007-in heç birinin UI-si yoxdur) — bunlar Phase 3-ün qalan
+  əsas işidir.
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

@@ -5,6 +5,7 @@ from backend.app.analysis.bars import TIMEFRAME_SECONDS, build_closed_mid_bars
 from backend.app.analysis.regime_candidates import compute_regime_candidates
 from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
 from backend.app.analysis.return_series import compute_return_series
+from backend.app.analysis.session_comparison import compute_session_comparison
 from backend.app.analysis.spread import compute_spread_statistics
 from backend.app.analysis.tick_rate import compute_tick_rate_statistics
 from backend.app.analysis.tick_volume import compute_tick_volume_statistics
@@ -18,7 +19,7 @@ from backend.app.quality.report import create_replay_quality_report
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
 
 
-STATISTICAL_ANALYSIS_API_VERSION = "1.6.0"
+STATISTICAL_ANALYSIS_API_VERSION = "1.7.0"
 MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000
 
 
@@ -37,6 +38,7 @@ class ReplayStatisticalAnalysis:
     tick_rate: dict[str, object]
     tick_volume: dict[str, object]
     regimes: dict[str, object]
+    sessions: dict[str, object]
     interpretation: str = "research_observation_not_trading_signal"
     api_version: str = STATISTICAL_ANALYSIS_API_VERSION
 
@@ -48,8 +50,9 @@ def _timestamp(value: str) -> datetime:
 def create_replay_statistical_analysis(
     *, session: ReplaySession, timeframe: str, minimum_sample_size: int = 30,
 ) -> ReplayStatisticalAnalysis:
-    """Build deterministic, causal descriptive statistics (Phase 3 SA-001 through
-    SA-005, plus SA-007 regime candidates; SA-006 is not yet implemented)."""
+    """Build deterministic, causal descriptive statistics (Phase 3 SA-001
+    through SA-007; SA-006 runs in calendar-unavailable degraded mode --
+    see `session_comparison.py`)."""
     if session.state != "completed":
         raise ReplayTransitionConflictError("Replay session is not completed")
     if timeframe not in TIMEFRAME_SECONDS:
@@ -139,6 +142,12 @@ def create_replay_statistical_analysis(
         data_quality_status=quality_report.summary.status,
         minimum_sample=minimum_sample_size,
     )
+    sessions = compute_session_comparison(
+        bar_result.bars,
+        return_series,
+        bar_fingerprint=bar_result.fingerprint,
+        minimum_sample=minimum_sample_size,
+    )
 
     return ReplayStatisticalAnalysis(
         session_id=session.session_id,
@@ -169,6 +178,8 @@ def create_replay_statistical_analysis(
             "quality_status": quality_report.summary.status,
             "regime_version": regimes.version,
             "regime_fingerprint": regimes.fingerprint,
+            "session_comparison_version": sessions.version,
+            "session_comparison_fingerprint": sessions.fingerprint,
         },
         return_series=asdict(return_series),
         volatility=asdict(volatility),
@@ -176,4 +187,5 @@ def create_replay_statistical_analysis(
         tick_rate=asdict(tick_rate),
         tick_volume=asdict(tick_volume),
         regimes=asdict(regimes),
+        sessions=asdict(sessions),
     )

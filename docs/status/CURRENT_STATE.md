@@ -1,5 +1,48 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-006: sessiya müqayisəsi (təqvim-yoxdur deqradasiya rejimi) — SA-001-SA-007 tamamlandı
+
+- İstifadəçi "davam et" dedi. SA-007-dən sonra qalan yeganə Phase 3
+  namizədi SA-006 idi. Müqavilə versiyalanmış simvol/broker təqvimi
+  (timezone, DST, həftəsonu/bayram, üst-üstə düşən sessiya prioriteti)
+  tələb edir, AMMA təqvim olmadıqda özü açıq bir deqradasiya rejimi
+  müəyyənləşdirir: "Təqvim yoxdursa yalnız UTC saat dilimləri göstərilir
+  və `calendar_unavailable` məhdudiyyəti yazılır. UTC saat statistikası
+  'London', 'New York' və ya başqa bazar sessiyası adlandırılmır."
+  Platformada real broker təqvimi olmadığı üçün bu artım MƏHZ bu
+  deqradasiya rejimini tətbiq etdi — uydurma təqvim qurulmadı, istifadəçi
+  ilə ayrıca dizayn müzakirəsinə ehtiyac olmadı (müqavilənin özü fallback-i
+  tam təyin edib).
+- Yeni `backend/app/analysis/session_comparison.py`:
+  `compute_session_comparison()` — pəncərələri `start_at`-ın xam UTC
+  saatına (0-23) görə qruplaşdırır (heç bir adlandırılmış sessiya YOX).
+  Hər saat qrupu üçün: return orta/median/standart sapma + ortalama
+  üzərində 95% etibar intervalı (`Z_95=1.96 * std/√n`, digər modullardakı
+  eyni CI konvensiyası), nümunə sayı, orta nisbi range (volatilite
+  proksisi). Hamısı artıq mövcud `bars.py`/`return_series.py`
+  nəticələrindən hesablanır — yeni xam-tick keçidi YOX.
+  `calendar_unavailable: true` və məhdudiyyət mətni HƏR CAVABDA mövcuddur
+  (gözdən qaçırıla bilməz). Qruplar arası fərq açıq şəkildə "yalnız bu
+  dataset-in təsviri, ticarət üstünlüyü deyil" kimi sənədləşdirilib
+  (həm docstring-də, həm cavab formasında).
+- `statistical_analysis.py`-a inteqrasiya: yeni `sessions` sahəsi.
+  `STATISTICAL_ANALYSIS_API_VERSION 1.6.0 → 1.7.0`.
+- Frontend toxunulmayıb (Phase 3-ün digər addımları ilə eyni ardıcıllıq).
+- Yoxlama: yeni `test_session_comparison.py` (`9` test — məhdudiyyət
+  mətninin həmişə mövcudluğu, UTC-saat qruplaşdırılması (adlandırılmış
+  sessiya yox), əl ilə yoxlanmış orta/median/CI (4-pəncərəlik fixture),
+  hər qrup üçün ayrı insufficient_data həddi, boş giriş, fingerprint
+  determinizmi, uyğunsuz simvol rəddi, təhlükəsiz parametr rəddi).
+  `test_replay_technical_analysis_api.py` yeniləndi (`api_version 1.7.0`,
+  `sessions` sahəsi, həm `completed` həm `insufficient_data` hallarında).
+  Tam backend regressiyası: `516 passed`.
+- **Bu artımla Phase 3-ün SA-001-SA-007 statistik analiz müqaviləsi tam
+  əhatə olunur** (SA-006 təqvim-yoxdur deqradasiya rejimində). Qalan:
+  real broker təqvimi qurulsa SA-006-nı "rəsmi" rejimə keçirmək (yalnız
+  istifadəçi ayrıca istəsə), async job/persistence resursu
+  (`POST /api/v2/statistical-analyses`) və frontend paneli (heç bir
+  SA-00x-in hələ UI-si yoxdur).
+
 ## 2026-08-07 — Phase 3 SA-007: bazar rejimi namizədləri
 
 - İstifadəçi "davam et" dedi. SA-006 (sessiya müqayisəsi) versiyalanmış

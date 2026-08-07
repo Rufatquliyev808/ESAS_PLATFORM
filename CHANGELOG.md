@@ -8,6 +8,37 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-006: session comparison (calendar-unavailable degraded mode)
+
+- Completes Phase 3's SA-001 through SA-007 statistical-analysis
+  contract. The contract requires a versioned symbol/broker session
+  calendar (timezone, DST rule, weekend/holiday, overlapping-session
+  priority) for an official session comparison, and explicitly specifies
+  a fallback when one is unavailable: UTC-hour-only buckets, never named
+  as trading sessions, with a `calendar_unavailable` flag. This platform
+  has no such calendar, so this increment implements exactly that
+  fallback rather than fabricating one.
+- New `backend/app/analysis/session_comparison.py`: `compute_session_comparison()`
+  groups windows by `start_at`'s raw UTC hour (0-23) and reports, per
+  bucket: return mean/median/std-dev with a 95% CI on the mean, sample
+  size, and mean relative range (a volatility proxy) -- all using
+  already-computed `bars.py`/`return_series.py` output, no new raw-tick
+  pass. `calendar_unavailable: true` and an explicit limitation string are
+  always present in the response, impossible to overlook. A difference
+  between hour buckets is documented, in both the docstring and the
+  response shape, as descriptive only -- never a trading edge.
+- Wired into `statistical_analysis.py` (new `sessions` field).
+  `STATISTICAL_ANALYSIS_API_VERSION` `1.6.0 -> 1.7.0`.
+- Frontend untouched, same precedent as the rest of Phase 3.
+- Verification: new `test_session_comparison.py` (9 tests -- always-present
+  limitation string, UTC-hour grouping vs named sessions, hand-verified
+  mean/median/CI for a 4-window fixture, insufficient-data gating per
+  bucket, empty-input handling, fingerprint determinism, mismatched-symbol
+  and unsafe-parameter rejection). `test_replay_technical_analysis_api.py`
+  updated for the new `sessions` field and `api_version` in both the
+  completed and insufficient-data cases. Full backend regression:
+  `516 passed`.
+
 ### Added — Phase 3 SA-007: market regime candidates
 
 - Continues the main Phase 3 roadmap track past SA-006 (session

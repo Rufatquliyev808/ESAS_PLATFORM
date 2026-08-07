@@ -411,7 +411,7 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     data = first.json()["data"]
     assert data["session_id"] == session.session_id
     assert data["timeframe"] == "M1"
-    assert data["api_version"] == "1.6.0"
+    assert data["api_version"] == "1.7.0"
     assert data["interpretation"] == "research_observation_not_trading_signal"
     assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
     assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
@@ -422,6 +422,7 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     assert data["lineage"]["tick_volume_fingerprint"].startswith("sha256:")
     assert data["lineage"]["regime_fingerprint"].startswith("sha256:")
     assert data["lineage"]["quality_status"] in ("pass", "review", "fail")
+    assert data["lineage"]["session_comparison_fingerprint"].startswith("sha256:")
     series = data["return_series"]
     assert series["status"] == "completed"
     assert series["n_total"] == 3
@@ -470,6 +471,15 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     assert len(regimes["observations"]) == 3
     assert all(item["regime"].startswith("regime_") for item in regimes["observations"])
     assert regimes["interpretation"] == "research_observation_not_trading_signal"
+    sessions = data["sessions"]
+    assert sessions["calendar_unavailable"] is True
+    assert len(sessions["limitations"]) == 1
+    assert len(sessions["buckets"]) == 1
+    bucket = sessions["buckets"][0]
+    assert bucket["utc_hour"] == 21
+    assert bucket["status"] == "completed"
+    assert bucket["n_return_windows"] == 3
+    assert sessions["interpretation"] == "research_observation_not_trading_signal"
     with get_connection() as connection:
         after = connection.execute(
             "SELECT event_id, raw_event_json FROM tick_events ORDER BY event_id"
@@ -519,6 +529,10 @@ def test_statistical_analysis_api_defaults_to_insufficient_data_below_minimum_sa
     assert regimes["n_total_windows"] == 3
     assert regimes["n_classified_windows"] == 0
     assert regimes["regimes"] == []
+    sessions = data["sessions"]
+    assert sessions["calendar_unavailable"] is True
+    assert sessions["buckets"][0]["status"] == "insufficient_data"
+    assert sessions["buckets"][0]["mean_return"] is None
 
 
 def test_statistical_analysis_api_enforces_owner_completed_state_and_safe_parameters(
