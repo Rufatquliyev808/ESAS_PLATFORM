@@ -150,7 +150,21 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   `tick_rate` sahəsi, `STATISTICAL_ANALYSIS_API_VERSION 1.2.0 → 1.3.0`.
   Yeni `test_tick_rate.py` (8 test). Tam backend regressiyası:
   `488 passed`. Frontend toxunulmayıb.
-- **Phase 3 SA-005 — tick-volume/flags** (hələ commit edilməyib) —
+- **Phase 3 SA-002 tamamlanması — tick-to-tick return std-i** (hələ commit
+  edilməyib) — SA-004/005-in açdığı xam-tick oxuma formasını istifadə
+  edərək əvvəllər qəsdən kənarda saxlanmış SA-002 hissəsi tamamlandı.
+  `volatility.py`-ın `compute_volatility()`-i indi `ticks`/`start_at`/
+  `end_at` də qəbul edir, yeni `tick_return` sahəsi (tick-to-tick,
+  pəncərəsiz mid-price log-return paylanması) qaytarır. `bars.py`-ın
+  mid-price etibarlılıq filtri (bid/ask müsbət, ask≥bid) tətbiq edilir —
+  tick_rate/tick_volume-dan fərqli olaraq bu, qiymət seriyasıdır.
+  `VOLATILITY_VERSION 1.0.0 → 1.1.0`. `statistical_analysis.py`-a
+  inteqrasiya (dördüncü `iter_tick_batches` keçidi),
+  `STATISTICAL_ANALYSIS_API_VERSION 1.4.0 → 1.5.0`. `test_volatility.py`
+  yeniləndi + 4 yeni test. Tam backend regressiyası: `500 passed`.
+  Frontend toxunulmayıb.
+- **Phase 3 SA-005 — tick-volume/flags** (commit `625ab98`, push edilib,
+  CI yaşıl) —
   SA-004-ün davamı, eyni xam-tick oxuma formasını paylaşır. Yeni
   `tick_volume.py`: mövcud `volume` sahəsi MT5 tick-volume kimi
   etiketlənir (real birja həcmi deyil). `tick_volume` (hər tick-in xam
@@ -183,15 +197,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
 - **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
-  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi + SA-003 spread
-  davranışı + SA-004 tick sürəti + SA-005 tick-volume/flags, təfərrüat
-  yuxarıda). Növbəti namizədlər: SA-002-nin qalan hissəsi (tick-to-tick
-  return std-i — indi SA-004/005-in xam-tick keçidi ilə paylaşıla bilər),
-  SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb edir), SA-007
-  (bazar rejimi namizədləri — əvvəlki SA-002/003/004/005-dən asılı).
-  Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
-  və frontend paneli (hazırkı SA-001/SA-002/SA-003/SA-004/SA-005-in heç
-  birinin UI-si yoxdur).
+  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return
+  std-i daxil, tam tamamlandı) + SA-003 spread davranışı + SA-004 tick
+  sürəti + SA-005 tick-volume/flags, təfərrüat yuxarıda). Növbəti
+  namizədlər: SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb
+  edir, daha böyük iş), SA-007 (bazar rejimi namizədləri — əvvəlki
+  SA-002/003/004/005-dən asılı). Sonra: async job/persistence resursu
+  (`POST /api/v2/statistical-analyses`) və frontend paneli (hazırkı
+  SA-001/SA-002/SA-003/SA-004/SA-005-in heç birinin UI-si yoxdur).
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

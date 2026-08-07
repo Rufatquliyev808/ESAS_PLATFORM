@@ -212,18 +212,30 @@ Son yenilənmə: 2026-08-07
   `statistical_analysis.py`-a inteqrasiya (ikinci `iter_tick_batches`
   keçidi ilə), `STATISTICAL_ANALYSIS_API_VERSION 1.2.0 → 1.3.0`. Yeni
   `test_tick_rate.py` (8 test). Backend `488 passed`.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-005 — tick-volume/flags.**
-  İstifadəçi "davam et" dedi, SA-004-ün birbaşa davamı olaraq SA-005
-  seçildi (eyni xam-tick oxuma formasını paylaşır). Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `tick_volume.py` — mövcud
-  `volume` sahəsi MT5 tick-volume kimi etiketlənir (real birja həcmi
-  deyil). Hər tick-in xam volume paylanması + sıfır/müsbət sayı; pəncərə
-  üzrə cəm (bir nöqtə/dolu pəncərə); `flags` dəyərləri və sayları
-  ŞÜURLU ŞƏKİLDƏ deşifr edilmədən (versiyalanmış MT5 bit mapping yoxdur);
-  module/event versiyası üzrə seqmentlər. `statistical_analysis.py`-a
-  inteqrasiya (üçüncü `iter_tick_batches` keçidi),
-  `STATISTICAL_ANALYSIS_API_VERSION 1.3.0 → 1.4.0`. Yeni
-  `test_tick_volume.py` (9 test). Tam backend regressiyası: `496 passed`.
+- **Phase 3 SA-005 — tick-volume/flags** (commit `625ab98`, PUSH EDİLİB,
+  CI yaşıl). İstifadəçi "davam et" dedi, SA-004-ün birbaşa davamı olaraq
+  SA-005 seçildi (eyni xam-tick oxuma formasını paylaşır). Yeni
+  `tick_volume.py` — mövcud `volume` sahəsi MT5 tick-volume kimi
+  etiketlənir (real birja həcmi deyil). Hər tick-in xam volume paylanması
+  + sıfır/müsbət sayı; pəncərə üzrə cəm (bir nöqtə/dolu pəncərə); `flags`
+  dəyərləri və sayları ŞÜURLU ŞƏKİLDƏ deşifr edilmədən (versiyalanmış MT5
+  bit mapping yoxdur); module/event versiyası üzrə seqmentlər.
+  `statistical_analysis.py`-a inteqrasiya (üçüncü `iter_tick_batches`
+  keçidi), `STATISTICAL_ANALYSIS_API_VERSION 1.3.0 → 1.4.0`. Yeni
+  `test_tick_volume.py` (9 test). Backend `496 passed`.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 SA-002 tamamlanması —
+  tick-to-tick return standart sapması.** İstifadəçi "davam et" dedi,
+  SA-002-nin əvvəllər qəsdən kənarda saxlanmış hissəsi (indi SA-004/005-in
+  xam-tick oxuma formasından istifadə edərək) tamamlandı. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: `volatility.py`-ın
+  `compute_volatility()`-i indi `ticks`/`start_at`/`end_at` də qəbul edir,
+  yeni `tick_return` sahəsi (tick-to-tick, pəncərəsiz mid-price log-return
+  paylanması). `bars.py`-ın mid-price etibarlılıq filtri tətbiq edilir
+  (tick_rate/tick_volume-dan fərqli olaraq — bu, qiymət seriyasıdır).
+  `VOLATILITY_VERSION 1.0.0 → 1.1.0`. `statistical_analysis.py`-a
+  inteqrasiya (dördüncü `iter_tick_batches` keçidi),
+  `STATISTICAL_ANALYSIS_API_VERSION 1.4.0 → 1.5.0`. `test_volatility.py`
+  yeniləndi + 4 yeni test. Tam backend regressiyası: `500 passed`.
   Frontend toxunulmayıb.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
@@ -233,7 +245,7 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `243553a`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `625ab98`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
@@ -241,13 +253,13 @@ Son yenilənmə: 2026-08-07
   konsensusu paneli (RSI+EMA), 5 yeni osilator, boş CI-düzəliş commit-i,
   likvidlik-səviyyəsi reaksiya statistikası (yalnız backend), likvidlik
   sisteminin qalan 3 addımı, tarixi hərəkət diapazonu, Phase 3 SA-003
-  spread davranışı, Phase 3 SA-004 tick sürəti — hamısı push edilib,
-  CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 SA-005 — tick-volume/flags
-  (kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına
-  görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi
-  qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
-  əhəmiyyətsiz) də qalıb.
+  spread davranışı, Phase 3 SA-004 tick sürəti, Phase 3 SA-005
+  tick-volume/flags — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Phase 3 SA-002 tamamlanması —
+  tick-to-tick return standart sapması (kod + testlər + sənədlər),
+  yuxarıda təsvir edilib. AGENTS.md qaydasına görə commit/push
+  istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/`
+  (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -258,9 +270,10 @@ Son yenilənmə: 2026-08-07
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `496
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `500
   passed`.
-- Frontend: bu artımda (Phase 3 SA-005, yalnız backend) toxunulmayıb.
+- Frontend: bu artımda (Phase 3 SA-002 tamamlanması, yalnız backend)
+  toxunulmayıb.
   Əvvəlki artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13` test,
   production build uğurlu idi.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
@@ -303,19 +316,19 @@ Son yenilənmə: 2026-08-07
 ## Növbəti mərhələ
 
 Seçilməyib. Phase 3-ün SA-001 (gəlir seriyası), SA-002 (pəncərə
-volatilitesi), SA-003 (spread davranışı), SA-004 (tick sürəti/interval) və
-SA-005 (tick-volume/flags) tamamlandı; əsas ekrana canlı indikator
-konsensusu paneli əlavə edildi və 5 yeni osilatorla (Stochastic, CCI,
-Williams %R, MACD, ADX) genişləndirildi; likvidlik-səviyyəsi reaksiya
-statistikasının istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym,
-seqmentasiya, canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət
-diapazonu (excursion range) əlavə edildi. Namizədlər
-(`docs/status/NEXT_TASK.md`): SA-002-nin qalan hissəsi (tick-to-tick
-return std-i — indi SA-004/005-in xam-tick keçidi ilə paylaşıla bilər),
-SA-006-SA-007 (sessiya, rejim), hərəkətli ortalamaların genişləndirilməsi
-(SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə şərtlər, Phase 9-un
-qalan bölmələri (istəsə), job-queue-nun frontend səthi (istəsə).
-İstifadəçinin ayrıca təsdiqi tələb olunur.
+volatilitesi, tick-to-tick return std-i daxil, tam tamamlandı), SA-003
+(spread davranışı), SA-004 (tick sürəti/interval) və SA-005
+(tick-volume/flags) tamamlandı; əsas ekrana canlı indikator konsensusu
+paneli əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R,
+MACD, ADX) genişləndirildi; likvidlik-səviyyəsi reaksiya statistikasının
+istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
+canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
+range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-006-SA-007
+(sessiya — versiyalanmış təqvim tələb edir, rejim — SA-002-005-dən asılı),
+hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
+seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri (istəsə),
+job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb
+olunur.
 
 ## Təhlükəsizlik
 

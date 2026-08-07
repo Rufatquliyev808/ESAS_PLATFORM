@@ -8,6 +8,32 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-002 completion: tick-to-tick return standard deviation
+
+- Closes the piece of SA-002 (volatility) that was deliberately deferred
+  when SA-002 first shipped, since it needed a raw-tick pass that no
+  Phase 3 module had yet. SA-004/SA-005 have since established that
+  pattern, so this reuses it.
+- `backend/app/analysis/volatility.py`: `compute_volatility()` now also
+  takes a raw `ticks` iterable plus `start_at`/`end_at`, and returns a new
+  `tick_return` field -- the distribution of tick-to-tick (unwindowed)
+  mid-price log-returns. Unlike `tick_rate.py`/`tick_volume.py` (which
+  count every tick regardless of price validity), this is itself a price
+  series, so it inherits `bars.py`'s mid-price validity filter (finite,
+  positive bid/ask, ask >= bid). `VOLATILITY_VERSION 1.0.0 -> 1.1.0`.
+- Wired into `statistical_analysis.py` (fourth `iter_tick_batches` pass).
+  `STATISTICAL_ANALYSIS_API_VERSION` `1.4.0 -> 1.5.0`.
+- Frontend untouched, same precedent as the rest of Phase 3.
+- Verification: `test_volatility.py` updated for the new required
+  parameters and extended with 4 new tests (hand-verified constant-return
+  fixture where every tick-to-tick log-return is exactly 0.01, invalid
+  bid/ask exclusion, mismatched-symbol rejection, unsafe start/end
+  rejection). `test_replay_technical_analysis_api.py` updated for the new
+  `tick_return` field and `api_version` (also demonstrates that a
+  tick-level metric can be `completed` even while window-level metrics in
+  the same response are `insufficient_data`, since they draw from
+  different sample sizes). Full backend regression: `500 passed`.
+
 ### Added — Phase 3 SA-005: tick volume and flags
 
 - Continues the main Phase 3 roadmap track after SA-004 (tick speed),

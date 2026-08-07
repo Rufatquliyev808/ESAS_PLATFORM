@@ -16,7 +16,7 @@ from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
 
 
-STATISTICAL_ANALYSIS_API_VERSION = "1.4.0"
+STATISTICAL_ANALYSIS_API_VERSION = "1.5.0"
 MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000
 
 
@@ -82,10 +82,18 @@ def create_replay_statistical_analysis(
         bar_fingerprint=bar_result.fingerprint,
         minimum_window_returns=minimum_sample_size,
     )
+    volatility_ticks = (
+        tick
+        for batch in iter_tick_batches(symbol=session.symbol, start_at=start_at, end_at=end_at)
+        for tick in batch
+    )
     volatility = compute_volatility(
         bar_result.bars,
         return_series,
+        volatility_ticks,
         bar_fingerprint=bar_result.fingerprint,
+        start_at=start_at,
+        end_at=end_at,
         minimum_sample=minimum_sample_size,
     )
     spread = compute_spread_statistics(

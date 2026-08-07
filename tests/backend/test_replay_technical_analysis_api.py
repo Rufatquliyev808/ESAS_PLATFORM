@@ -411,7 +411,7 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     data = first.json()["data"]
     assert data["session_id"] == session.session_id
     assert data["timeframe"] == "M1"
-    assert data["api_version"] == "1.4.0"
+    assert data["api_version"] == "1.5.0"
     assert data["interpretation"] == "research_observation_not_trading_signal"
     assert data["lineage"]["dataset_fingerprint"].startswith("sha256:")
     assert data["lineage"]["bar_fingerprint"].startswith("sha256:")
@@ -435,6 +435,8 @@ def test_statistical_analysis_api_is_protected_deterministic_and_research_only(
     assert volatility["window_log_return_abs"]["n_valid"] == 3
     assert volatility["robust_mad_status"] == "completed"
     assert volatility["robust_mad"] is not None and volatility["robust_mad"] >= 0
+    assert volatility["tick_return"]["status"] == "completed"
+    assert volatility["tick_return"]["n_valid"] == 34
     assert volatility["interpretation"] == "research_observation_not_trading_signal"
     spread = data["spread"]
     assert spread["window_spread_absolute"]["status"] == "completed"
@@ -489,6 +491,10 @@ def test_statistical_analysis_api_defaults_to_insufficient_data_below_minimum_sa
     assert volatility["window_range_absolute"]["status"] == "insufficient_data"
     assert volatility["robust_mad_status"] == "insufficient_data"
     assert volatility["robust_mad"] is None
+    # tick_return is tick-level (34 valid gaps), not window-level -- it clears
+    # the default minimum_sample=30 even though the window-based metrics above
+    # (only 3 M1 windows) do not.
+    assert volatility["tick_return"]["status"] == "completed"
     spread = data["spread"]
     assert spread["window_spread_absolute"]["status"] == "insufficient_data"
     assert spread["window_spread_absolute"]["mean"] is None

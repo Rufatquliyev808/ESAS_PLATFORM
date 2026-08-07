@@ -1,5 +1,36 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-002 tamamlanması: tick-to-tick return standart sapması
+
+- İstifadəçi "davam et" dedi — SA-005-in davamı olaraq, əvvəllər SA-002
+  ilk təqdim edildikdə (2026-08-06) qəsdən kənarda saxlanmış hissə
+  (tick-to-tick, pəncərəsiz return standart sapması) indi SA-004/005-in
+  açdığı xam-tick oxuma formasından istifadə edərək tamamlandı — bu, ən
+  kiçik, "artıq açıq qalmış işi bağlayan" addım idi (SA-006 versiyalanmış
+  təqvim, SA-007 isə SA-002-005-dən asılı olduğu üçün daha böyükdür).
+- `backend/app/analysis/volatility.py`: `compute_volatility()` indi əlavə
+  olaraq xam `ticks` (+ `start_at`/`end_at`) qəbul edir, yeni `tick_return`
+  sahəsi qaytarır — hər ardıcıl tick cütünün mid-price-ından hesablanan
+  log-return-un paylanması (say/orta/median/std/min/maks/p05/p95).
+  `tick_rate.py`/`tick_volume.py`-dan **fərqli** olaraq (onlar bütün
+  tick-ləri sayır, qiymət etibarlılığından asılı olmadan) bu, özü bir
+  QİYMƏT seriyasıdır, ona görə `bars.py`-ın mid-price etibarlılıq filtrini
+  (bid/ask müsbət, sonlu, ask≥bid) irsən alır. `VOLATILITY_VERSION
+  1.0.0 → 1.1.0`.
+- `statistical_analysis.py`-a inteqrasiya (dördüncü ayrıca
+  `iter_tick_batches` keçidi), `STATISTICAL_ANALYSIS_API_VERSION
+  1.4.0 → 1.5.0`.
+- Frontend toxunulmayıb (Phase 3-ün digər addımları ilə eyni ardıcıllıq).
+- Yoxlama: `test_volatility.py` yeni tələb olunan parametrlərə uyğun
+  yeniləndi + 4 yeni test (sabit-return fixture-u — hər tick-to-tick
+  log-return dəqiq 0.01, etibarsız bid/ask-ın xaric edilməsi, uyğunsuz
+  simvol rəddi, təhlükəsiz start/end rəddi). `test_replay_technical_
+  analysis_api.py` yeniləndi (`api_version 1.5.0`, `tick_return` sahəsi —
+  həm də göstərir ki, eyni cavabda pəncərə-səviyyəli metriklər
+  `insufficient_data` olsa belə, tick-səviyyəli metrik fərqli nümunə
+  ölçüsü ilə `completed` ola bilər). Tam backend regressiyası:
+  `500 passed`.
+
 ## 2026-08-07 — Phase 3 SA-005: tick-volume və flags
 
 - İstifadəçi "davam et" dedi — SA-004-ün birbaşa davamı olaraq SA-005

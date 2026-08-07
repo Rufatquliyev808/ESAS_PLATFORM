@@ -1,13 +1,17 @@
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from hashlib import sha256
 import json
+import math
 import statistics
 
 from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.return_series import ReturnSeriesResult
+from backend.app.database.tick_replay_repository import ReplayTick
 
 
-VOLATILITY_VERSION = "1.0.0"
+VOLATILITY_VERSION = "1.1.0"
 QUANTILE_METHOD = "linear-interpolation-v1"
 COMPLETED = "completed"
 INSUFFICIENT_DATA = "insufficient_data"
@@ -36,6 +40,7 @@ class VolatilityResult:
     window_range_absolute: DistributionSummary
     window_range_relative: DistributionSummary
     window_log_return_abs: DistributionSummary
+    tick_return: DistributionSummary
     robust_mad_status: str
     robust_mad: float | None
     fingerprint: str
@@ -74,6 +79,45 @@ def _summarize(values: list[float], *, n_total: int, minimum_sample: int) -> Dis
     )
 
 
+def _utc(value: datetime, field_name: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field_name} must include a timezone")
+    return value.astimezone(UTC)
+
+
+def _timestamp(value: str) -> datetime:
+    return _utc(datetime.fromisoformat(value.replace("Z", "+00:00")), "event_timestamp")
+
+
+def _tick_mid_returns(
+    ticks: Iterable[ReplayTick], *, symbol: str, start_at: datetime, end_at: datetime,
+) -> list[float]:
+    """Tick-to-tick (unwindowed) log-returns of the mid-price, following the
+    same validity rule as `bars.py`'s mid-price series: only finite, positive
+    bid/ask pairs with ask >= bid contribute, in canonical
+    (event_timestamp, event_id) order. Unlike `tick_rate.py`/`tick_volume.py`
+    (which count every tick regardless of price validity), this is itself a
+    price series, so it inherits `bars.py`'s validity filter.
+    """
+    filtered: list[tuple[datetime, str, float]] = []
+    for tick in ticks:
+        if tick.symbol != symbol:
+            raise ValueError("all ticks must match the requested symbol")
+        timestamp = _timestamp(tick.event_timestamp)
+        if not (start_at <= timestamp < end_at):
+            continue
+        if not (math.isfinite(tick.bid) and math.isfinite(tick.ask)):
+            continue
+        if tick.bid <= 0 or tick.ask <= 0 or tick.ask < tick.bid:
+            continue
+        filtered.append((timestamp, tick.event_id, (tick.bid + tick.ask) / 2.0))
+    filtered.sort(key=lambda item: (item[0], item[1]))
+    return [
+        math.log(current[2] / previous[2])
+        for previous, current in zip(filtered, filtered[1:])
+    ]
+
+
 def _fingerprint(
     *,
     bar_fingerprint: str,
@@ -82,6 +126,7 @@ def _fingerprint(
     window_range_absolute: DistributionSummary,
     window_range_relative: DistributionSummary,
     window_log_return_abs: DistributionSummary,
+    tick_return: DistributionSummary,
     robust_mad_status: str,
     robust_mad: float | None,
 ) -> str:
@@ -91,6 +136,7 @@ def _fingerprint(
         "minimum_sample": minimum_sample,
         "robust_mad": robust_mad,
         "robust_mad_status": robust_mad_status,
+        "tick_return": asdict(tick_return),
         "version": VOLATILITY_VERSION,
         "window_log_return_abs": asdict(window_log_return_abs),
         "window_range_absolute": asdict(window_range_absolute),
@@ -109,22 +155,30 @@ def _fingerprint(
 def compute_volatility(
     bars: tuple[MarketBar, ...],
     return_series: ReturnSeriesResult,
+    ticks: Iterable[ReplayTick],
     *,
     bar_fingerprint: str,
+    start_at: datetime,
+    end_at: datetime,
     minimum_sample: int = 30,
 ) -> VolatilityResult:
-    """Compute descriptive window-level volatility (SA-002) from closed bars
-    and an already-computed return series over the same bars.
-
-    Tick-to-tick return volatility is not computed here (it needs a raw tick
-    pass, which only `bars.py` performs); this covers the window range and
-    window-return-magnitude measures the contract also requires.
+    """Compute descriptive volatility (SA-002) from closed bars, an
+    already-computed return series over the same bars, and a raw tick pass
+    for the tick-to-tick (unwindowed) return standard deviation the contract
+    also requires -- this is the piece earlier increments deliberately left
+    out, since every other Phase 3 module up to that point only consumed
+    `bars.py`'s bars. `SA-004`/`SA-005` have since established the "read raw
+    ticks directly" pattern this reuses.
     """
     if isinstance(minimum_sample, bool) or not isinstance(minimum_sample, int) or minimum_sample < 1:
         raise ValueError("minimum_sample must be a positive integer")
     normalized_fingerprint = bar_fingerprint.strip()
     if not normalized_fingerprint:
         raise ValueError("bar_fingerprint must not be empty")
+    normalized_start = _utc(start_at, "start_at")
+    normalized_end = _utc(end_at, "end_at")
+    if normalized_start >= normalized_end:
+        raise ValueError("start_at must be before end_at")
     for bar in bars:
         if bar.symbol != return_series.symbol or bar.timeframe != return_series.timeframe:
             raise ValueError("bars must match the return series symbol and timeframe")
@@ -139,6 +193,10 @@ def compute_volatility(
     window_log_return_abs = _summarize(
         abs_returns, n_total=len(return_series.windows), minimum_sample=minimum_sample
     )
+    tick_returns = _tick_mid_returns(
+        ticks, symbol=return_series.symbol, start_at=normalized_start, end_at=normalized_end,
+    )
+    tick_return = _summarize(tick_returns, n_total=len(tick_returns), minimum_sample=minimum_sample)
 
     if len(signed_returns) < minimum_sample:
         robust_mad_status, robust_mad = INSUFFICIENT_DATA, None
@@ -154,6 +212,7 @@ def compute_volatility(
         window_range_absolute=window_range_absolute,
         window_range_relative=window_range_relative,
         window_log_return_abs=window_log_return_abs,
+        tick_return=tick_return,
         robust_mad_status=robust_mad_status,
         robust_mad=robust_mad,
     )
@@ -165,6 +224,7 @@ def compute_volatility(
         window_range_absolute,
         window_range_relative,
         window_log_return_abs,
+        tick_return,
         robust_mad_status,
         robust_mad,
         fingerprint,
