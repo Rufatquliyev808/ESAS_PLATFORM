@@ -8,6 +8,46 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-007: market regime candidates
+
+- Continues the main Phase 3 roadmap track past SA-006 (session
+  comparison, which needs a versioned calendar this platform does not
+  have yet and was deliberately skipped for now).
+- New `backend/app/analysis/regime_candidates.py`: `compute_regime_candidates()`.
+  An initial, purely descriptive clustering of windows by four features
+  already produced by SA-001-003 -- no new raw-tick pass needed.
+  - Volatility (window range relative to open), spread (window mean
+    spread in bps), and tick speed (window tick count) are each bucketed
+    `low`/`high` by a median split WITHIN the analyzed dataset -- there is
+    no universal or annualized threshold, so a tier is only meaningful
+    relative to the rest of the same run, never across runs.
+  - Return direction is `up`/`down`/`flat` from the window's log-return
+    sign, or `unknown` for single-tick windows (no computable return).
+  - Each distinct (volatility, spread, tick-speed, direction) combination
+    observed gets an arbitrary, lexicographically-ordered `regime_N`
+    label -- the contract is explicit that regime names must not carry
+    economic meaning ("trend", "range", "risky") without separate
+    validation, which has not happened here. Regime labels are therefore
+    NOT stable across different datasets or re-runs with a different
+    window set.
+  - `data_quality_status` is the whole session's Phase 2 quality status
+    (`pass`/`review`/`fail`, from a real `create_replay_quality_report()`
+    call, the same one used to gate pattern-candidate backtests),
+    attached uniformly to every window since this platform only tracks
+    quality per session, not per window.
+- Wired into `statistical_analysis.py` (new `regimes` field; adds a
+  quality-report call, not a new tick pass). `STATISTICAL_ANALYSIS_
+  API_VERSION` `1.5.0 -> 1.6.0`.
+- Frontend untouched, same precedent as the rest of Phase 3.
+- Verification: new `test_regime_candidates.py` (7 tests -- hand-verified
+  4-quadrant fixture with exact median-split and lexicographic
+  regime-assignment checks, single-tick "unknown" direction,
+  insufficient-data gating, invalid-quality-status rejection,
+  mismatched-symbol rejection, unsafe-parameter rejection).
+  `test_replay_technical_analysis_api.py` updated for the new `regimes`
+  field and `api_version` in both the completed and insufficient-data
+  cases. Full backend regression: `507 passed`.
+
 ### Added — Phase 3 SA-002 completion: tick-to-tick return standard deviation
 
 - Closes the piece of SA-002 (volatility) that was deliberately deferred

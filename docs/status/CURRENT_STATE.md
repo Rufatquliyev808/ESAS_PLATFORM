@@ -1,5 +1,52 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-007: bazar rejimi namizədləri
+
+- İstifadəçi "davam et" dedi. SA-006 (sessiya müqayisəsi) versiyalanmış
+  simvol/broker təqvimi tələb etdiyi üçün daha böyük, yeni infrastrukturlu
+  iş idi; SA-007 isə artıq tamamlanmış SA-001/002/003-ün üzərində qurula
+  bilirdi (yeni xam-tick keçidi tələb etmir) — istifadəçiyə iki seçim
+  təklif edildi, SA-007 seçildi.
+- Yeni `backend/app/analysis/regime_candidates.py`:
+  `compute_regime_candidates()` — hər pəncərəni artıq mövcud 4 feature
+  üzrə təsnifləndirir:
+  - **Volatilite** (pəncərə range-i/open), **spread** (pəncərə orta
+    spread-i, bps) və **tick sürəti** (pəncərə tick sayı) hər biri dataset
+    DAXİLİNDƏ median split ilə `low`/`high`-a bölünür — universal və ya
+    illikləşdirilmiş hədd YOXDUR, ona görə bir "tier" yalnız EYNİ icra
+    daxilində mənalıdır, fərqli icralar arasında müqayisə edilə bilməz.
+  - **Return istiqaməti**: pəncərənin log-return işarəsindən `up`/`down`/
+    `flat`; tək-tick pəncərə üçün (hesablanan return yoxdur) `unknown`.
+  - Müşahidə olunan hər fərqli (volatilite, spread, tick-sürəti,
+    istiqamət) kombinasiyası ixtiyari, leksikoqrafik sıralı `regime_N`
+    etiketi alır — müqavilə açıq tələb edir ki, rejim adları ("trend",
+    "range", "riskli") ayrıca validasiya olunmadan iqtisadi məna
+    daşımasın, bura heç bir belə validasiya edilməyib. Nəticədə **rejim
+    etiketləri fərqli dataset-lər və ya fərqli pəncərə dəstləri arasında
+    SABİT DEYİL** — yalnız hər rejimə bağlı feature tuple-ı müqayisə
+    edilə bilər.
+  - `data_quality_status` — bütün sessiyanın Phase 2 keyfiyyət statusu
+    (`pass`/`review`/`fail`), REAL `create_replay_quality_report()`
+    çağırışından (Phase 4-ün `blocked_by_data_quality` qapısında
+    istifadə olunan EYNİ funksiya) — bütün pəncərələrə eyni tətbiq
+    olunur, çünki platforma per-pəncərə keyfiyyət izləmir, yalnız
+    sessiya-səviyyəli.
+- `statistical_analysis.py`-a inteqrasiya: yeni `regimes` sahəsi, yeni
+  keyfiyyət-hesabatı çağırışı (yeni tick keçidi YOX — bu modul yalnız
+  artıq qurulmuş bar-lar/return_series üzərində işləyir).
+  `STATISTICAL_ANALYSIS_API_VERSION 1.5.0 → 1.6.0`.
+- Frontend toxunulmayıb (Phase 3-ün digər addımları ilə eyni ardıcıllıq).
+- Yoxlama: yeni `test_regime_candidates.py` (`7` test — əl ilə qurulmuş
+  4-kvadrant fixture: 2 bar aşağı volatilite/spread/tick-sürəti (return
+  up/down fərqli), 2 bar yuxarı (return down/up fərqli) — median split-in
+  dəqiq nəticəsi VƏ leksikoqrafik regime təyini (`"high..."` < `"low..."`
+  əlifba sırasına görə) əl ilə doğrulanıb; tək-tick `unknown` istiqamət;
+  insufficient_data həddi; etibarsız keyfiyyət-statusu rəddi; uyğunsuz
+  simvol rəddi; təhlükəsiz parametr rəddi). `test_replay_technical_
+  analysis_api.py` yeniləndi (`api_version 1.6.0`, `regimes` sahəsi, həm
+  `completed` həm `insufficient_data` hallarında). Tam backend
+  regressiyası: `507 passed`.
+
 ## 2026-08-07 — Phase 3 SA-002 tamamlanması: tick-to-tick return standart sapması
 
 - İstifadəçi "davam et" dedi — SA-005-in davamı olaraq, əvvəllər SA-002

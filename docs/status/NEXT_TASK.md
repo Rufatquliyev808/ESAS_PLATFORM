@@ -176,8 +176,35 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   (module_version/event_version üzrə say). `statistical_analysis.py`-a
   inteqrasiya (üçüncü `iter_tick_batches` keçidi), yeni `tick_volume`
   sahəsi, `STATISTICAL_ANALYSIS_API_VERSION 1.3.0 → 1.4.0`. Yeni
-  `test_tick_volume.py` (9 test). Tam backend regressiyası: `496 passed`.
-  Frontend toxunulmayıb.
+  `test_tick_volume.py` (9 test). Backend `496 passed`.
+- **Phase 3 SA-002 tamamlanması — tick-to-tick return std-i** (commit
+  `ef06731`, push edilib, CI yaşıl) — SA-004/005-in açdığı xam-tick oxuma
+  formasını istifadə edərək əvvəllər qəsdən kənarda saxlanmış SA-002
+  hissəsi tamamlandı. `volatility.py`-ın `compute_volatility()`-i indi
+  `ticks`/`start_at`/`end_at` də qəbul edir, yeni `tick_return` sahəsi
+  (tick-to-tick, pəncərəsiz mid-price log-return paylanması) qaytarır.
+  `bars.py`-ın mid-price etibarlılıq filtri tətbiq edilir.
+  `VOLATILITY_VERSION 1.0.0 → 1.1.0`. `STATISTICAL_ANALYSIS_API_VERSION
+  1.4.0 → 1.5.0`. Backend `500 passed`.
+- **Phase 3 SA-007 — bazar rejimi namizədləri** (hələ commit edilməyib) —
+  istifadəçinin seçimi: SA-006 (sessiya müqayisəsi) əvəzinə SA-007
+  (versiyalanmış təqvim tələb etmir, artıq tamamlanmış SA-001/002/003
+  üzərində qurulur, yeni xam-tick keçidi tələb etmir). Yeni
+  `regime_candidates.py`: hər pəncərəni 4 feature üzrə (volatilite
+  səviyyəsi, spread səviyyəsi, tick sürəti — hamısı dataset-daxili median
+  split ilə low/high, universal/annualized hədd YOXDUR; return
+  istiqaməti — up/down/flat, tək-tick pəncərə üçün unknown) neytral,
+  leksikoqrafik sıralı `regime_N` etiketinə təsnifləndirir (iqtisadi ad
+  YOX — müqavilə bunu açıq tələb edir). `data_quality_status` real
+  `create_replay_quality_report()` çağırışından (Phase 4-ün
+  `blocked_by_data_quality` qapısında istifadə olunan eyni funksiya) gəlir,
+  bütün pəncərələrə eyni tətbiq olunur (per-pəncərə keyfiyyət izlənmir).
+  `statistical_analysis.py`-a inteqrasiya (yeni `regimes` sahəsi, yeni
+  keyfiyyət-hesabatı çağırışı, yeni tick keçidi YOX),
+  `STATISTICAL_ANALYSIS_API_VERSION 1.5.0 → 1.6.0`. Yeni
+  `test_regime_candidates.py` (7 test — əl ilə yoxlanmış 4-kvadrant
+  fixture, median split, leksikoqrafik regime təyini). Tam backend
+  regressiyası: `507 passed`. Frontend toxunulmayıb.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -199,12 +226,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
 - **Phase 3 statistik analiz davam edir** (pəncərə/resampling təməli +
   SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return
   std-i daxil, tam tamamlandı) + SA-003 spread davranışı + SA-004 tick
-  sürəti + SA-005 tick-volume/flags, təfərrüat yuxarıda). Növbəti
-  namizədlər: SA-006 (sessiya müqayisəsi — versiyalanmış təqvim tələb
-  edir, daha böyük iş), SA-007 (bazar rejimi namizədləri — əvvəlki
-  SA-002/003/004/005-dən asılı). Sonra: async job/persistence resursu
-  (`POST /api/v2/statistical-analyses`) və frontend paneli (hazırkı
-  SA-001/SA-002/SA-003/SA-004/SA-005-in heç birinin UI-si yoxdur).
+  sürəti + SA-005 tick-volume/flags + SA-007 bazar rejimi namizədləri,
+  təfərrüat yuxarıda). Növbəti namizəd: SA-006 (sessiya müqayisəsi —
+  versiyalanmış simvol/broker təqvimi tələb edir: timezone, DST,
+  həftəsonu/bayram, üst-üstə düşən sessiya prioriteti — daha böyük,
+  yeni infrastruktur tələb edən iş, ayrıca dizayn qərarları lazımdır).
+  Sonra: async job/persistence resursu (`POST /api/v2/statistical-analyses`)
+  və frontend paneli (hazırkı SA-001/SA-002/SA-003/SA-004/SA-005/SA-007-in
+  heç birinin UI-si yoxdur).
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları
