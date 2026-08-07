@@ -8,6 +8,40 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 3 SA-005: tick volume and flags
+
+- Continues the main Phase 3 roadmap track after SA-004 (tick speed),
+  reusing the same raw-tick-read shape.
+- New `backend/app/analysis/tick_volume.py`: `compute_tick_volume_statistics()`.
+  The existing `volume` field is explicitly labelled MT5 tick-volume (a
+  count of price updates behind the tick) -- the contract forbids
+  presenting it as real exchange trade volume, order-book depth, or
+  executable liquidity.
+  - `tick_volume`: distribution of each individual tick's raw volume
+    value (all ticks, zero included), plus separate `n_zero_volume` /
+    `n_positive_volume` counts.
+  - `window_volume_sum`: one population point per populated epoch-aligned
+    window (that window's total volume), same "one point per window,
+    empty windows not zero-filled" convention as SA-003/SA-004.
+  - `flag_combinations`: raw observed `flags` integer values and their
+    counts, deliberately left UNDECODED -- the contract says flags
+    semantics must not be interpreted without a separate, versioned MT5
+    bit mapping, which this platform does not have.
+  - `version_segments`: counts grouped by (`module_version`,
+    `event_version`) so a caller can see whether a range spans a
+    bridge/schema upgrade.
+- Wired into `statistical_analysis.py` alongside SA-001-004 (new
+  `tick_volume` field, third `iter_tick_batches` pass).
+  `STATISTICAL_ANALYSIS_API_VERSION` `1.3.0 -> 1.4.0`.
+- Frontend untouched, same precedent as SA-001-004.
+- Verification: new `test_tick_volume.py` (9 tests -- hand-verified
+  percentiles, zero/positive volume counting, window-sum bucketing, flag
+  combination ordering, version-segment grouping, empty input, fingerprint
+  determinism, unsafe-parameter rejection).
+  `test_replay_technical_analysis_api.py` updated for the new
+  `tick_volume` field and `api_version` in both the completed and
+  insufficient-data cases. Full backend regression: `496 passed`.
+
 ### Added — Phase 3 SA-004: tick speed and interval
 
 - Continues the main Phase 3 roadmap track after SA-003 (spread behaviour).

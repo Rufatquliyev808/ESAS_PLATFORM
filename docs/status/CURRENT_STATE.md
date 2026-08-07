@@ -1,5 +1,42 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Phase 3 SA-005: tick-volume və flags
+
+- İstifadəçi "davam et" dedi — SA-004-ün birbaşa davamı olaraq SA-005
+  (tövsiyə edilən növbəti addım idi: SA-004-ün açdığı xam-tick oxuma
+  formasını birbaşa paylaşır, SA-006 versiyalanmış təqvim tələb edir,
+  SA-007 əvvəlki SA-002-005-dən asılıdır).
+- Yeni `backend/app/analysis/tick_volume.py`: `compute_tick_volume_statistics()`
+  — mövcud `volume` sahəsi **MT5 tick-volume** kimi etiketlənir (müqavilə
+  onu real birja həcmi, order-book dərinliyi və ya icra edilə bilən
+  likvidlik hesab etmir). `tick_rate.py` ilə eyni dizayn: xam tick-lər
+  üzərində birbaşa işləyir, `bars.py`-ın bid/ask etibarlılıq filtri
+  tətbiq edilmir (volume/flags qiymət keyfiyyətindən asılı deyil).
+  - `tick_volume`: hər tick-in xam volume dəyərinin paylanması (bütün
+    tick-lər, sıfır daxil) + ayrıca `n_zero_volume`/`n_positive_volume`
+    sayları.
+  - `window_volume_sum`: dolu (epoch-aligned) pəncərə üzrə bir nöqtə —
+    həmin pəncərənin ümumi volume-u, SA-003/004-ün "pəncərə başına bir
+    nöqtə, boş pəncərə sıfırla doldurulmur" konvensiyası ilə eyni.
+  - `flag_combinations`: müşahidə olunan xam `flags` dəyərləri və sayları,
+    **ŞÜURLU ŞƏKİLDƏ deşifr edilmədən** — müqavilə flags semantikasının
+    ayrıca versiyalanmış MT5 bit mapping olmadan şərh edilməməsini tələb
+    edir, platformada belə bir mapping yoxdur.
+  - `version_segments`: `module_version`/`event_version` cütü üzrə say —
+    aralığın bridge/schema yenilənməsini əhatə edib-etmədiyini göstərir.
+- `statistical_analysis.py`-a inteqrasiya: SA-001-004 ilə eyni
+  orkestratora əlavə edildi (üçüncü ayrıca `iter_tick_batches` keçidi),
+  yeni `tick_volume` sahəsi. `STATISTICAL_ANALYSIS_API_VERSION
+  1.3.0 → 1.4.0`.
+- Frontend toxunulmayıb (SA-001-004 ilə eyni ardıcıllıq).
+- Yoxlama: yeni `test_tick_volume.py` (`9` test — əl ilə yoxlanmış
+  persentillər, sıfır/müsbət volume ayrı sayımı, pəncərə-cəm bucketing-i,
+  flag kombinasiyası sıralaması, versiya-seqment qruplaşdırılması, boş
+  giriş, fingerprint determinizmi, təhlükəsiz parametr rəddi).
+  `test_replay_technical_analysis_api.py` yeniləndi (`api_version 1.4.0`,
+  `tick_volume` sahəsi, həm `completed` həm `insufficient_data`
+  hallarında). Tam backend regressiyası: `496 passed`.
+
 ## 2026-08-07 — Phase 3 SA-004: tick sürəti və interval
 
 - İstifadəçi "platformanı qaldığımız yerdən düzəldək" dedi — SA-003-dən

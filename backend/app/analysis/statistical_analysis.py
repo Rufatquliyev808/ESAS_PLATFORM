@@ -6,6 +6,7 @@ from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
 from backend.app.analysis.return_series import compute_return_series
 from backend.app.analysis.spread import compute_spread_statistics
 from backend.app.analysis.tick_rate import compute_tick_rate_statistics
+from backend.app.analysis.tick_volume import compute_tick_volume_statistics
 from backend.app.analysis.volatility import compute_volatility
 from backend.app.database.replay_session_repository import (
     ReplaySession,
@@ -15,7 +16,7 @@ from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
 
 
-STATISTICAL_ANALYSIS_API_VERSION = "1.3.0"
+STATISTICAL_ANALYSIS_API_VERSION = "1.4.0"
 MAX_STATISTICAL_ANALYSIS_WINDOWS = 50_000
 
 
@@ -32,6 +33,7 @@ class ReplayStatisticalAnalysis:
     volatility: dict[str, object]
     spread: dict[str, object]
     tick_rate: dict[str, object]
+    tick_volume: dict[str, object]
     interpretation: str = "research_observation_not_trading_signal"
     api_version: str = STATISTICAL_ANALYSIS_API_VERSION
 
@@ -104,6 +106,19 @@ def create_replay_statistical_analysis(
         end_at=end_at,
         minimum_sample=minimum_sample_size,
     )
+    volume_ticks = (
+        tick
+        for batch in iter_tick_batches(symbol=session.symbol, start_at=start_at, end_at=end_at)
+        for tick in batch
+    )
+    tick_volume = compute_tick_volume_statistics(
+        volume_ticks,
+        symbol=session.symbol,
+        timeframe=timeframe,
+        start_at=start_at,
+        end_at=end_at,
+        minimum_sample=minimum_sample_size,
+    )
 
     return ReplayStatisticalAnalysis(
         session_id=session.session_id,
@@ -128,9 +143,12 @@ def create_replay_statistical_analysis(
             "spread_fingerprint": spread.fingerprint,
             "tick_rate_version": tick_rate.version,
             "tick_rate_fingerprint": tick_rate.fingerprint,
+            "tick_volume_version": tick_volume.version,
+            "tick_volume_fingerprint": tick_volume.fingerprint,
         },
         return_series=asdict(return_series),
         volatility=asdict(volatility),
         spread=asdict(spread),
         tick_rate=asdict(tick_rate),
+        tick_volume=asdict(tick_volume),
     )
