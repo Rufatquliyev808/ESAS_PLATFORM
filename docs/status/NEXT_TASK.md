@@ -119,6 +119,14 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   tam sınandı (15 günlük ossilasiya edən sintetik data, real bazaya
   toxunmadan). Backend `472 passed`, frontend lint/build/`13/13` test
   təmiz.
+- **Tarixi hərəkət diapazonu (excursion range)** (hələ commit edilməyib) —
+  istifadəçi "gələcəyi proqnoz etmək" istəyini bildirdi ("filan nöqtədən
+  filan nöqtəyə qədər gözlənilir"); eyni sərhəd izahı təkrarlandı, tarixi
+  (backward-looking) aralıq seçildi. Yeni `ExcursionDistribution` — hər
+  tərəf/nəticə üçün median/p25/p75/p90 (n≥30). Frontend-də hər cümlənin
+  sonunda məcburi "Bu, gələcək proqnoz deyil" xəbərdarlığı (source-text
+  guard testi ilə kilidlənib). Canlı brauzerdə tam sınandı. Backend
+  `474 passed`, frontend lint/build/`13/13` test təmiz.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -190,6 +198,15 @@ test backend/frontend ilə) — 4 taymfreym kartı, seqment siyahıları və
 30-sətirlik jurnal düzgün göründü, konsol xətası yox, sorğu axını təmiz.
 Real production backend/frontend (8000/3000) sınaq boyu toxunulmadan
 işlədi.
+
+2026-08-07 (davamı, eyni gün): istifadəçi real dashboard-da "Likvidlik
+icmalı alına bilmədi" xətası gördü (real backend yeni endpoint-dən
+ƏVVƏL başladılmışdı — kod restart olmadan yüklənmir); real backend/
+frontend `tools/stop-local-platform.ps1` → `tools/start-local-platform.ps1`
+ilə yenidən başladıldı, `404` → `401`-ə keçdi, düzəldi. Sonra, tarixi
+hərəkət diapazonu (excursion range) əlavə edildikdən sonra da eyni
+sintetik data ilə canlı brauzerdə sınandı — hər cümlənin sonunda "Bu,
+gələcək proqnoz deyil" xəbərdarlığı düzgün göründü, konsol xətası yox.
 
 ## Başlama şərti
 

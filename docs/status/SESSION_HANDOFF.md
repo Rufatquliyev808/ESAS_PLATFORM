@@ -160,48 +160,55 @@ Son yenilənmə: 2026-08-07
   girişi kimi qəbul edir, hər toxunuşu `reversed`/`continued`/`ambiguous`
   təsnifləndirir (purge/embargo ilə), `buy_side`/`sell_side` üçün ayrı
   95% etibar intervallı statistika.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Likvidlik sisteminin qalan 3 addımı**
-  (çox-taymfreym orkestrasiyası, "özü öyrənən sistem", jurnal). İstifadəçi
-  "1-dən başlayaq, soruşma, hamısını edək" dedi — 3 addım ardıcıl
-  təsdiqsiz tamamlandı, tədqiqat dili qaydası eyni qaldı. Ətraflı:
-  `docs/status/CURRENT_STATE.md`. Qısaca: yeni
+- **Likvidlik sisteminin qalan 3 addımı** (commit `11f47ee`, PUSH EDİLİB,
+  CI yaşıl) — çox-taymfreym orkestrasiyası, "özü öyrənən sistem", jurnal.
+  İstifadəçi "1-dən başlayaq, soruşma, hamısını edək" dedi — 3 addım
+  ardıcıl təsdiqsiz tamamlandı, tədqiqat dili qaydası eyni qaldı. Yeni
   `liquidity_reaction_segments.py` (RSI/Stochastic/ADX şərtləri üzrə
   Bonferroni-düzəlişli seqment statistikası, `ReactionEvent`-ə `bar_index`
-  əlavə edildi, `REACTION_VERSION 1.1.0`), yeni `liquidity_overview.py`
-  (4 taymfreymin orkestrasiyası — trend, ən yaxın müqavimət/dəstək,
-  reaksiya, seqmentlər), yeni `GET /api/v2/liquidity-overview` endpoint-i,
-  yeni `liquidity-overview-panel.tsx` ("Nəticələr" ekranında, 90s polling
-  + manual "Yenilə" — bu endpoint hər çağırışda 4 taymfreymin tam
-  backtest statistikasını yenidən hesablayır). Jurnal yeni backend
-  infrastrukturu tələb etmədi — mövcud `ReactionEvent`-lər artıq lazım
-  olan məlumatı (vaxt/qiymət/nəticə/point) daşıyırdı. Canlı brauzerdə tam
-  sınandı (15 günlük ossilasiya edən sintetik data — M30/H1/H4 mənalı
-  statistika verdi, D1 düzgün `insufficient_data`). Backend `472 passed`,
-  frontend lint/build/`13/13` test təmiz.
+  əlavə edildi), yeni `liquidity_overview.py` (4 taymfreymin
+  orkestrasiyası — trend, ən yaxın müqavimət/dəstək, reaksiya,
+  seqmentlər), yeni `GET /api/v2/liquidity-overview` endpoint-i, yeni
+  `liquidity-overview-panel.tsx` ("Nəticələr" ekranında, 90s polling +
+  manual "Yenilə"). Jurnal yeni backend infrastrukturu tələb etmədi —
+  mövcud `ReactionEvent`-lər artıq lazım olan məlumatı daşıyırdı.
+- **Real production backend/frontend YENƏ yenidən başladıldı** (2026-08-07,
+  eyni gün, ikinci dəfə) — istifadəçi real dashboard-da "Likvidlik icmalı
+  alına bilmədi" gördü (eyni kök səbəb: yeni `/api/v2/liquidity-overview`
+  endpoint-i restart-dan əvvəl əlavə edilmişdi). Eyni təhlükəsiz stop/start
+  ssenari izlənildi, `404` → `401`-ə keçdi.
+- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Tarixi hərəkət diapazonu (excursion
+  range).** İstifadəçi "gələcəyi proqnoz etmək" istədi ("filan nöqtədən
+  filan nöqtəyə qədər gözlənilir") — **eyni sərhəd üçüncü dəfə izah
+  edildi**, tədqiqat-dilli (backward-looking) versiya seçildi. Ətraflı:
+  `docs/status/CURRENT_STATE.md`. Qısaca: yeni `ExcursionDistribution`
+  (`reversed`/`continued` üçün ayrı, median/p25/p75/p90, `n≥30`),
+  `ReactionStatistics`-ə əlavə edildi (`REACTION_VERSION 1.2.0`).
+  Frontend-də hər cümlənin sonunda məcburi "Bu, gələcək proqnoz deyil"
+  xəbərdarlığı, source-text guard testi ilə kilidlənib. Canlı brauzerdə
+  tam sınandı. Backend `474 passed`, frontend lint/build/`13/13` test
+  təmiz.
 - Frontend: sol menyulu, bölmə əsaslı iş sahəsi. "Pattern namizədləri"
   bölməsində draft kartlar + qeydiyyat + arxivləşdirmə + backtest (v1) +
   nəticələndirmə var. "Nəticələr" (defolt) bölməsində indi canlı indikator
   konsensusu paneli (6 osilator + 1 hərəkətli ortalama) VƏ çox-taymfreym
-  likvidlik icmalı paneli də var.
+  likvidlik icmalı paneli (tarixi hərəkət diapazonu daxil) də var.
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `5c4a186`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `11f47ee`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
   seriyası, Phase 3 SA-002 volatilite, əsas ekranın canlı indikator
   konsensusu paneli (RSI+EMA), 5 yeni osilator, boş CI-düzəliş commit-i,
-  likvidlik-səviyyəsi reaksiya statistikası (yalnız backend) — hamısı
-  push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Likvidlik sisteminin qalan 3 addımı
-  (çox-taymfreym orkestrasiyası, özü-öyrənən seqmentasiya, jurnal — kod +
-  testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına görə
-  commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir (istifadəçi bu
-  artım üçün "soruşma, hamısını et" dedi — dizayn seçimlərini soruşmadan
-  tikdim, amma commit/push ritualını yenə də izlədim). İşçi qovluqda
-  `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz)
-  də qalıb.
+  likvidlik-səviyyəsi reaksiya statistikası (yalnız backend), likvidlik
+  sisteminin qalan 3 addımı — hamısı push edilib, CI-də yaşıl).
+- **Yeni, hələ commit edilməyib:** Tarixi hərəkət diapazonu (excursion
+  range — kod + testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md
+  qaydasına görə commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
+  İşçi qovluqda `.tmp/` (əvvəlki sessiyanın pytest qalıqları, untracked,
+  əhəmiyyətsiz) də qalıb.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya tətbiq edilib. `0010` (bu artımın portfolio ledger
   cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
@@ -212,10 +219,10 @@ Son yenilənmə: 2026-08-07
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `472
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla `474
   passed`.
-- Frontend: bu artımda (çox-taymfreym likvidlik icmalı paneli) lint təmiz,
-  `13/13` test, production build uğurlu.
+- Frontend: bu artımda (tarixi hərəkət diapazonu) lint təmiz, `13/13`
+  test, production build uğurlu.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
@@ -247,6 +254,11 @@ Son yenilənmə: 2026-08-07
   D1 düzgün `insufficient_data`. Jurnal (30 sətir) düzgün göründü, konsol
   xətası yox. Real production backend/frontend sınaq boyu toxunulmadan
   işlədi.
+- 2026-08-07 (davamı): tarixi hərəkət diapazonu əlavə edildikdən sonra da
+  eyni sintetik data ilə canlı brauzerdə sınandı (eyni "Yenilə"-klik
+  metodu ilə, storm yox) — hər cümlənin sonunda "Bu, gələcək proqnoz
+  deyil" xəbərdarlığı düzgün göründü, real hesablanan median/p25/p75
+  dəyərləri dəqiq eyni mətnlə render olundu, konsol xətası yox.
 
 ## Növbəti mərhələ
 
@@ -255,13 +267,13 @@ volatilitesi) tamamlandı, əsas ekrana canlı indikator konsensusu paneli
 əlavə edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD,
 ADX) genişləndirildi, likvidlik-səviyyəsi reaksiya statistikasının
 istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
-canlı UI, jurnal) tamamlandı. Namizədlər (`docs/status/NEXT_TASK.md`):
-SA-002-nin qalan hissəsi (tick-to-tick return std-i), SA-003-SA-007
-(spread, tick sürəti, tick-volume, sessiya, rejim), hərəkətli
-ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
-seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri (istəsə),
-job-queue-nun frontend səthi (istəsə). İstifadəçinin ayrıca təsdiqi
-tələb olunur.
+canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
+range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`): SA-002-nin
+qalan hissəsi (tick-to-tick return std-i), SA-003-SA-007 (spread, tick
+sürəti, tick-volume, sessiya, rejim), hərəkətli ortalamaların
+genişləndirilməsi (SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə
+şərtlər, Phase 9-un qalan bölmələri (istəsə), job-queue-nun frontend
+səthi (istəsə). İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

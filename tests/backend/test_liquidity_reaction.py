@@ -138,6 +138,44 @@ def test_completed_statistics_once_thirty_directional_touches_reached() -> None:
     assert stats.confidence_interval_high_percent == pytest.approx(100.0)
 
 
+def test_reversed_excursion_distribution_hand_verified_percentiles() -> None:
+    bars = [bar(0, close=99.0)]
+    index = 1
+    for step in range(30):
+        touch_close = 100.0 - (step + 1) * 0.5
+        bars.append(bar(index, close=touch_close, high=101.0))
+        bars.append(bar(index + 1, close=99.9))
+        index += 2
+    result = compute_liquidity_reaction_statistics(
+        tuple(bars), (buy_side_pool(),), bar_fingerprint="sha256:source",
+        horizon_bars=1, reaction_threshold_bps=10.0,
+    )
+    stats = result.buy_side_statistics
+    assert stats.n_reversed == 30
+    excursion = stats.reversed_excursion
+    assert excursion.status == "completed"
+    assert excursion.n == 30
+    assert excursion.median_bps == pytest.approx(775.0)
+    assert excursion.p25_bps == pytest.approx(412.5)
+    assert excursion.p75_bps == pytest.approx(1137.5)
+    assert excursion.p90_bps == pytest.approx(1355.0)
+    # No continued touches occurred in this fixture.
+    assert stats.continued_excursion.status == INSUFFICIENT_DATA
+    assert stats.continued_excursion.n == 0
+
+
+def test_excursion_distribution_insufficient_below_minimum_sample() -> None:
+    bars = (bar(0, close=99.0), bar(1, close=99.5, high=101.0))
+    result = compute_liquidity_reaction_statistics(
+        bars, (buy_side_pool(),), bar_fingerprint="sha256:source",
+        horizon_bars=1, reaction_threshold_bps=10.0,
+    )
+    excursion = result.buy_side_statistics.reversed_excursion
+    assert excursion.status == INSUFFICIENT_DATA
+    assert excursion.n == 1
+    assert excursion.median_bps is None
+
+
 def test_deterministic_fingerprint_for_same_input() -> None:
     bars = (bar(0, close=99.0), bar(1, close=99.5, high=101.0))
     first = compute_liquidity_reaction_statistics(

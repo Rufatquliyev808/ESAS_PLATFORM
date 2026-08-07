@@ -21,6 +21,15 @@ type ReactionEvent = {
   excursion_bps: number | null;
 };
 
+type ExcursionDistribution = {
+  status: "completed" | "insufficient_data";
+  n: number;
+  median_bps: number | null;
+  p25_bps: number | null;
+  p75_bps: number | null;
+  p90_bps: number | null;
+};
+
 type ReactionStatistics = {
   pool_side: string;
   status: "completed" | "insufficient_data";
@@ -31,6 +40,8 @@ type ReactionStatistics = {
   reversed_percent: number | null;
   confidence_interval_low_percent: number | null;
   confidence_interval_high_percent: number | null;
+  reversed_excursion: ExcursionDistribution;
+  continued_excursion: ExcursionDistribution;
 };
 
 type ReactionPayload = {
@@ -111,7 +122,20 @@ function formatPoints(distanceBps: number, price: number): string {
   return `${points.toFixed(2)} (${Math.abs(distanceBps).toFixed(0)} bps)`;
 }
 
-function ReactionSummary({ side, stats }: { side: string; stats: ReactionStatistics }) {
+function ExcursionRangeNote({ label, excursion, price }: { label: string; excursion: ExcursionDistribution; price: number }) {
+  if (excursion.status === "insufficient_data") return null;
+  return (
+    <p className="card-detail liquidity-excursion-note">
+      {label}: tarixən adətən{" "}
+      <strong>{formatPoints(excursion.p25_bps ?? 0, price)}</strong>–
+      <strong>{formatPoints(excursion.p75_bps ?? 0, price)}</strong> aralığında hərəkət edib (median{" "}
+      {formatPoints(excursion.median_bps ?? 0, price)}, n={excursion.n}). Bu, gələcək proqnoz deyil —
+      keçmiş toxunmaların tarixi hərəkət diapazonudur.
+    </p>
+  );
+}
+
+function ReactionSummary({ side, stats, price }: { side: string; stats: ReactionStatistics; price: number }) {
   if (stats.status === "insufficient_data") {
     return (
       <p className="card-detail">
@@ -120,11 +144,15 @@ function ReactionSummary({ side, stats }: { side: string; stats: ReactionStatist
     );
   }
   return (
-    <p className="card-detail">
-      {SIDE_LABELS[side] ?? side}: tarixən <strong>{formatPercent(stats.reversed_percent)}</strong> geri
-      qayıdıb (95% etibar intervalı: {formatPercent(stats.confidence_interval_low_percent)}–
-      {formatPercent(stats.confidence_interval_high_percent)}, n={stats.n_reversed + stats.n_continued}).
-    </p>
+    <>
+      <p className="card-detail">
+        {SIDE_LABELS[side] ?? side}: tarixən <strong>{formatPercent(stats.reversed_percent)}</strong> geri
+        qayıdıb (95% etibar intervalı: {formatPercent(stats.confidence_interval_low_percent)}–
+        {formatPercent(stats.confidence_interval_high_percent)}, n={stats.n_reversed + stats.n_continued}).
+      </p>
+      <ExcursionRangeNote label="Geri qayıtdıqda hərəkət" excursion={stats.reversed_excursion} price={price} />
+      <ExcursionRangeNote label="Keçdikdə hərəkət" excursion={stats.continued_excursion} price={price} />
+    </>
   );
 }
 
@@ -194,8 +222,8 @@ function TimeframeCard({ overview }: { overview: TimeframeOverview }) {
           ? `Ən yaxın dəstək: ${overview.nearest_support.level.toFixed(2)} (${formatPoints(overview.nearest_support.distance_bps, price)} uzaqda)`
           : "Dəstək səviyyəsi tapılmadı."}
       </p>
-      <ReactionSummary side="buy_side" stats={overview.reaction.buy_side_statistics} />
-      <ReactionSummary side="sell_side" stats={overview.reaction.sell_side_statistics} />
+      <ReactionSummary side="buy_side" stats={overview.reaction.buy_side_statistics} price={price} />
+      <ReactionSummary side="sell_side" stats={overview.reaction.sell_side_statistics} price={price} />
       <SegmentList segments={overview.segments.buy_side.segments} />
       <SegmentList segments={overview.segments.sell_side.segments} />
       <JournalList events={overview.reaction.events} price={price} />

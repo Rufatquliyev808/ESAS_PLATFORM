@@ -8,6 +8,41 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Historical excursion range for liquidity reactions (research-safe answer to a forecast request)
+
+- The user asked, a third time in this liquidity-feature arc, for
+  something that edges toward prediction: "from point A to point B a
+  decline/rise is expected." The same boundary discussion as before
+  applied -- a specific price target framed as "expected" is a forecast,
+  which is Phase 8 (Decision/Risk Layer) territory, not yet built. Offered
+  two framings again: a historical (backward-looking) movement range, or
+  the literal "expected" wording. The user chose the historical range.
+- `backend/app/analysis/liquidity_reaction.py`: new `ExcursionDistribution`
+  dataclass -- for each side (`buy_side`/`sell_side`) and each outcome
+  (`reversed`/`continued`) separately, the median/p25/p75/p90 of the
+  already-recorded `ReactionEvent.excursion_bps` values (gated on `n >= 30`,
+  `insufficient_data` below that). Added `reversed_excursion` /
+  `continued_excursion` fields to `ReactionStatistics`.
+  `REACTION_VERSION` `1.1.0 -> 1.2.0`. `liquidity_reaction_segments.py`'s
+  baseline-statistics construction updated to match (`SEGMENT_VERSION`
+  `1.0.0 -> 1.1.0`).
+- Frontend: `liquidity-overview-panel.tsx` gained two sentences per side
+  ("historically moves X-Y points when it reverses / when it continues",
+  with points and bps, median, and sample size). Every occurrence ends
+  with a mandatory disclaimer -- "Bu, gələcək proqnoz deyil -- keçmiş
+  toxunmaların tarixi hərəkət diapazonudur" (this is not a forecast, it's
+  the historical movement range of past touches) -- which is now locked in
+  by the source-text guard test alongside the existing "no buy/sell
+  language" check.
+- Verified live in the browser against the same 15-day synthetic dataset:
+  confirmed the exact computed percentile values (e.g. M30 buy_side
+  reversed: median 32 bps / 13.77 points, p25-p75 15-32 bps) render
+  correctly with the disclaimer on every sentence, no console errors.
+- Verification: 2 new hand-verified tests in `test_liquidity_reaction.py`
+  (exact percentile values for a 30-sample fixture, and the
+  insufficient-data floor). Full backend regression: `474 passed`.
+  Frontend lint clean, `13/13` tests, production build clean.
+
 ### Added — Liquidity system: multi-timeframe overview, indicator-segment search, live panel, journal
 
 - Direct continuation of the liquidity-reaction backtest increment. The

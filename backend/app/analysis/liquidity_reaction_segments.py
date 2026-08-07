@@ -5,11 +5,17 @@ import json
 import math
 
 from backend.app.analysis.indicators import IndicatorSeries, IndicatorSetResult
-from backend.app.analysis.liquidity_reaction import CONTINUED, REVERSED, ReactionEvent, ReactionStatistics
+from backend.app.analysis.liquidity_reaction import (
+    CONTINUED,
+    REVERSED,
+    ExcursionDistribution,
+    ReactionEvent,
+    ReactionStatistics,
+)
 from backend.app.analysis.oscillators import OscillatorSeries, OscillatorSetResult
 
 
-SEGMENT_VERSION = "1.0.0"
+SEGMENT_VERSION = "1.1.0"
 MIN_EFFECTIVE_SAMPLE = 30
 COMPLETED = "completed"
 INSUFFICIENT_DATA = "insufficient_data"
@@ -75,16 +81,48 @@ def _proportion_ci(reversed_count: int, total: int, z: float) -> tuple[float, fl
     return proportion * 100.0, max(0.0, (proportion - margin) * 100.0), min(100.0, (proportion + margin) * 100.0)
 
 
+def _quantile(ordered: list[float], fraction: float) -> float:
+    if len(ordered) == 1:
+        return ordered[0]
+    position = fraction * (len(ordered) - 1)
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    weight = position - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * weight
+
+
+def _excursion_distribution(events: list[ReactionEvent], outcome: str) -> ExcursionDistribution:
+    values = sorted(
+        item.excursion_bps for item in events
+        if item.outcome == outcome and item.excursion_bps is not None
+    )
+    n = len(values)
+    if n < MIN_EFFECTIVE_SAMPLE:
+        return ExcursionDistribution(INSUFFICIENT_DATA, n, None, None, None, None)
+    return ExcursionDistribution(
+        COMPLETED, n,
+        _quantile(values, 0.5), _quantile(values, 0.25), _quantile(values, 0.75), _quantile(values, 0.9),
+    )
+
+
 def _baseline_statistics(pool_side: str, side_events: list[ReactionEvent]) -> ReactionStatistics:
     n_total = len(side_events)
     n_reversed = sum(1 for item in side_events if item.outcome == REVERSED)
     n_continued = sum(1 for item in side_events if item.outcome == CONTINUED)
     n_ambiguous = n_total - n_reversed - n_continued
     directional = n_reversed + n_continued
+    reversed_excursion = _excursion_distribution(side_events, REVERSED)
+    continued_excursion = _excursion_distribution(side_events, CONTINUED)
     if directional < MIN_EFFECTIVE_SAMPLE:
-        return ReactionStatistics(pool_side, INSUFFICIENT_DATA, n_total, n_reversed, n_continued, n_ambiguous, None, None, None)
+        return ReactionStatistics(
+            pool_side, INSUFFICIENT_DATA, n_total, n_reversed, n_continued, n_ambiguous,
+            None, None, None, reversed_excursion, continued_excursion,
+        )
     pct, low, high = _proportion_ci(n_reversed, directional, 1.96)
-    return ReactionStatistics(pool_side, COMPLETED, n_total, n_reversed, n_continued, n_ambiguous, pct, low, high)
+    return ReactionStatistics(
+        pool_side, COMPLETED, n_total, n_reversed, n_continued, n_ambiguous,
+        pct, low, high, reversed_excursion, continued_excursion,
+    )
 
 
 def _fingerprint(*, pool_side: str, baseline: ReactionStatistics, segments: tuple[IndicatorSegment, ...]) -> str:

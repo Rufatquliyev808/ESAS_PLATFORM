@@ -1,5 +1,41 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-07 — Tarixi hərəkət diapazonu (excursion range) — "proqnoz" tələbinin tədqiqat-dilli qarşılığı
+
+- İstifadəçi (real backend/frontend restart edilib jurnal göstərildikdən
+  sonra) dedi: hazırkı analiz "faktiki qalxış/düşüş" göstərir, amma
+  **"gələcəyi proqnoz etmək"** lazımdır — "filan nöqtədən filan nöqtəyə
+  qədər düşüş/qalxış gözlənilir" formasında. **Bu, əvvəlki iki dəfə
+  müzakirə edilən eyni sərhəddir** — "gözlənilir" sözü ilə konkret qiymət
+  hədəfi vermək artıq proqnozdur (Phase 8 mövzusu). İstifadəçiyə iki
+  seçim təklif edildi: (1) tarixi hərəkət aralığı (backward-looking,
+  "keçmişdə belə olub") — tövsiyə edilən, (2) hərfi "gözlənilir" dili.
+  İstifadəçi **tarixi hərəkət aralığını** seçdi.
+- `backend/app/analysis/liquidity_reaction.py`: yeni `ExcursionDistribution`
+  dataclass-ı — hər tərəf (`buy_side`/`sell_side`) üçün, HƏM `reversed`
+  HƏM `continued` nəticələr üçün ayrıca, tarixi `excursion_bps`
+  (artıq mövcud `ReactionEvent.excursion_bps`-dən) paylanmasının median/
+  p25/p75/p90 persentilləri (`n≥30` həddi, aşağıda `insufficient_data`).
+  `ReactionStatistics`-ə `reversed_excursion`/`continued_excursion`
+  sahələri əlavə edildi. `REACTION_VERSION 1.1.0 → 1.2.0`.
+  `liquidity_reaction_segments.py`-ın `_baseline_statistics`-i də uyğun
+  yeniləndi (`SEGMENT_VERSION 1.1.0`).
+- Frontend: `liquidity-overview-panel.tsx`-ə hər tərəf üçün 2 yeni cümlə
+  ("Geri qayıtdıqda hərəkət:.../Keçdikdə hərəkət:...") — point/bps
+  formatında p25–p75 aralığı, median, n. **Hər cümlənin sonunda məcburi
+  xəbərdarlıq: "Bu, gələcək proqnoz deyil — keçmiş toxunmaların tarixi
+  hərəkət diapazonudur."** — bu, yalnız stilistik seçim deyil, source-text
+  guard testi ilə də kilidlənib (`gələcək proqnoz deyil` mütləq olmalıdır,
+  `gözlənilir` sözü isə mütləq olmamalıdır).
+- **Canlı brauzerdə tam sınandı** (mövcud 15 günlük sintetik data ilə,
+  birdəfəlik test backend/frontend, real bazaya toxunmadan): real hesablanan
+  dəyərlər (məs. M30 buy_side reversed: median 32bps/13.77 point, p25-p75
+  15-32bps) brauzerdə dəqiq eyni mətnlə göründü, hər cümlənin sonunda
+  xəbərdarlıq mövcud idi, konsol xətası yox. Real production backend/
+  frontend (8000/3000) sınaq boyu toxunulmadan işlədi.
+- Backend `474 passed`. Frontend: lint təmiz, `13/13` test, production
+  build uğurlu.
+
 ## 2026-08-07 — Likvidlik sisteminin qalan 3 addımı: çox-taymfreym UI, özü-öyrənən seqmentasiya, jurnal
 
 - İstifadəçi əvvəlki artımdan sonra "1-dən başlayaq, soruşma, hamısını

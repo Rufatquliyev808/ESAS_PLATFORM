@@ -13,4 +13,7 @@ test("liquidity overview panel stays a research-only backtest summary, not a tra
   // false-positive here; check for the actual prohibited action language.
   const lowered = source.toLowerCase();
   assert.doesNotMatch(lowered, /placeorder|sendorder|positionsize|"buy"|'buy'|"sell"|'sell'|gözlənilir/);
+  // The historical excursion range must stay explicitly framed as backward-
+  // looking evidence, not a forecast or a price target.
+  assert.match(source, /gələcək proqnoz deyil/);
 });

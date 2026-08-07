@@ -7,7 +7,7 @@ from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.liquidity_sweep import LiquidityPool
 
 
-REACTION_VERSION = "1.1.0"
+REACTION_VERSION = "1.2.0"
 Z_95 = 1.96
 MIN_EFFECTIVE_SAMPLE = 30
 REVERSED = "reversed"
@@ -30,6 +30,19 @@ class ReactionEvent:
 
 
 @dataclass(frozen=True)
+class ExcursionDistribution:
+    """Descriptive (backward-looking) distribution of how far price has
+    historically moved for a given outcome -- not a forecast or a target,
+    just what has already happened in similar historical touches."""
+    status: str
+    n: int
+    median_bps: float | None
+    p25_bps: float | None
+    p75_bps: float | None
+    p90_bps: float | None
+
+
+@dataclass(frozen=True)
 class ReactionStatistics:
     pool_side: str
     status: str
@@ -40,6 +53,8 @@ class ReactionStatistics:
     reversed_percent: float | None
     confidence_interval_low_percent: float | None
     confidence_interval_high_percent: float | None
+    reversed_excursion: ExcursionDistribution
+    continued_excursion: ExcursionDistribution
 
 
 @dataclass(frozen=True)
@@ -120,16 +135,42 @@ def _quantile_bounded(value: float) -> float:
     return max(0.0, min(100.0, value))
 
 
+def _quantile(ordered: list[float], fraction: float) -> float:
+    if len(ordered) == 1:
+        return ordered[0]
+    position = fraction * (len(ordered) - 1)
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    weight = position - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * weight
+
+
+def _excursion_distribution(events: list[ReactionEvent], outcome: str) -> ExcursionDistribution:
+    values = sorted(
+        item.excursion_bps for item in events
+        if item.outcome == outcome and item.excursion_bps is not None
+    )
+    n = len(values)
+    if n < MIN_EFFECTIVE_SAMPLE:
+        return ExcursionDistribution(INSUFFICIENT_DATA, n, None, None, None, None)
+    return ExcursionDistribution(
+        COMPLETED, n,
+        _quantile(values, 0.5), _quantile(values, 0.25), _quantile(values, 0.75), _quantile(values, 0.9),
+    )
+
+
 def _summarize_side(side: str, events: list[ReactionEvent]) -> ReactionStatistics:
     n_total = len(events)
     n_reversed = sum(1 for item in events if item.outcome == REVERSED)
     n_continued = sum(1 for item in events if item.outcome == CONTINUED)
     n_ambiguous = sum(1 for item in events if item.outcome == AMBIGUOUS)
     directional = n_reversed + n_continued
+    reversed_excursion = _excursion_distribution(events, REVERSED)
+    continued_excursion = _excursion_distribution(events, CONTINUED)
     if directional < MIN_EFFECTIVE_SAMPLE:
         return ReactionStatistics(
             side, INSUFFICIENT_DATA, n_total, n_reversed, n_continued, n_ambiguous,
-            None, None, None,
+            None, None, None, reversed_excursion, continued_excursion,
         )
     proportion = n_reversed / directional
     margin = Z_95 * math.sqrt(proportion * (1 - proportion) / directional)
@@ -138,6 +179,7 @@ def _summarize_side(side: str, events: list[ReactionEvent]) -> ReactionStatistic
         proportion * 100.0,
         _quantile_bounded((proportion - margin) * 100.0),
         _quantile_bounded((proportion + margin) * 100.0),
+        reversed_excursion, continued_excursion,
     )
 
 
