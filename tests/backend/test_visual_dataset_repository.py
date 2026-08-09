@@ -1,20 +1,28 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from backend.app.analysis.visual_dataset import DatasetManifestEntry, VisualSample
+from backend.app.analysis.bars import MarketBar
+from backend.app.analysis.visual_dataset import DatasetManifestEntry, build_visual_sample
+from backend.app.analysis.visual_label import LabelSpec
+from backend.app.analysis.visual_materializer import MaterializedSample
+from backend.app.analysis.visual_render import RenderSpec, render_canonical_chart
 from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
 from backend.app.database.visual_dataset_repository import (
     VisualDatasetManifestConflictError,
+    artifact_checksum_for,
     count_dataset_samples,
     get_dataset_manifest,
     persist_dataset_manifest,
     persist_materialized_samples,
 )
 from backend.app.database.visual_experiment_repository import register_visual_experiment
-from backend.app.analysis.visual_render import RenderSpec
-from backend.app.analysis.visual_label import LabelSpec
+
+
+BASE_TIME = datetime(2026, 8, 5, 0, 0, tzinfo=UTC)
+SPEC = RenderSpec(width=20, height=10, padding_top=1, padding_bottom=1, padding_left=1, padding_right=1)
 
 
 def _prepare(database_path: Path) -> str:
@@ -43,15 +51,35 @@ def _prepare(database_path: Path) -> str:
     return experiment.experiment_id
 
 
-def _sample(sample_id: str, split_id: str = "train") -> VisualSample:
-    return VisualSample(
-        version="1.0.0", sample_id=sample_id, symbol="GOLD", timeframe="M1",
-        source_bar_fingerprint="sha256:bars", render_spec_id="sha256:render",
-        image_checksum="sha256:image", observation_window_start_at="2026-08-05T00:00:00+00:00",
-        observation_end_at="2026-08-05T00:10:00+00:00", label_spec_id="sha256:label",
-        label_available_at="2026-08-05T00:20:00+00:00", label_value="up", label_status="labeled",
-        quality_flags=(), split_id=split_id,
+def _bar(index: int, price: float) -> MarketBar:
+    start = BASE_TIME + timedelta(minutes=index)
+    return MarketBar(
+        symbol="GOLD", timeframe="M1",
+        start_at=start.isoformat(timespec="microseconds"),
+        end_at=(start + timedelta(minutes=1)).isoformat(timespec="microseconds"),
+        open=price, high=price + 1, low=price - 1, close=price + 0.5,
+        tick_count=2, tick_volume=2,
+        spread_min=0.1, spread_max=0.1, spread_mean=0.1,
+        first_event_id=f"event:{index}:0", last_event_id=f"event:{index}:1",
     )
+
+
+def _sample(tag: str, split_id: str = "train") -> MaterializedSample:
+    """Builds a real (small) rendered+labelled sample. `tag` is folded into
+    the bar_fingerprint (not the bar prices -- two windows with the same
+    relative open/high/low/close shape but different absolute price levels
+    render to identical pixels, since the renderer only cares about
+    relative position within [price_min, price_max]) to get distinct,
+    genuinely-different sample_ids/checksums across calls.
+    """
+    bars = (_bar(0, 100.0), _bar(1, 100.0))
+    image = render_canonical_chart(bars, bar_fingerprint=f"sha256:bars-{tag}", spec=SPEC)
+    sample = build_visual_sample(
+        image, label_spec_id="sha256:label",
+        label_available_at="2026-08-05T00:20:00+00:00", label_value="up",
+    )
+    sample = sample.__class__(**{**sample.__dict__, "split_id": split_id})
+    return MaterializedSample(sample=sample, image=image)
 
 
 def _manifest(fingerprint: str = "sha256:manifest-fingerprint"):
@@ -62,7 +90,7 @@ def _manifest(fingerprint: str = "sha256:manifest-fingerprint"):
 
 def test_persist_materialized_samples_inserts_rows(isolated_database: Path) -> None:
     experiment_id = _prepare(isolated_database)
-    samples = (_sample("s1"), _sample("s2"))
+    samples = (_sample("a"), _sample("b"))
     inserted = persist_materialized_samples(experiment_id, samples)
     assert inserted == 2
     assert count_dataset_samples(experiment_id) == 2
@@ -70,11 +98,24 @@ def test_persist_materialized_samples_inserts_rows(isolated_database: Path) -> N
 
 def test_persist_materialized_samples_is_idempotent(isolated_database: Path) -> None:
     experiment_id = _prepare(isolated_database)
-    samples = (_sample("s1"), _sample("s2"))
+    samples = (_sample("a"), _sample("b"))
     persist_materialized_samples(experiment_id, samples)
     second_inserted = persist_materialized_samples(experiment_id, samples)
     assert second_inserted == 0
     assert count_dataset_samples(experiment_id) == 2
+
+
+def test_persist_materialized_samples_stores_artifact_checksum(isolated_database: Path) -> None:
+    experiment_id = _prepare(isolated_database)
+    item = _sample("a")
+    persist_materialized_samples(experiment_id, (item,))
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT artifact_checksum, image_checksum FROM visual_dataset_samples WHERE sample_id = ?;",
+            (item.sample.sample_id,),
+        ).fetchone()
+    assert row["artifact_checksum"] == artifact_checksum_for(item)
+    assert row["artifact_checksum"] != row["image_checksum"]
 
 
 def test_persist_dataset_manifest_stores_and_returns(isolated_database: Path) -> None:

@@ -6,6 +6,7 @@ import pytest
 
 from backend.app.database.connection import configure_database_path
 from backend.app.auth import reset_active_sessions, reset_login_attempts
+from backend.app.storage.artifact_store import configure_artifact_root
 
 
 @pytest.fixture(autouse=True)
@@ -18,9 +19,11 @@ def isolated_database(tmp_path: Path) -> Iterator[Path]:
     reset_active_sessions()
     database_path = tmp_path / "ESAS_PLATFORM_TEST.sqlite"
     configure_database_path(database_path)
+    configure_artifact_root(tmp_path / "artifacts")
 
     yield database_path
 
     reset_login_attempts()
     reset_active_sessions()
     configure_database_path(None)
+    configure_artifact_root(None)

@@ -8,6 +8,63 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Local content-addressed artifact store; PNG artifacts now actually persisted
+
+- User's own gap analysis after the last increment correctly identified
+  that "PNG artefaktları saxlanmır" (rendered images only ever existed
+  in RAM -- `visual_dataset_samples` recorded checksums/lineage but no
+  actual file) and specified the fix precisely: build the artifact
+  storage contract and a local content-addressed store first, before
+  touching job-queue/API wiring or the `rendering -> training`
+  transition. Full execution authority given; only files/docs, no DB
+  writes to production.
+- New `docs/architecture/ARTIFACT_STORE_CONTRACT.md` and
+  `backend/app/storage/artifact_store.py`: `put_artifact()`/
+  `get_artifact()`/`has_artifact()`, keyed by the standard
+  `sha256:<hex>` checksum format already used everywhere in Phase 5.
+  Path is deterministically derived from the checksum (2-level
+  sharded directory, e.g. `storage/artifacts/ab/12/ab12....png`) --
+  no separate "location" column is ever needed. Writes are idempotent
+  (existing content is never rewritten); `put_artifact()` refuses
+  content that doesn't match its declared checksum
+  (`ArtifactIntegrityError`); `get_artifact(verify=True)` (the
+  default) re-hashes on read to catch corruption. Root directory is
+  swappable via `configure_artifact_root()`, mirroring
+  `connection.py`'s `configure_database_path()` pattern exactly --
+  `tests/backend/conftest.py`'s autouse fixture now isolates it for
+  every test the same way it already isolates the database, so no
+  test can ever touch the real artifact tree.
+- **Found and fixed a real bug while wiring this in**: `visual_render.py`'s
+  `image_checksum` is deliberately the checksum of the RAW PIXEL BUFFER
+  (documented reasoning: reproducibility independent of zlib/PNG
+  encoder version), which is a *different* byte sequence -- and
+  therefore a different hash -- than the actual encoded PNG file
+  bytes. Trying to `put_artifact(image_checksum, png_bytes, ...)`
+  correctly failed integrity verification. Fixed by adding a genuinely
+  separate `artifact_checksum` column (migration `0013` amended in
+  place -- still unapplied to production, safe to edit) holding
+  `sha256(png_bytes)`, computed by a new
+  `visual_dataset_repository.artifact_checksum_for()` helper.
+  `image_checksum` keeps its original, unchanged meaning (pixel-level
+  reproducibility proof); `artifact_checksum` is the real file-locator.
+- `visual_experiment_materialization.py`'s `render_visual_experiment()`
+  now writes every sample's PNG to the artifact store as part of the
+  `registered -> rendering` step (any I/O or integrity failure there
+  also correctly moves the experiment to `failed`, same as a
+  bar-fingerprint mismatch).
+- 16 new tests (14 for the artifact store itself -- determinism,
+  sharded paths, invalid-checksum rejection, idempotent writes,
+  integrity mismatch on write, not-found, corruption detection on
+  read, verify-skipping; 2 more for the repository/orchestration
+  wiring). Full backend regression: `685 passed`.
+- **Scratch end-to-end verification**: real replay session -> real
+  materialization -> all 6 samples' artifacts confirmed present on
+  disk with valid PNG signatures (content-addressed dedup correctly
+  collapsed several visually-identical candles down to one file on
+  disk -- expected, not a bug). Real production database, services,
+  and artifact directory (`storage/artifacts/` was never created in
+  the real project tree) all confirmed untouched.
+
 ### Added — Phase 5: registered -> rendering job/lifecycle persistence
 
 - User granted full execution authority for this step, explicitly

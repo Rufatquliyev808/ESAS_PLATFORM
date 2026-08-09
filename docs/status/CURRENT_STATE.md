@@ -1,5 +1,36 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Yerli content-addressed artifact store; PNG-lər indi real saxlanılır
+
+- İstifadəçinin öz boşluq analizi düzgün tapdı: "PNG artefaktları
+  saxlanmır" (şəkillər yalnız RAM-da yaranırdı, bazada yalnız checksum
+  qalırdı). Tapşırıq dəqiq idi: əvvəlcə saxlama müqaviləsi + yerli
+  content-addressed store, sonra job-queue/API, ən sonda
+  `rendering → training`. Tam icra icazəsi verildi.
+- Yeni `docs/architecture/ARTIFACT_STORE_CONTRACT.md` +
+  `backend/app/storage/artifact_store.py`: checksum-dan deterministik
+  yol (2-səviyyəli sharding), idempotent yazma, yazmada/oxumada
+  bütövlük yoxlaması (`ArtifactIntegrityError`). Kök qovluq
+  `configure_artifact_root()` ilə dəyişdirilə bilər —
+  `conftest.py`-ın autouse fixture-u indi HƏR testi buna görə də
+  izolyasiya edir (bazanı izolyasiya etdiyi kimi).
+- **Wiring zamanı real bug tapılıb düzəldildi**: `image_checksum`
+  (piksel-əsaslı) real PNG fayl bytes-ının sha256-sı ilə EYNİ DEYİL
+  (qəsdən — reproduktivlik üçün). `put_artifact()` bunu düzgün tutdu.
+  Migration `0013`-ə (hələ production-a tətbiq edilməyib, təhlükəsiz
+  redaktə edildi) ayrıca `artifact_checksum` sütunu əlavə edildi
+  (`sha256(png_bytes)`), yeni `artifact_checksum_for()` funksiyası ilə
+  hesablanır. `image_checksum`-un mənası dəyişməyib.
+- `render_visual_experiment()` indi hər nümunənin PNG-sini artifact
+  store-a yazır (I/O/bütövlük xətası da `failed`-ə keçirir).
+- 16 yeni test. Tam backend regressiyası: `685 passed`.
+- **Scratch uçdan-uca doğrulama**: real replay → materiallaşdırma →
+  6 nümunənin hamısının artefaktı diskdə düzgün PNG kimi təsdiqləndi
+  (bəziləri eyni məzmuna malik olduğu üçün content-addressing təbii
+  dedup etdi — düzgün davranış). Real production baza, xidmətlər və
+  artifact qovluğu (`storage/artifacts/` real layihədə YARADILMADI)
+  toxunulmadan qaldı.
+
 ## 2026-08-09 — Phase 5: `registered → rendering` job/lifecycle persistence
 
 - İstifadəçi bu addım üçün tam icra icazəsi verdi ("materializer

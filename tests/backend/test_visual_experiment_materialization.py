@@ -110,6 +110,31 @@ def test_render_visual_experiment_succeeds_and_persists(isolated_database: Path)
     assert result.manifest.total_samples == result.sample_count
     assert count_dataset_samples(experiment.experiment_id) == result.sample_count
 
+
+def test_render_visual_experiment_writes_png_artifacts_to_disk(isolated_database: Path) -> None:
+    from backend.app.database.connection import get_connection
+    from backend.app.storage.artifact_store import get_artifact, has_artifact
+
+    session = _prepare(isolated_database)
+    fingerprint = _real_bar_fingerprint(session)
+    experiment = _register(session, source_bar_fingerprint=fingerprint)
+
+    result = render_visual_experiment(experiment.experiment_id, actor="TEST-USER", actor_role="operator")
+
+    with get_connection() as connection:
+        checksums = [
+            row["artifact_checksum"]
+            for row in connection.execute(
+                "SELECT artifact_checksum FROM visual_dataset_samples WHERE experiment_id = ?;",
+                (experiment.experiment_id,),
+            ).fetchall()
+        ]
+    assert checksums
+    for checksum in checksums:
+        assert has_artifact(checksum, extension="png")
+        content = get_artifact(checksum, extension="png")
+        assert content[:8] == b"\x89PNG\r\n\x1a\n"
+
     stored = get_visual_experiment(experiment.experiment_id)
     assert stored.lifecycle_state == "rendering"
     manifest = get_dataset_manifest(experiment.experiment_id)

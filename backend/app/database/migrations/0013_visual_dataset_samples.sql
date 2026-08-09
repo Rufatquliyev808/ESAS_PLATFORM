@@ -1,3 +1,10 @@
+-- image_checksum is the deterministic RAW PIXEL BUFFER checksum from
+-- visual_render.py (same pixels -> same checksum regardless of zlib/PNG
+-- encoder). artifact_checksum is the actual sha256 of the encoded PNG FILE
+-- bytes stored in the local artifact store (storage/artifact_store.py) --
+-- these are two different hash domains over two different byte sequences,
+-- so both are kept: image_checksum for reproducibility/lineage proofs,
+-- artifact_checksum to locate the real file on disk.
 CREATE TABLE visual_dataset_samples
 (
     sample_id                    TEXT PRIMARY KEY,
@@ -7,6 +14,7 @@ CREATE TABLE visual_dataset_samples
     source_bar_fingerprint       TEXT NOT NULL,
     render_spec_id               TEXT NOT NULL,
     image_checksum               TEXT NOT NULL,
+    artifact_checksum            TEXT NOT NULL,
     observation_window_start_at  TEXT NOT NULL,
     observation_end_at           TEXT NOT NULL,
     label_spec_id                TEXT NOT NULL,

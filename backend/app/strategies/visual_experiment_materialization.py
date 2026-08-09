@@ -18,6 +18,7 @@ from backend.app.database.replay_session_repository import (
 from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.database.visual_dataset_repository import (
     PersistedVisualDatasetManifest,
+    artifact_checksum_for,
     persist_dataset_manifest,
     persist_materialized_samples,
 )
@@ -29,6 +30,10 @@ from backend.app.database.visual_experiment_repository import (
     start_rendering,
 )
 from backend.app.replay.dataset_snapshot import create_dataset_snapshot
+from backend.app.storage.artifact_store import ArtifactIntegrityError, put_artifact
+
+
+ARTIFACT_EXTENSION = "png"
 
 
 @dataclass(frozen=True)
@@ -67,11 +72,14 @@ def render_visual_experiment(
 ) -> VisualExperimentRenderingResult:
     """Orchestrates the Phase 5 `registered -> rendering` step: rebuilds the
     experiment's replay session bars, runs the Deterministic Visual Dataset
-    Materializer v1, and persists the resulting samples/manifest. Every
-    computation step (rendering, labelling, splitting, manifesting) is done
-    by the existing, already-tested `visual_materializer.py` -- this module
-    only adds the replay-session bar rebuild, the lifecycle transition, and
-    persistence around it.
+    Materializer v1, writes each sample's PNG to the local content-addressed
+    artifact store (`storage/artifact_store.py` -- see
+    `docs/architecture/ARTIFACT_STORE_CONTRACT.md`), and persists the
+    resulting sample lineage/manifest rows. Every computation step
+    (rendering, labelling, splitting, manifesting) is done by the existing,
+    already-tested `visual_materializer.py` -- this module only adds the
+    replay-session bar rebuild, the lifecycle transition, artifact writes,
+    and persistence around it.
 
     On any failure (dataset drift, bar-fingerprint mismatch, or any other
     materialization error) the experiment is moved to `failed` and the
@@ -123,16 +131,19 @@ def render_visual_experiment(
             train_end_at=experiment.train_end_at,
             validation_end_at=experiment.validation_end_at,
         )
-    except (BarFingerprintMismatchError, ReplayDatasetChangedError, ValueError):
+        for item in materialization.samples:
+            put_artifact(artifact_checksum_for(item), item.image.png_bytes, extension=ARTIFACT_EXTENSION)
+    except (
+        BarFingerprintMismatchError, ReplayDatasetChangedError, ValueError,
+        ArtifactIntegrityError, OSError,
+    ):
         mark_rendering_failed(
             experiment_id=experiment.experiment_id, actor=actor, actor_role=actor_role,
             expected_state_version=rendering_experiment.state_version,
         )
         raise
 
-    persist_materialized_samples(
-        experiment.experiment_id, tuple(item.sample for item in materialization.samples),
-    )
+    persist_materialized_samples(experiment.experiment_id, materialization.samples)
     manifest = persist_dataset_manifest(
         experiment.experiment_id, materialization.manifest,
         dataset_fingerprint=materialization.dataset_fingerprint,

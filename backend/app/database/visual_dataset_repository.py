@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 import json
 
-from backend.app.analysis.visual_dataset import DatasetManifest, VisualSample
+from backend.app.analysis.visual_dataset import DatasetManifest
+from backend.app.analysis.visual_materializer import MaterializedSample
 from backend.app.database.connection import get_connection
 
 
@@ -26,40 +28,52 @@ def _required_text(value: str, field_name: str) -> str:
     return normalized
 
 
+def artifact_checksum_for(materialized_sample: MaterializedSample) -> str:
+    """The real sha256 of the encoded PNG file bytes -- distinct from
+    `sample.image_checksum` (the deterministic RAW PIXEL BUFFER checksum
+    from `visual_render.py`). Two different hash domains over two
+    different byte sequences; this is the one that actually addresses the
+    artifact in `storage/artifact_store.py`.
+    """
+    return f"sha256:{sha256(materialized_sample.image.png_bytes).hexdigest()}"
+
+
 def persist_materialized_samples(
-    experiment_id: str, samples: tuple[VisualSample, ...],
+    experiment_id: str, materialized_samples: tuple[MaterializedSample, ...],
 ) -> int:
     """Idempotently persist per-sample lineage rows for a materialization.
     `sample_id` is a deterministic content hash (see `visual_dataset.py`),
     so re-materializing identical input re-derives the same ids -- `INSERT
     OR IGNORE` makes re-running materialization safe rather than failing on
-    duplicate rows. Does not store raw PNG bytes -- image storage location
-    (filesystem/blob) is a deliberately separate, not-yet-made decision;
-    this table only carries the deterministic lineage/checksum record.
+    duplicate rows. Does not store the raw PNG bytes themselves (that is
+    `storage/artifact_store.py`'s job) -- only `artifact_checksum`, so a
+    caller can locate the file.
     """
     normalized_experiment_id = _required_text(experiment_id, "experiment_id")
     now = datetime.now(UTC).isoformat(timespec="microseconds")
     inserted = 0
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
-        for sample in samples:
+        for item in materialized_samples:
+            sample = item.sample
             cursor = connection.execute(
                 """
                 INSERT OR IGNORE INTO visual_dataset_samples
                 (
                     sample_id, experiment_id, symbol, timeframe, source_bar_fingerprint,
-                    render_spec_id, image_checksum, observation_window_start_at,
+                    render_spec_id, image_checksum, artifact_checksum, observation_window_start_at,
                     observation_end_at, label_spec_id, label_available_at, label_value,
                     label_status, quality_flags_json, split_id, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 (
                     sample.sample_id, normalized_experiment_id, sample.symbol, sample.timeframe,
                     sample.source_bar_fingerprint, sample.render_spec_id, sample.image_checksum,
-                    sample.observation_window_start_at, sample.observation_end_at,
-                    sample.label_spec_id, sample.label_available_at, sample.label_value,
-                    sample.label_status, json.dumps(list(sample.quality_flags)), sample.split_id, now,
+                    artifact_checksum_for(item), sample.observation_window_start_at,
+                    sample.observation_end_at, sample.label_spec_id, sample.label_available_at,
+                    sample.label_value, sample.label_status,
+                    json.dumps(list(sample.quality_flags)), sample.split_id, now,
                 ),
             )
             inserted += cursor.rowcount

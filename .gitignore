@@ -26,3 +26,6 @@ database/*.sqlite
 database/*.sqlite-wal
 database/*.sqlite-shm
 database/backups/
+
+# Local content-addressed artifact store (docs/architecture/ARTIFACT_STORE_CONTRACT.md)
+storage/artifacts/

@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
-Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si (real spec saxlanması ilə)+frontend paneli+materializer v1+**`registered → rendering` job/lifecycle persistence** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: real production bazaya migration `0012`/`0013` tətbiqi (istifadəçinin ayrıca açıq qərarı gözlənilir), model təlimi, API/frontend-ə bağlamaq. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`/`0013` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+**yerli content-addressed artifact store (PNG-lər indi real saxlanılır)** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: job queue/API inteqrasiyası (materializasiya hazırda sinxron funksiya çağırışıdır, enqueue/worker/endpoint yoxdur), model təlimi, API/frontend-ə bağlamaq, `rendering → training` keçidi. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`/`0013` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -494,15 +494,18 @@ bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
   persistence** (migration `0013`, `visual_dataset_repository.py`,
   `visual_experiment_repository.py`-də `start_rendering()`/
   `mark_rendering_failed()`, `strategies/visual_experiment_materialization.py`-də
-  `render_visual_experiment()` orkestrasiyası) tamamlandı. Nümunələr
-  (checksum+lineage, xam PNG bytes YOX) və manifest indi real DB-də
-  saxlanılır (yalnız test/scratch bazada — real production-a YOX).
-  Növbəti təbii addımlar: (1) real production bazaya migration
-  `0012`/`0013` tətbiqi — ayrıca açıq təsdiq lazımdır; (2) PNG
-  bytes-ların uzunmüddətli harada saxlanacağı (fayl sistemi/blob) qərarı;
-  (3) `render_visual_experiment()`-i API/frontend-ə bağlamaq; (4) model
-  təlimi (ML asılılığı, GPU qərarı) — daha böyük, ayrıca qərar tələb
-  edən addım. İstifadəçinin prioritet sırasına görə (Phase 3→4→7→8→9→10)
+  `render_visual_experiment()` orkestrasiyası) VƏ **yerli
+  content-addressed artifact store** (`docs/architecture/ARTIFACT_STORE_CONTRACT.md`,
+  `storage/artifact_store.py`, migration `0013`-ə `artifact_checksum`
+  sütunu) tamamlandı. Nümunə lineage+checksum VƏ real PNG faylı indi
+  hər ikisi saxlanılır (yalnız test/scratch bazada — real production-a
+  YOX). Növbəti təbii addımlar: (1) real production bazaya migration
+  `0012`/`0013` tətbiqi — ayrıca açıq təsdiq lazımdır; (2) job
+  queue/API inteqrasiyası (materializasiya hazırda sinxron funksiya
+  çağırışıdır); (3) `render_visual_experiment()`-i frontend-ə bağlamaq;
+  (4) `rendering → training` keçidi; (5) model təlimi (ML asılılığı,
+  GPU qərarı) — daha böyük, ayrıca qərar tələb edən addım.
+  İstifadəçinin prioritet sırasına görə (Phase 3→4→7→8→9→10)
   Phase 5 "əhəmiyyətli yeni həcm" kimi qeyd edilib, Phase 3/4-dən sonra
   əlavə addımdır — bu barədə istifadəçi ilə aydınlaşdırma lazım ola bilər.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**

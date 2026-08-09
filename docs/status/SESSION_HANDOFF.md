@@ -50,7 +50,12 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   fingerprint, fail-closed bar-fingerprint yoxlaması, nümunə/manifest
   persistence — hər ikisi real seed edilmiş replay sessiyası ilə
   uçdan-uca doğrulandı. İndi `registered ↔ archived ↔ rendering ↔ failed`
-  keçidləri işlək. Migration `0012`/`0013` YALNIZ test bazasındadır.
+  keçidləri işlək. **Yerli content-addressed artifact store**
+  (`docs/architecture/ARTIFACT_STORE_CONTRACT.md`,
+  `storage/artifact_store.py`) də tamamlandı — PNG-lər artıq RAM-da
+  yox, real diskdə saxlanılır (`artifact_checksum` sütunu ilə,
+  `image_checksum`-dan fərqli — wiring zamanı tapılan real bug
+  düzəldildi). Migration `0012`/`0013` YALNIZ test bazasındadır.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin
@@ -337,15 +342,16 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 
 ## Commit/push vəziyyəti
 
-- **`origin/main` = `ff4a57e`** (bu HEAD push edilib — tick-axını
-  diaqnostikası, Phase 7 dayandırma qərarı VƏ Phase 5 materializer v1
-  daxil olmaqla). **Push edilməmiş YEREL commit** olacaq: Phase 5
-  `registered → rendering` job/lifecycle persistence (bu turda edilir,
-  `669 passed`). Real production baza HƏLƏ `0011`-dədir — migration
-  `0012`/`0013` istifadəçinin açıq qərarı ilə tətbiq edilmədi.
-  İstifadəçinin qaydasına görə push yalnız açıq tapşırıqla ediləcək.
-  Ətraflı, kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md`
-  (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan" qeydləri.
+- **`origin/main` = `e2d1972`** (bu HEAD push edilib — tick-axını
+  diaqnostikası, Phase 7 dayandırma qərarı, Phase 5 materializer v1 VƏ
+  `registered → rendering` job/lifecycle persistence daxil olmaqla).
+  **Push edilməmiş YEREL commit** olacaq: yerli content-addressed
+  artifact store (bu turda edilir, `685 passed`). Real production baza
+  HƏLƏ `0011`-dədir — migration `0012`/`0013` istifadəçinin açıq qərarı
+  ilə tətbiq edilmədi. İstifadəçinin qaydasına görə push yalnız açıq
+  tapşırıqla ediləcək. Ətraflı, kronoloji dəyişiklik siyahısı üçün:
+  `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan"
+  qeydləri.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni
