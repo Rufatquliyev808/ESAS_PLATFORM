@@ -8,6 +8,65 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Async job/persistence resource for Phase 3 statistical analysis
+
+- The contract's `POST /api/v2/statistical-analyses` conceptual resource
+  (statistical analysis has been synchronous and DB-less until now, unlike
+  pattern-candidate backtests which already had a job queue).
+- **Real constraint discovered mid-implementation:** `analysis_jobs`
+  (migration `0007`) already has an identical shape for job-queue jobs,
+  but its `job_type` CHECK constraint only allows
+  `'pattern_candidate_backtest'` and has already been applied to the real
+  production database. This migration system's safety validator forbids
+  `DROP`/`DELETE`/`UPDATE` statements, so the standard SQLite "rebuild the
+  table" technique for widening a CHECK constraint is not available.
+  Flagged to the user; chose a new, separate table over duplicating the
+  repository logic.
+- New migration `0011_statistical_analysis_jobs.sql`: a `statistical_analysis_jobs`
+  table, identical in shape to `analysis_jobs` but scoped to
+  `job_type = 'statistical_analysis'`, plus its own append-only
+  `statistical_analysis_job_audit` table and indexes.
+- `backend/app/database/analysis_job_repository.py` generalized to route
+  by job type instead of being hardcoded to `analysis_jobs`: each job type
+  now maps to its own (jobs table, audit table, job_id prefix). Job-id-only
+  lookups (`get_job`, `send_heartbeat`, `complete_job`, `fail_job`,
+  `request_cancel`) route via the job_id's prefix (`job_` for
+  pattern-candidate-backtest, unchanged for backward compatibility with
+  existing production rows; `saj_` for statistical-analysis) rather than
+  needing an extra query or an extra parameter. `queue_metrics()` now also
+  rejects an unsupported `job_type` instead of silently returning empty
+  depth-by-state. A useful side effect: the per-user active-job cap is now
+  naturally independent per job-type family, since each family has its own
+  table.
+- `backend/app/workers/analysis_job_worker.py`: new
+  `_run_statistical_analysis_job()` handler dispatching to
+  `create_replay_statistical_analysis()`; the existing non-retryable-error
+  list already covered every exception this handler can raise.
+- New `backend/app/models/statistical_analysis.py`
+  (`StatisticalAnalysisJobRequest`) and three new endpoints mirroring the
+  existing pattern-candidate-backtest job endpoints exactly: `POST
+  .../statistical-analysis-jobs` (202, enqueues + a `BackgroundTask` drains
+  the queue), `GET .../statistical-analysis-jobs/{job_id}` (status, and the
+  full statistical-analysis result once completed -- no separate "results"
+  endpoint, same as the existing job type), `POST
+  .../statistical-analysis-jobs/{job_id}/cancel`.
+- **Bug fix found and fixed in passing:** the existing synchronous `GET
+  .../statistical-analysis` endpoint's `timeframe` query parameter regex
+  only allowed `S1|S10|M1|M5|M15|H1` -- stale from before `bars.py` grew
+  `M30`/`H4`/`D1` support (used by SA-004 onward and by the new frontend
+  panel's timeframe selector, which would have 422'd on those three
+  values). Fixed to match `bars.py`'s actual `TIMEFRAME_SECONDS`.
+- Verification: `test_migration_runner.py` updated for the new migration
+  count. `test_analysis_job_repository.py` gained 5 new tests (separate-
+  table routing, full lifecycle through the new table, job-id collision
+  safety between the two families, independent queue metrics, unsupported-
+  job-type rejection). New `test_statistical_analysis_jobs_api.py` (7
+  tests, mirroring the existing pattern-candidate-backtest job API test
+  file). Full backend regression: `528 passed`. Verified against the real
+  running production backend after restart: the new route returns `401`
+  (auth required), not `404` -- confirms the new code loaded correctly.
+  Frontend untouched (this is a backend-only, API-level addition).
+
 ### Added — Frontend panel for Phase 3 SA-001-SA-007
 
 - SA-001 through SA-007 had no UI at all until now (each increment

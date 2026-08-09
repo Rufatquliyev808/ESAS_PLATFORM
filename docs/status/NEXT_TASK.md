@@ -226,20 +226,49 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
 
 **Phase 3-ün SA-001-SA-007 müqaviləsi indi tam əhatə olunub** (SA-006
 təqvim-yoxdur deqradasiya rejimində) **VƏ frontend paneli əlavə edildi**
-(commit hələ göndərilməyib) — istifadəçinin "frontend panel (tövsiyə)"
-seçimi ilə. Yeni `statistical-analysis-panel.tsx`: "Araşdırma" qrupunda
-yeni "Statistik analiz" bölməsi (mövcud replay-session-seçimi axını ilə),
-form (vaxt çərçivəsi + minimum nümunə) + 7 SA bölməsinin hər biri üçün
-kart (status/n/orta/median/std/aralıq). Canlı brauzerdə tam sınandı
-(birdəfəlik scratch backend/DB, 1,100 sintetik tick, real replay
+(commit `9930dd6`, push edilib, CI yaşıl) — istifadəçinin "frontend panel
+(tövsiyə)" seçimi ilə. Yeni `statistical-analysis-panel.tsx`: "Araşdırma"
+qrupunda yeni "Statistik analiz" bölməsi (mövcud replay-session-seçimi
+axını ilə), form (vaxt çərçivəsi + minimum nümunə) + 7 SA bölməsinin hər
+biri üçün kart (status/n/orta/median/std/aralıq). Canlı brauzerdə tam
+sınandı (birdəfəlik scratch backend/DB, 1,100 sintetik tick, real replay
 sessiyası tamamlanana qədər işlədilib): M5-də (11 pəncərə) pəncərə-əsaslı
 bölmələr düzgün `insufficient_data`, tick-səviyyəli metriklər (tick-return,
 interval) öz nümunəsi ilə `completed`; M1-də (55 pəncərə) bütün 7 bölmə
 `completed`, real dəyərlər (8 rejim, 100%-ə cəmlənən nisbətlər, dəqiq
 flag/UTC-saat cədvəlləri). Konsol xətası yox, sorğu storm-u yox. Yeni
 `statistical-analysis-ui.test.mjs`. Frontend: lint təmiz, `14/14` test,
-build uğurlu. Qalan: async job/persistence resursu
-(`POST /api/v2/statistical-analyses`) — yalnız istifadəçi ayrıca istəsə.
+build uğurlu.
+
+**Async job/persistence resursu** (`POST /api/v2/statistical-analyses`)
+(hələ commit edilməyib) — istifadəçinin seçimi (SA-001-SA-007
+tamamlandıqdan sonra). İcrası zamanı real maneə aşkarlandı: `analysis_jobs`
+(migration `0007`) real bazaya artıq tətbiq edilib, `job_type` CHECK-i
+yalnız `pattern_candidate_backtest`-i qəbul edir, migration sistemi
+`DROP`/`DELETE`/`UPDATE` qadağan etdiyi üçün CHECK-i genişləndirmək
+mümkün deyil. İstifadəçiyə bildirildi, "yeni ayrıca cədvəl + repository-ni
+ümumiləşdir" seçildi. Yeni migration `0011_statistical_analysis_jobs.sql`
+(eyni struktur, `job_type='statistical_analysis'`). `analysis_job_
+repository.py` cədvəl-ad-marşrutlaşdırmasına ümumiləşdirildi (job_id
+prefiksi ilə: `job_` — pattern-candidate, dəyişməz; `saj_` — statistical-
+analysis) — job_id-yalnız funksiyalar (`get_job`, `send_heartbeat`,
+`complete_job`, `fail_job`, `request_cancel`) əlavə sorğu/parametr
+olmadan düzgün cədvələ yönləndirilir. Yeni worker handler
+(`_run_statistical_analysis_job`), yeni `StatisticalAnalysisJobRequest`
+modeli, 3 yeni endpoint (mövcud pattern-candidate-backtest job
+endpoint-lərinin eyni nümunəsi: `POST .../statistical-analysis-jobs`
+202, `GET .../statistical-analysis-jobs/{job_id}`, `POST
+.../{job_id}/cancel`). **Yolüstü tapılıb düzəldilən bug:** mövcud
+sinxron `GET .../statistical-analysis` endpoint-inin `timeframe`
+regex-i köhnə idi (yalnız `S1|S10|M1|M5|M15|H1`, `M30/H4/D1` YOX) —
+`bars.py`-ın faktiki dəstəyinə uyğunlaşdırıldı (SA-004-dən bəri və yeni
+frontend panelinin seçicisi bu 3 dəyəri artıq təklif edirdi, 422 verirdi).
+`test_migration_runner.py` yeniləndi (yeni migration sayı). `test_
+analysis_job_repository.py`-a 5 yeni test. Yeni `test_statistical_
+analysis_jobs_api.py` (7 test). Tam backend regressiyası: `528 passed`.
+Real işləyən production backend-də restart-dan sonra yoxlanıldı: yeni
+route `401` qaytarır (`404` yox) — kodun düzgün yükləndiyini təsdiqləyir.
+Frontend toxunulmayıb (backend-only, API-səviyyəli artım).
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -258,16 +287,15 @@ build uğurlu. Qalan: async job/persistence resursu
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
 - Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
-- **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi VƏ frontend
-  paneli tam əhatə olunub** (pəncərə/resampling təməli + SA-001 gəlir
-  seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return std-i
-  daxil) + SA-003 spread davranışı + SA-004 tick sürəti + SA-005
+- **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi, frontend paneli
+  VƏ async job resursu tam əhatə olunub** (pəncərə/resampling təməli +
+  SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return
+  std-i daxil) + SA-003 spread davranışı + SA-004 tick sürəti + SA-005
   tick-volume/flags + SA-006 sessiya müqayisəsi (təqvim-yoxdur deqradasiya
-  rejimi) + SA-007 bazar rejimi namizədləri + `statistical-analysis-panel.tsx`,
-  təfərrüat yuxarıda). Namizədlər (yalnız istifadəçi ayrıca istəsə): real
-  versiyalanmış simvol/broker təqvimi qurulsa SA-006 "rəsmi" rejimə
-  keçirilə bilər; async job/persistence resursu
-  (`POST /api/v2/statistical-analyses`).
+  rejimi) + SA-007 bazar rejimi namizədləri + `statistical-analysis-panel.tsx`
+  + `POST/GET .../statistical-analysis-jobs`, təfərrüat yuxarıda).
+  Namizəd (yalnız istifadəçi ayrıca istəsə): real versiyalanmış
+  simvol/broker təqvimi qurulsa SA-006 "rəsmi" rejimə keçirilə bilər.
 - **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
   (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
   (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları

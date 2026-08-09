@@ -17,9 +17,11 @@ from backend.app.database.pattern_candidate_repository import (
     PatternCandidateOwnershipError,
 )
 from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
+from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
 from backend.app.database.replay_session_repository import (
     ReplaySessionNotFoundError,
     ReplayTransitionConflictError,
+    get_replay_session,
 )
 from backend.app.strategies.pattern_candidate_backtest import (
     PatternCandidateBacktestUnsupportedError,
@@ -62,8 +64,20 @@ def _run_pattern_candidate_backtest_job(job: AnalysisJob) -> dict[str, object]:
     return asdict(backtest)
 
 
+def _run_statistical_analysis_job(job: AnalysisJob) -> dict[str, object]:
+    payload = job.payload
+    session = get_replay_session(str(payload["session_id"]))
+    analysis = create_replay_statistical_analysis(
+        session=session,
+        timeframe=str(payload.get("timeframe", "M1")),
+        minimum_sample_size=int(payload.get("minimum_sample_size", 30)),
+    )
+    return asdict(analysis)
+
+
 _DISPATCH = {
     "pattern_candidate_backtest": _run_pattern_candidate_backtest_job,
+    "statistical_analysis": _run_statistical_analysis_job,
 }
 
 

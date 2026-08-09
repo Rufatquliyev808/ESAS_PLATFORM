@@ -1,5 +1,77 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 3 statistik analiz üçün async job/persistence resursu
+
+- İstifadəçi seçdi: "Async job resursu (tövsiyə)" — SA-001-SA-007 VƏ
+  frontend paneli tamamlandıqdan sonra. Müqavilənin `POST /api/v2/
+  statistical-analyses` konseptual resursu — statistik analiz indiyədək
+  sinxron və DB-siz-nəticə idi (pattern-candidate backtest-lərin əksinə,
+  onun artıq job-queue-su var idi).
+- **İcrası zamanı real maneə aşkarlandı:** `analysis_jobs` (migration
+  `0007`) job-queue üçün eyni struktura malikdir, AMMA onun `job_type`
+  CHECK məhdudiyyəti yalnız `'pattern_candidate_backtest'`-i qəbul edir
+  və bu migration ARTIQ real production bazasına tətbiq edilib. Bu
+  platformanın migration sistemi təhlükəsizlik səbəbindən `DROP`/
+  `DELETE`/`UPDATE` statement-lərini tamamilə qadağan edir — deməli CHECK
+  məhdudiyyətini genişləndirmək üçün standart SQLite üsulu (cədvəli
+  yenidən qurmaq) bu sistemdə mümkün deyil. İstifadəçiyə açıq bildirildi,
+  3 seçim təklif edildi; "yeni ayrıca cədvəl + repository-ni
+  ümumiləşdir" seçildi.
+- Yeni migration `0011_statistical_analysis_jobs.sql`: `statistical_
+  analysis_jobs` cədvəli — `analysis_jobs` ilə eyni struktur, AMMA
+  `CHECK (job_type = 'statistical_analysis')`, öz append-only
+  `statistical_analysis_job_audit` cədvəli və indeksləri ilə.
+- `backend/app/database/analysis_job_repository.py` **cədvəl-ad-
+  marşrutlaşdırmasına ümumiləşdirildi** — sərt şəkildə `analysis_jobs`-a
+  bağlı olmaq əvəzinə, hər job növü öz (job cədvəli, audit cədvəli,
+  job_id prefiksi) üçlüyünə uyğunlaşdırılıb. Yalnız `job_id` ilə işləyən
+  funksiyalar (`get_job`, `send_heartbeat`, `complete_job`, `fail_job`,
+  `request_cancel`) `job_id`-nin prefiksinə görə düzgün cədvələ
+  yönləndirilir (`job_` — pattern-candidate-backtest, DƏYIŞMƏDƏN, real
+  bazadakı mövcud sətirlərlə geriyə uyğunluq üçün; `saj_` — statistical-
+  analysis, yeni) — əlavə sorğu və ya əlavə parametrə ehtiyac olmadan.
+  `queue_metrics()` indi dəstəklənməyən `job_type`-ı da rədd edir (əvvəllər
+  səssizcə boş nəticə qaytarırdı). Faydalı yan effekt: hər-istifadəçi
+  aktiv-job həddi indi hər job-növü ailəsi üçün təbii olaraq müstəqildir
+  (hər ailənin öz cədvəli olduğu üçün).
+- `backend/app/workers/analysis_job_worker.py`: yeni
+  `_run_statistical_analysis_job()` handler-i
+  `create_replay_statistical_analysis()`-ə göndərir; mövcud
+  qeyri-təkrarlanan-xəta siyahısı bu handler-in ata biləcəyi bütün
+  xətaları artıq əhatə edirdi (yeni idxal yalnız).
+- Yeni `backend/app/models/statistical_analysis.py`
+  (`StatisticalAnalysisJobRequest`) və 3 yeni endpoint — mövcud
+  pattern-candidate-backtest job endpoint-lərinin DƏQİQ eyni nümunəsi:
+  `POST .../statistical-analysis-jobs` (202, növbəyə əlavə edir +
+  `BackgroundTask` növbəni boşaldır), `GET .../statistical-analysis-jobs/
+  {job_id}` (status, tamamlandıqdan sonra tam statistik analiz nəticəsi —
+  ayrıca "nəticələr" endpoint-i yoxdur, mövcud job növü ilə eyni), `POST
+  .../statistical-analysis-jobs/{job_id}/cancel`.
+- **Yolüstü tapılıb düzəldilən real bug:** mövcud sinxron `GET .../
+  statistical-analysis` endpoint-inin `timeframe` sorğu parametri regex-i
+  köhnə idi (yalnız `S1|S10|M1|M5|M15|H1` — `bars.py`-a SA-004-dən
+  bəri əlavə edilmiş `M30`/`H4`/`D1` YOX idi) — bu, yeni frontend
+  panelinin taymfreym seçicisinin təklif etdiyi 3 dəyərin backend
+  tərəfindən `422` ilə rədd edilməsi demək idi. `bars.py`-ın faktiki
+  `TIMEFRAME_SECONDS`-ına uyğunlaşdırıldı.
+- Yoxlama: `test_migration_runner.py` yeni migration sayına uyğunlaşdırıldı.
+  `test_analysis_job_repository.py`-a 5 yeni test (ayrıca-cədvəl
+  marşrutlaşdırması, yeni cədvəl üzərindən tam lifecycle, iki ailə
+  arasında job_id toqquşma təhlükəsizliyi, müstəqil queue metrikaları,
+  dəstəklənməyən job_type rəddi). Yeni `test_statistical_analysis_jobs_api.py`
+  (7 test, mövcud pattern-candidate-backtest job API test faylının eyni
+  nümunəsi ilə). Tam backend regressiyası: `528 passed`. **Real işləyən
+  production backend-də restart-dan sonra yoxlanıldı**: yeni route `401`
+  qaytarır (`404` yox) — kodun düzgün yükləndiyini təsdiqləyir. **VACİB:**
+  migration `0011` (`statistical_analysis_jobs` cədvəli) real bazaya HƏLƏ
+  TƏTBİQ EDİLMƏYİB (`start-local-platform.ps1` migrasiyaları avtomatik
+  tətbiq etmir) — real istifadəçi hazırda yeni job endpoint-lərini real
+  sessiyada çağırsa `no such table` xətası alacaq. `0011` tətbiq
+  ediləndə əvvəlki `0005`-`0009` kimi ehtiyat nüsxə + ayrıca icazə tələb
+  olunacaq. Sinxron `GET .../statistical-analysis` (əvvəllər mövcud) bu
+  problemdən təsirlənmir. Frontend toxunulmayıb (backend-only,
+  API-səviyyəli artım, UI dəyişikliyi yoxdur).
+
 ## 2026-08-07 — Phase 3 SA-001-SA-007 üçün frontend panel
 
 - İstifadəçi seçdi: "Frontend panel (tövsiyə)" — SA-001-SA-007 tamamlandıqdan

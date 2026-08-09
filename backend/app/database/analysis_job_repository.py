@@ -9,13 +9,30 @@ import secrets
 from backend.app.database.connection import get_connection
 
 
-JOB_TYPES = frozenset({"pattern_candidate_backtest"})
+JOB_TYPES = frozenset({"pattern_candidate_backtest", "statistical_analysis"})
 TERMINAL_STATES = frozenset({"completed", "cancelled", "failed"})
 DEFAULT_LEASE_SECONDS = 30
 LEASE_RECOVERY_SECONDS = 60
 MAX_JITTER_SECONDS = 1.0
 MAX_BACKOFF_SECONDS = 60.0
 MAX_ACTIVE_JOBS_PER_USER = 3
+
+# Each job type owns its own (jobs table, audit table, job_id prefix). This
+# exists because `analysis_jobs`' job_type CHECK constraint was already
+# applied to the real production database restricted to just
+# 'pattern_candidate_backtest', and this migration system's safety validator
+# forbids DROP/DELETE/UPDATE statements -- so the usual SQLite "rebuild the
+# table" technique for widening a CHECK constraint is not available. A new
+# job type gets a new table (see migration 0011 for 'statistical_analysis'),
+# not a wider CHECK on the old one. The job_id prefix lets every job-id-only
+# lookup (get_job, send_heartbeat, complete_job, fail_job, request_cancel)
+# route to the right table without an extra query or a job_type parameter
+# the caller may not have on hand.
+_JOB_TABLES: dict[str, tuple[str, str, str]] = {
+    "pattern_candidate_backtest": ("analysis_jobs", "analysis_job_audit", "job"),
+    "statistical_analysis": ("statistical_analysis_jobs", "statistical_analysis_job_audit", "saj"),
+}
+_PREFIX_TO_JOB_TYPE = {prefix: job_type for job_type, (_, _, prefix) in _JOB_TABLES.items()}
 
 
 class AnalysisJobNotFoundError(LookupError):
@@ -85,8 +102,22 @@ def _hash(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-def _new_job_id() -> str:
-    return f"job_{secrets.token_urlsafe(18)}"
+def _tables_for_job_type(job_type: str) -> tuple[str, str]:
+    table, audit_table, _ = _JOB_TABLES[job_type]
+    return table, audit_table
+
+
+def _tables_for_job_id(job_id: str) -> tuple[str, str]:
+    prefix = job_id.split("_", 1)[0]
+    job_type = _PREFIX_TO_JOB_TYPE.get(prefix)
+    if job_type is None:
+        raise AnalysisJobNotFoundError("analysis job was not found")
+    return _tables_for_job_type(job_type)
+
+
+def _new_job_id(job_type: str) -> str:
+    _, _, prefix = _JOB_TABLES[job_type]
+    return f"{prefix}_{secrets.token_urlsafe(18)}"
 
 
 def _row_to_job(row: object) -> AnalysisJob:
@@ -106,13 +137,13 @@ def _row_to_job(row: object) -> AnalysisJob:
 
 
 def _insert_audit(
-    connection, *, job_id: str, actor: str, actor_kind: str, action: str,
+    connection, audit_table: str, *, job_id: str, actor: str, actor_kind: str, action: str,
     previous_state: str | None, next_state: str, fencing_token: int | None,
     details: dict[str, object] | None, now: str,
 ) -> None:
     connection.execute(
-        """
-        INSERT INTO analysis_job_audit
+        f"""
+        INSERT INTO {audit_table}
         (job_id, actor, actor_kind, action, previous_state, next_state, fencing_token, details_json, occurred_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
         """,
@@ -151,6 +182,7 @@ def enqueue_job(
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
 
+    table, audit_table = _tables_for_job_type(normalized_type)
     payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     payload_hash = _hash(payload_json)
     # Deliberately NOT scoped by creator: the key namespace is shared per job_type so a
@@ -158,13 +190,13 @@ def enqueue_job(
     # creating an independent per-user namespace that would defeat that protection.
     key_hash = _hash(f"{normalized_type}:{normalized_key}")
     now = _now()
-    job_id = _new_job_id()
+    job_id = _new_job_id(normalized_type)
     correlation_id = f"corr_{secrets.token_urlsafe(12)}"
 
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
         existing = connection.execute(
-            "SELECT * FROM analysis_jobs WHERE job_type = ? AND idempotency_key_hash = ?;",
+            f"SELECT * FROM {table} WHERE job_type = ? AND idempotency_key_hash = ?;",
             (normalized_type, key_hash),
         ).fetchone()
         if existing is not None:
@@ -173,8 +205,8 @@ def enqueue_job(
             return _row_to_job(existing)
 
         active_count = connection.execute(
-            """
-            SELECT COUNT(*) FROM analysis_jobs
+            f"""
+            SELECT COUNT(*) FROM {table}
             WHERE created_by = ? AND state NOT IN ('completed', 'cancelled', 'failed');
             """,
             (normalized_creator,),
@@ -185,8 +217,8 @@ def enqueue_job(
             )
 
         connection.execute(
-            """
-            INSERT INTO analysis_jobs
+            f"""
+            INSERT INTO {table}
             (
                 job_id, job_type, created_by, created_at, priority, payload_json, payload_hash,
                 idempotency_key_hash, related_resource_id, correlation_id, state, state_version,
@@ -203,11 +235,11 @@ def enqueue_job(
             ),
         )
         _insert_audit(
-            connection, job_id=job_id, actor=normalized_creator, actor_kind="user",
+            connection, audit_table, job_id=job_id, actor=normalized_creator, actor_kind="user",
             action="enqueue", previous_state=None, next_state="queued", fencing_token=None,
             details={"priority": priority, "related_resource_id": normalized_resource}, now=now,
         )
-        row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (job_id,)).fetchone()
+        row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (job_id,)).fetchone()
     return _row_to_job(row)
 
 
@@ -217,10 +249,11 @@ def _reclaim_expired_leases(connection, *, job_type: str, now: str, now_dt: date
     (with a fresh attempt slot check happening at claim time); exhausted ones
     fail. This is what makes restart/crash recovery safe without a live
     heartbeat process watching workers."""
+    table, audit_table = _tables_for_job_type(job_type)
     stale_cutoff = (now_dt - timedelta(seconds=LEASE_RECOVERY_SECONDS)).isoformat(timespec="microseconds")
     stale_rows = connection.execute(
-        """
-        SELECT * FROM analysis_jobs
+        f"""
+        SELECT * FROM {table}
         WHERE job_type = ? AND state IN ('claimed', 'running')
           AND (lease_expires_at IS NULL OR lease_expires_at < ?);
         """,
@@ -230,8 +263,8 @@ def _reclaim_expired_leases(connection, *, job_type: str, now: str, now_dt: date
         can_retry = row["attempt_count"] < row["max_attempts"]
         next_state = "queued" if can_retry else "failed"
         updated = connection.execute(
-            """
-            UPDATE analysis_jobs
+            f"""
+            UPDATE {table}
             SET state = ?, state_version = state_version + 1, lease_owner = NULL,
                 lease_expires_at = NULL, error_code = CASE WHEN ? = 'failed' THEN 'lease_expired_max_attempts' ELSE error_code END,
                 completed_at = CASE WHEN ? = 'failed' THEN ? ELSE completed_at END,
@@ -242,7 +275,7 @@ def _reclaim_expired_leases(connection, *, job_type: str, now: str, now_dt: date
         )
         if updated.rowcount == 1:
             _insert_audit(
-                connection, job_id=row["job_id"], actor="scheduler", actor_kind="worker",
+                connection, audit_table, job_id=row["job_id"], actor="scheduler", actor_kind="worker",
                 action="interrupted", previous_state=row["state"], next_state=next_state,
                 fencing_token=row["fencing_token"],
                 details={"reason": "lease_expired"}, now=now,
@@ -258,6 +291,7 @@ def claim_next_job(*, worker_id: str, job_type: str, lease_seconds: int = DEFAUL
     if normalized_type not in JOB_TYPES:
         raise ValueError(f"unsupported job_type: {normalized_type}")
 
+    table, audit_table = _tables_for_job_type(normalized_type)
     now_dt = datetime.now(UTC)
     now = now_dt.isoformat(timespec="microseconds")
 
@@ -266,8 +300,8 @@ def claim_next_job(*, worker_id: str, job_type: str, lease_seconds: int = DEFAUL
         _reclaim_expired_leases(connection, job_type=normalized_type, now=now, now_dt=now_dt)
 
         candidate = connection.execute(
-            """
-            SELECT * FROM analysis_jobs
+            f"""
+            SELECT * FROM {table}
             WHERE job_type = ?
               AND (
                   state = 'queued'
@@ -284,8 +318,8 @@ def claim_next_job(*, worker_id: str, job_type: str, lease_seconds: int = DEFAUL
         lease_expires = (now_dt + timedelta(seconds=lease_seconds)).isoformat(timespec="microseconds")
         next_fencing_token = candidate["fencing_token"] + 1
         updated = connection.execute(
-            """
-            UPDATE analysis_jobs
+            f"""
+            UPDATE {table}
             SET state = 'claimed', state_version = state_version + 1, lease_owner = ?,
                 lease_expires_at = ?, fencing_token = ?, attempt_count = attempt_count + 1,
                 updated_at = ?
@@ -297,16 +331,16 @@ def claim_next_job(*, worker_id: str, job_type: str, lease_seconds: int = DEFAUL
             # Another worker claimed it between our SELECT and UPDATE; caller can retry.
             return None
         _insert_audit(
-            connection, job_id=candidate["job_id"], actor=normalized_worker, actor_kind="worker",
+            connection, audit_table, job_id=candidate["job_id"], actor=normalized_worker, actor_kind="worker",
             action="claim", previous_state=candidate["state"], next_state="claimed",
             fencing_token=next_fencing_token, details={"lease_seconds": lease_seconds}, now=now,
         )
-        row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (candidate["job_id"],)).fetchone()
+        row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (candidate["job_id"],)).fetchone()
     return _row_to_job(row)
 
 
-def _load_for_write(connection, job_id: str) -> object:
-    row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (job_id,)).fetchone()
+def _load_for_write(connection, job_id: str, table: str) -> object:
+    row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (job_id,)).fetchone()
     if row is None:
         raise AnalysisJobNotFoundError("analysis job was not found")
     return row
@@ -323,12 +357,13 @@ def send_heartbeat(*, job_id: str, worker_id: str, fencing_token: int, lease_sec
     """Extend the lease and, on the first heartbeat after claim, move claimed -> running."""
     normalized_job_id = _required_text(job_id, "job_id")
     normalized_worker = _required_text(worker_id, "worker_id")
+    table, audit_table = _tables_for_job_id(normalized_job_id)
     now_dt = datetime.now(UTC)
     now = now_dt.isoformat(timespec="microseconds")
 
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
-        row = _load_for_write(connection, normalized_job_id)
+        row = _load_for_write(connection, normalized_job_id, table)
         _check_fencing(row, normalized_worker, fencing_token)
         if row["state"] not in ("claimed", "running"):
             raise AnalysisJobConflictError(f"cannot heartbeat from state {row['state']}")
@@ -336,8 +371,8 @@ def send_heartbeat(*, job_id: str, worker_id: str, fencing_token: int, lease_sec
         started_at = row["started_at"] or now
         lease_expires = (now_dt + timedelta(seconds=lease_seconds)).isoformat(timespec="microseconds")
         connection.execute(
-            """
-            UPDATE analysis_jobs
+            f"""
+            UPDATE {table}
             SET state = ?, state_version = state_version + 1, lease_expires_at = ?,
                 started_at = ?, last_heartbeat_at = ?, updated_at = ?
             WHERE job_id = ? AND state_version = ?;
@@ -346,11 +381,11 @@ def send_heartbeat(*, job_id: str, worker_id: str, fencing_token: int, lease_sec
         )
         if row["state"] != next_state:
             _insert_audit(
-                connection, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
+                connection, audit_table, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
                 action="heartbeat_start", previous_state=row["state"], next_state=next_state,
                 fencing_token=fencing_token, details=None, now=now,
             )
-        result_row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (normalized_job_id,)).fetchone()
+        result_row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (normalized_job_id,)).fetchone()
     return _row_to_job(result_row)
 
 
@@ -360,19 +395,20 @@ def complete_job(*, job_id: str, worker_id: str, fencing_token: int, result: dic
     checkpoints to interrupt mid-computation)."""
     normalized_job_id = _required_text(job_id, "job_id")
     normalized_worker = _required_text(worker_id, "worker_id")
+    table, audit_table = _tables_for_job_id(normalized_job_id)
     now = _now()
 
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
-        row = _load_for_write(connection, normalized_job_id)
+        row = _load_for_write(connection, normalized_job_id, table)
         _check_fencing(row, normalized_worker, fencing_token)
         if row["state"] != "running":
             raise AnalysisJobConflictError(f"cannot complete from state {row['state']}")
         next_state = "cancelled" if row["cancel_requested"] else "completed"
         result_json = json.dumps(result, sort_keys=True, separators=(",", ":")) if next_state == "completed" else None
         connection.execute(
-            """
-            UPDATE analysis_jobs
+            f"""
+            UPDATE {table}
             SET state = ?, state_version = state_version + 1, result_json = ?,
                 completed_at = ?, updated_at = ?
             WHERE job_id = ? AND state_version = ?;
@@ -380,12 +416,12 @@ def complete_job(*, job_id: str, worker_id: str, fencing_token: int, result: dic
             (next_state, result_json, now, now, normalized_job_id, row["state_version"]),
         )
         _insert_audit(
-            connection, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
+            connection, audit_table, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
             action="complete" if next_state == "completed" else "cancel_honored",
             previous_state="running", next_state=next_state, fencing_token=fencing_token,
             details=None, now=now,
         )
-        result_row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (normalized_job_id,)).fetchone()
+        result_row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (normalized_job_id,)).fetchone()
     return _row_to_job(result_row)
 
 
@@ -402,12 +438,13 @@ def fail_job(*, job_id: str, worker_id: str, fencing_token: int, error_code: str
     normalized_job_id = _required_text(job_id, "job_id")
     normalized_worker = _required_text(worker_id, "worker_id")
     normalized_error = _required_text(error_code, "error_code")
+    table, audit_table = _tables_for_job_id(normalized_job_id)
     now_dt = datetime.now(UTC)
     now = now_dt.isoformat(timespec="microseconds")
 
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
-        row = _load_for_write(connection, normalized_job_id)
+        row = _load_for_write(connection, normalized_job_id, table)
         _check_fencing(row, normalized_worker, fencing_token)
         if row["state"] != "running":
             raise AnalysisJobConflictError(f"cannot fail from state {row['state']}")
@@ -422,8 +459,8 @@ def fail_job(*, job_id: str, worker_id: str, fencing_token: int, error_code: str
             next_attempt_at = None
             completed_at = now
         connection.execute(
-            """
-            UPDATE analysis_jobs
+            f"""
+            UPDATE {table}
             SET state = ?, state_version = state_version + 1, error_code = ?,
                 next_attempt_at = ?, completed_at = ?, lease_owner = NULL,
                 lease_expires_at = NULL, updated_at = ?
@@ -432,11 +469,11 @@ def fail_job(*, job_id: str, worker_id: str, fencing_token: int, error_code: str
             (next_state, normalized_error, next_attempt_at, completed_at, now, normalized_job_id, row["state_version"]),
         )
         _insert_audit(
-            connection, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
+            connection, audit_table, job_id=normalized_job_id, actor=normalized_worker, actor_kind="worker",
             action="fail", previous_state="running", next_state=next_state, fencing_token=fencing_token,
             details={"error_code": normalized_error, "retryable": retryable}, now=now,
         )
-        result_row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (normalized_job_id,)).fetchone()
+        result_row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (normalized_job_id,)).fetchone()
     return _row_to_job(result_row)
 
 
@@ -448,11 +485,12 @@ def request_cancel(*, job_id: str, actor: str) -> AnalysisJob:
     the job completed."""
     normalized_job_id = _required_text(job_id, "job_id")
     normalized_actor = _required_text(actor, "actor")
+    table, audit_table = _tables_for_job_id(normalized_job_id)
     now = _now()
 
     with get_connection() as connection:
         connection.execute("BEGIN IMMEDIATE;")
-        row = _load_for_write(connection, normalized_job_id)
+        row = _load_for_write(connection, normalized_job_id, table)
         if row["created_by"] != normalized_actor:
             raise AnalysisJobOwnershipError("analysis job belongs to another user")
         if row["state"] in TERMINAL_STATES:
@@ -460,36 +498,37 @@ def request_cancel(*, job_id: str, actor: str) -> AnalysisJob:
 
         if row["state"] == "running":
             connection.execute(
-                "UPDATE analysis_jobs SET cancel_requested = 1, updated_at = ? WHERE job_id = ? AND state_version = ?;",
+                f"UPDATE {table} SET cancel_requested = 1, updated_at = ? WHERE job_id = ? AND state_version = ?;",
                 (now, normalized_job_id, row["state_version"]),
             )
             _insert_audit(
-                connection, job_id=normalized_job_id, actor=normalized_actor, actor_kind="user",
+                connection, audit_table, job_id=normalized_job_id, actor=normalized_actor, actor_kind="user",
                 action="cancel_requested", previous_state="running", next_state="running",
                 fencing_token=row["fencing_token"], details=None, now=now,
             )
         else:
             connection.execute(
-                """
-                UPDATE analysis_jobs
+                f"""
+                UPDATE {table}
                 SET state = 'cancelled', state_version = state_version + 1, completed_at = ?, updated_at = ?
                 WHERE job_id = ? AND state_version = ?;
                 """,
                 (now, now, normalized_job_id, row["state_version"]),
             )
             _insert_audit(
-                connection, job_id=normalized_job_id, actor=normalized_actor, actor_kind="user",
+                connection, audit_table, job_id=normalized_job_id, actor=normalized_actor, actor_kind="user",
                 action="cancel", previous_state=row["state"], next_state="cancelled",
                 fencing_token=None, details=None, now=now,
             )
-        result_row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (normalized_job_id,)).fetchone()
+        result_row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (normalized_job_id,)).fetchone()
     return _row_to_job(result_row)
 
 
 def get_job(job_id: str) -> AnalysisJob:
     normalized = _required_text(job_id, "job_id")
+    table, _ = _tables_for_job_id(normalized)
     with get_connection() as connection:
-        row = connection.execute("SELECT * FROM analysis_jobs WHERE job_id = ?;", (normalized,)).fetchone()
+        row = connection.execute(f"SELECT * FROM {table} WHERE job_id = ?;", (normalized,)).fetchone()
     if row is None:
         raise AnalysisJobNotFoundError("analysis job was not found")
     return _row_to_job(row)
@@ -498,13 +537,16 @@ def get_job(job_id: str) -> AnalysisJob:
 def queue_metrics(job_type: str) -> dict[str, object]:
     """Minimal observability: queue depth by state and the oldest queued job's age."""
     normalized_type = _required_text(job_type, "job_type")
+    if normalized_type not in JOB_TYPES:
+        raise ValueError(f"unsupported job_type: {normalized_type}")
+    table, _ = _tables_for_job_type(normalized_type)
     with get_connection() as connection:
         rows = connection.execute(
-            "SELECT state, COUNT(*) AS count FROM analysis_jobs WHERE job_type = ? GROUP BY state;",
+            f"SELECT state, COUNT(*) AS count FROM {table} WHERE job_type = ? GROUP BY state;",
             (normalized_type,),
         ).fetchall()
         oldest = connection.execute(
-            "SELECT created_at FROM analysis_jobs WHERE job_type = ? AND state = 'queued' ORDER BY created_at ASC LIMIT 1;",
+            f"SELECT created_at FROM {table} WHERE job_type = ? AND state = 'queued' ORDER BY created_at ASC LIMIT 1;",
             (normalized_type,),
         ).fetchone()
     depth_by_state = {row["state"]: row["count"] for row in rows}

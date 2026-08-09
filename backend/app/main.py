@@ -59,6 +59,7 @@ from backend.app.analysis.replay_analysis import (
     create_replay_technical_analysis,
 )
 from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
+from backend.app.models.statistical_analysis import StatisticalAnalysisJobRequest
 from backend.app.analysis.live_analysis import create_live_technical_summary
 from backend.app.analysis.liquidity_overview import create_liquidity_overview
 from backend.app.strategies.replay_strategy import create_replay_strategy_analysis
@@ -517,7 +518,7 @@ def replay_strategy_analysis(
 @app.get("/api/v2/replay-sessions/{session_id}/statistical-analysis")
 def replay_statistical_analysis(
     session_id: str,
-    timeframe: str = Query(default="M1", pattern="^(S1|S10|M1|M5|M15|H1)$"),
+    timeframe: str = Query(default="M1", pattern="^(S1|S10|M1|M5|M15|M30|H1|H4|D1)$"),
     minimum_sample_size: int = Query(default=30, ge=1, le=10_000),
     user_code: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
@@ -542,6 +543,75 @@ def replay_statistical_analysis(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(analysis), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/replay-sessions/{session_id}/statistical-analysis-jobs", status_code=202)
+def statistical_analysis_job_create(
+    session_id: str,
+    job_request: StatisticalAnalysisJobRequest,
+    background_tasks: BackgroundTasks,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Replay session was not found") from error
+    if session.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Replay session belongs to another user")
+    try:
+        job = enqueue_job(
+            job_type="statistical_analysis", created_by=user_code,
+            payload={
+                "session_id": session_id, "timeframe": job_request.timeframe,
+                "minimum_sample_size": job_request.minimum_sample_size,
+            },
+            related_resource_id=session_id, idempotency_key=job_request.idempotency_key,
+            priority=job_request.priority,
+        )
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobQueueFullError as error:
+        raise HTTPException(status_code=429, detail=str(error)) from error
+    background_tasks.add_task(drain_queue, worker_id=f"bg-{job.job_id}", job_type="statistical_analysis")
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/replay-sessions/{session_id}/statistical-analysis-jobs/{job_id}")
+def statistical_analysis_job_detail(
+    session_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != session_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    if job.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Analysis job belongs to another user")
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/replay-sessions/{session_id}/statistical-analysis-jobs/{job_id}/cancel")
+def statistical_analysis_job_cancel(
+    session_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != session_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    try:
+        cancelled = request_cancel(job_id=job_id, actor=user_code)
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(cancelled), "meta": {"api_version": "2"}}
 
 
 @app.get("/api/v2/replay-sessions/{session_id}/pattern-candidates")

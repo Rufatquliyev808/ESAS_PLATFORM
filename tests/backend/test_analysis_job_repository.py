@@ -241,3 +241,84 @@ def test_payload_carries_no_secret_looking_fields(isolated_database: Path) -> No
     job = _enqueue()
     forbidden = {"password", "token", "secret", "api_key", "access_token"}
     assert not (set(job.payload.keys()) & forbidden)
+
+
+def _enqueue_statistical_analysis(created_by: str = "TEST-USER", key: str = "sa1", session_id: str = "session-1"):
+    return enqueue_job(
+        job_type="statistical_analysis", created_by=created_by,
+        payload={"session_id": session_id, "timeframe": "M1", "minimum_sample_size": 30},
+        related_resource_id=session_id, idempotency_key=key,
+    )
+
+
+def test_statistical_analysis_jobs_use_a_separate_table(isolated_database: Path) -> None:
+    # analysis_jobs' job_type CHECK constraint (already applied to real
+    # production) only allows 'pattern_candidate_backtest' -- statistical
+    # analysis jobs must land in their own table, never that one.
+    _prepare(isolated_database)
+    job = _enqueue_statistical_analysis()
+    assert job.job_id.startswith("saj_")
+    with get_connection() as connection:
+        own_table_count = connection.execute(
+            "SELECT COUNT(*) FROM statistical_analysis_jobs WHERE job_id = ?;", (job.job_id,)
+        ).fetchone()[0]
+        other_table_count = connection.execute(
+            "SELECT COUNT(*) FROM analysis_jobs WHERE job_id = ?;", (job.job_id,)
+        ).fetchone()[0]
+    assert own_table_count == 1
+    assert other_table_count == 0
+
+
+def test_statistical_analysis_job_full_lifecycle_routes_to_its_own_table(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    _enqueue_statistical_analysis()
+    claimed = claim_next_job(worker_id="w1", job_type="statistical_analysis")
+    assert claimed is not None
+    assert claimed.job_id.startswith("saj_")
+    running = send_heartbeat(job_id=claimed.job_id, worker_id="w1", fencing_token=claimed.fencing_token)
+    assert running.state == "running"
+    finished = complete_job(job_id=claimed.job_id, worker_id="w1", fencing_token=claimed.fencing_token, result={"ok": True})
+    assert finished.state == "completed"
+    assert finished.result == {"ok": True}
+    reloaded = get_job(claimed.job_id)
+    assert reloaded.state == "completed"
+    with get_connection() as connection:
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM statistical_analysis_job_audit WHERE job_id = ?;", (claimed.job_id,)
+        ).fetchone()[0]
+    assert audit_count >= 3  # enqueue, claim, complete
+
+
+def test_pattern_candidate_and_statistical_analysis_job_ids_do_not_collide(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    pattern_job = _enqueue()
+    stats_job = _enqueue_statistical_analysis()
+    assert pattern_job.job_id.startswith("job_")
+    assert stats_job.job_id.startswith("saj_")
+    assert get_job(pattern_job.job_id).job_type == "pattern_candidate_backtest"
+    assert get_job(stats_job.job_id).job_type == "statistical_analysis"
+    # A per-user active-job cap is enforced independently per job type: three
+    # pattern-candidate jobs plus one statistical-analysis job should not
+    # trip the pattern-candidate queue's cap.
+    _enqueue(key="k2")
+    _enqueue(key="k3")
+    metrics = queue_metrics("statistical_analysis")
+    assert metrics["depth_by_state"]["queued"] == 1
+
+
+def test_statistical_analysis_queue_metrics_are_independent_of_pattern_candidate_queue(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    _enqueue_statistical_analysis(key="sa1")
+    _enqueue_statistical_analysis(key="sa2", session_id="session-2")
+    claim_next_job(worker_id="w1", job_type="statistical_analysis")
+    metrics = queue_metrics("statistical_analysis")
+    assert metrics["depth_by_state"]["queued"] == 1
+    assert metrics["depth_by_state"]["claimed"] == 1
+    pattern_metrics = queue_metrics("pattern_candidate_backtest")
+    assert pattern_metrics["depth_by_state"] == {}
+
+
+def test_queue_metrics_rejects_unsupported_job_type(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    with pytest.raises(ValueError, match="job_type"):
+        queue_metrics("not_a_real_job_type")
