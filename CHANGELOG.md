@@ -8,6 +8,60 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: Deterministic Visual Dataset Materializer v1
+
+- User gave a precisely-scoped task spec: read closed bars from a
+  completed replay session, generate observation windows with a frozen
+  RenderSpec/LabelSpec, reuse the existing renderer/label functions
+  unmodified, produce PNG+checksum+lineage per sample, keep
+  horizon-incomplete samples PENDING_HORIZON, apply the time-based
+  split with purge/embargo, produce a manifest and a deterministic
+  dataset fingerprint, and fail-closed if the bar fingerprint drifted.
+  Explicitly forbidden this step: touching production DB / migration
+  `0012`, new production tables, model training, `training` state,
+  frontend, real trading.
+- New `backend/app/analysis/visual_materializer.py`:
+  `materialize_visual_dataset(bars, *, bar_fingerprint,
+  source_bar_fingerprint, render_spec, label_spec,
+  observation_window_bars, train_end_at, validation_end_at)`. Pure
+  composition of the already-tested `render_canonical_chart()` /
+  `compute_label()` / `build_visual_sample()` /
+  `assign_time_based_splits()` / `build_dataset_manifest()` -- no
+  rendering, labelling, splitting, or manifest logic is reimplemented.
+  Slices bars into non-overlapping `observation_window_bars`-sized
+  windows (trailing partial window dropped), renders+labels each,
+  splits, and computes a `dataset_fingerprint` (sha256 over the sorted
+  set of `sample_id:image_checksum:split_id` triples plus the frozen
+  config) as a stronger whole-dataset identity than the manifest's own
+  count-based fingerprint alone.
+- **Fail-closed**: raises `BarFingerprintMismatchError` immediately if
+  the bars actually being materialized don't match the
+  `source_bar_fingerprint` frozen at experiment registration, rather
+  than silently materializing from drifted data.
+- `MaterializedSample` pairs each `VisualSample` (lineage) with its
+  `CanonicalImage` (actual PNG bytes) -- `visual_dataset.py`'s
+  `VisualSample` deliberately excludes raw image bytes, so this pairing
+  is the materializer's own concern, not a change to that module.
+- New `tests/backend/test_visual_materializer.py` (13 tests):
+  validation, fail-closed mismatch, window slicing (including trailing
+  partial-window drop), byte-for-byte cross-check against a direct
+  `render_canonical_chart()` call, pending-horizon handling, a
+  hand-verified split scenario covering train/purged/validation/pending
+  in one materialization, all-holdout and all-train boundary edge
+  cases, manifest/fingerprint presence, and determinism (identical
+  input -> identical dataset_fingerprint, manifest.fingerprint, and
+  full sample identity list). Full backend regression: `652 passed`.
+- **Scratch-database end-to-end verification** (real replay session:
+  1,200 synthetic ticks -> `build_closed_mid_bars()` -> 60 real closed
+  bars -> materializer): produced 10 samples (5 train, 4 purged, 1
+  pending-horizon), byte-valid PNGs, fail-closed check raised as
+  expected, and two independent materialization runs produced identical
+  `dataset_fingerprint`/`manifest.fingerprint`/sample identities. Real
+  production database and services (8000/3000) untouched throughout.
+  No migration `0012` application, no new production table, no ML
+  dependency, no `training` state, no frontend/trading change -- all
+  per the task's explicit boundaries.
+
 ### Decided — Phase 7 paused, honoring its own contract prerequisite; migration 0012 stays out of production
 
 - Flagged a real tension: `PHASE_7_KNOWLEDGE_BASE_CONTRACT.md` states

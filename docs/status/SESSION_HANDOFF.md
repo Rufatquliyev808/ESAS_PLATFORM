@@ -40,8 +40,13 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   `LabelSpec` saxlayır, əvvəlki ixtiyari hash-string dizaynı düzəldildi
   (migration `0012`,
   `visual_experiment_repository.py`, 4 endpoint — register/get/list/archive)
-  VƏ frontend paneli (`visual-experiments-panel.tsx`) tamamlanıb. Yalnız
-  `registered ↔ archived` keçidi işlək. **İNDİ YENİDƏN AKTİV PRİORİTET.**
+  VƏ frontend paneli (`visual-experiments-panel.tsx`) tamamlanıb.
+  **Deterministic Visual Dataset Materializer v1** (`visual_materializer.py`)
+  də tamamlandı: real render→dataset→label icrası, purge/embargo split,
+  manifest+dataset fingerprint, fail-closed bar-fingerprint yoxlaması —
+  scratch bazada real replay nümunəsi ilə uçdan-uca doğrulandı. Yalnız
+  `registered ↔ archived` keçidi işlək — materializer hələ DB/lifecycle-ə
+  bağlı deyil (bu, ayrıca, gələcək addımdır). **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin
   öz "Tətbiq şərti: Phase 1–6 bağlanmalıdır" şərti ilə istifadəçinin
@@ -327,16 +332,14 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 
 ## Commit/push vəziyyəti
 
-- **`main` origin ilə tam sinxrondur, HEAD = `c6d75c1`** (bu sessiyanın
-  bütün işi — Phase 5 spec saxlanması düzəlişi, Phase 7 knowledge claim
-  modeli, `PROJECT_ROADMAP.md` düzəlişi daxil olmaqla — istifadəçinin
-  açıq tapşırığı ilə push edildi). Hazırda commit edilməmiş kod
-  dəyişikliyi YOXDUR (yalnız bu status-sənəd yeniləməsi gedir). Real
-  production baza HƏLƏ `0011`-dədir — migration `0012` istifadəçinin
-  açıq qərarı ilə tətbiq edilmədi. İstifadəçinin qaydasına görə növbəti
-  push-lar da açıq tapşırıqla ediləcək. Ətraflı, kronoloji dəyişiklik
-  siyahısı üçün: `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı
-  "Tamamlanan" qeydləri.
+- **`origin/main` = `c6d75c1`** (bu HEAD push edilib). **Push edilməmiş
+  YEREL commit-lər var**: `a56fd44` (tick-axını diaqnostikası + Phase 7
+  dayandırma qərarının sənədləşdirilməsi) + Phase 5 materializer commit-i
+  (bu turda edilir, `652 passed`). Real production baza HƏLƏ `0011`-dədir
+  — migration `0012` istifadəçinin açıq qərarı ilə tətbiq edilmədi.
+  İstifadəçinin qaydasına görə push yalnız açıq tapşırıqla ediləcək.
+  Ətraflı, kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md`
+  (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan" qeydləri.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni

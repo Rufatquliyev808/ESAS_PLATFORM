@@ -1,5 +1,44 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5: Deterministic Visual Dataset Materializer v1
+
+- İstifadəçi dəqiq sərhədlənmiş tapşırıq verdi (9 tələb, 5 qadağa) və
+  tam icra icazəsi verdi — sorğu-sorğu təsdiq gözləmədən icra edildi.
+- Yeni `backend/app/analysis/visual_materializer.py`:
+  `materialize_visual_dataset()` — mövcud `render_canonical_chart()`/
+  `compute_label()`/`build_visual_sample()`/`assign_time_based_splits()`/
+  `build_dataset_manifest()` funksiyalarının SAF KOMPOZİSİYASI, heç biri
+  təkrar yazılmayıb. Bar-ları örtüşməyən `observation_window_bars`
+  ölçülü pəncərələrə bölür (yarımçıq son pəncərə atılır), hər birini
+  render edir+label edir, split təyin edir, `dataset_fingerprint`
+  hesablayır (bütün `sample_id:checksum:split_id` üçlüklərinin
+  sıralanmış çoxluğu üzərində sha256 — manifest-in öz say-əsaslı
+  fingerprint-indən daha güclü tam-dataset identifikatoru).
+- **Fail-closed**: real materiallaşdırılan bar-ların fingerprint-i
+  qeydiyyatda dondurulmuş `source_bar_fingerprint`-ə uyğun gəlmirsə,
+  dərhal `BarFingerprintMismatchError` atır — səssizcə dəyişmiş
+  məlumatdan materiallaşdırma aparmır.
+- `MaterializedSample` hər `VisualSample`-i (lineage) öz `CanonicalImage`-i
+  (real PNG bytes) ilə cütləşdirir — `visual_dataset.py`-ın `VisualSample`-i
+  qəsdən xam şəkil bytes-larını daşımır, bu cütləşdirmə materializer-in öz
+  işidir.
+- Yeni `test_visual_materializer.py` (13 test): validasiya, fail-closed,
+  pəncərə bölgüsü, birbaşa render ilə byte-byte müqayisə, pending-horizon,
+  əl ilə hesablanmış split ssenarisi (train/purged/validation/pending
+  bir materiallaşdırmada), all-holdout/all-train sərhəd halları,
+  manifest/fingerprint mövcudluğu, determinizm. Tam backend regressiyası:
+  `652 passed`.
+- **Scratch bazada uçdan-uca doğrulama** (real replay sessiyası: 1,200
+  sintetik tick → `build_closed_mid_bars()` → 60 real bağlanmış bar →
+  materializer): 10 nümunə (5 train, 4 purged, 1 pending-horizon),
+  düzgün PNG-lər, fail-closed sınağı gözlənilən kimi işlədi, iki
+  müstəqil materiallaşdırma eyni `dataset_fingerprint`/
+  `manifest.fingerprint`/nümunə identikliyini verdi. Real production
+  baza və xidmətlər (8000/3000) toxunulmadan qaldı. Migration `0012`
+  tətbiq edilmədi, yeni production cədvəli yaradılmadı, ML asılılığı
+  əlavə edilmədi, `training` vəziyyətinə keçilmədi, frontend/ticarətə
+  toxunulmadı — hamısı tapşırığın sərhədlərinə uyğun.
+
 ## 2026-08-09 — Canlı tick axını diaqnostikası + Phase 7 dayandırıldı, Phase 5-ə qayıdıldı
 
 - İstifadəçinin planına uyğun, canlı tick axınının niyə köhnəldiyi

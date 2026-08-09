@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
-Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si (real spec saxlanması ilə)+frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi/render-training state keçidləri qalıb. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si (real spec saxlanması ilə)+frontend paneli+**materializer v1** (bu sessiyada tamamlandı: real render→dataset→label icrası, purge/embargo split, manifest, dataset fingerprint, fail-closed) tamamlanıb. Qalan: `registered → rendering` job/lifecycle persistence (materializer-i real DB-yə bağlamaq), sonra model təlimi. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -486,16 +486,18 @@ bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
   tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
-- **Phase 5 (Visual AI) — İNDİ YENİDƏN AKTİV PRİORİTET** (Phase 7
-  dayandırılandan sonra, 2026-08-09): renderer, dataset
-  lineage/manifest qatı, label hesablanması, eksperiment
-  qeydiyyatı/persistence API-si VƏ frontend paneli tamamlandı (yalnız
-  `registered ↔ archived` keçidi işlək; `rendering/training/evaluated/...`
-  state-ləri CHECK-də var, amma koda hələ bağlanmayıb). Növbəti təbii
-  addımlar: (1) real render→dataset→label icrası — qeydiyyatdan keçmiş
-  bir eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq
-  (RenderSpec/LabelSpec artıq real dəyərlərlə saxlanılır — bu sual HƏLL
-  OLUNDU); (2) `rendering`/`training` state keçidləri; (3) model təlimi
+- **Phase 5 (Visual AI) — AKTİV PRİORİTET** (Phase 7 dayandırılandan
+  sonra, 2026-08-09): renderer, dataset lineage/manifest qatı, label
+  hesablanması, eksperiment qeydiyyatı/persistence API-si, frontend
+  paneli VƏ **Deterministic Visual Dataset Materializer v1**
+  (`visual_materializer.py`, real render→dataset→label icrası, purge/
+  embargo split, manifest+dataset fingerprint, fail-closed) tamamlandı
+  (yalnız `registered ↔ archived` keçidi işlək; `rendering/training/
+  evaluated/...` state-ləri CHECK-də var, amma koda hələ bağlanmayıb).
+  Növbəti təbii addımlar: (1) `registered → rendering` job/lifecycle
+  persistence — materializer-i real DB-yə (yeni migration tələb edəcək,
+  əvvəlcədən icazə lazımdır) bağlamaq, materiallaşdırılmış nümunələri/
+  PNG-ləri harada saxlamaq (fayl sistemi/blob) qərarı; (2) model təlimi
   (ML asılılığı, GPU qərarı) — daha böyük, ayrıca qərar tələb edən addım.
   İstifadəçinin prioritet sırasına görə (Phase 3→4→7→8→9→10) Phase 5
   "əhəmiyyətli yeni həcm" kimi qeyd edilib, Phase 3/4-dən sonra əlavə
