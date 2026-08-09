@@ -1,6 +1,6 @@
 # ESAS Platform — Sessiya handoff
 
-Son yenilənmə: 2026-08-07
+Son yenilənmə: 2026-08-09
 
 ## Başlanğıc
 
@@ -303,14 +303,16 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- **`main` origin ilə tam sinxrondur, HEAD = `7a6f1b7`** (bu sessiyanın
+- **`main` origin ilə tam sinxrondur, HEAD = `297377e`** (bu sessiyanın
   bütün işi — Phase 3 SA-001-SA-007 (backend+frontend+async job resursu),
   job-queue frontend səthi, `PROJECT_ROADMAP.md` yeniləməsi, canlı
-  konsensus panelinin hərəkətli ortalamaları — daxil olmaqla). Hazırda
-  commit edilməmiş kod dəyişikliyi YOXDUR. Ətraflı, kronoloji dəyişiklik
-  siyahısı üçün: `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı
-  "Tamamlanan" qeydləri. AGENTS.md qaydasına görə hər yeni dəyişikliyin
-  push-u istifadəçinin ayrıca açıq təsdiqini gözləyəcək.
+  konsensus panelinin hərəkətli ortalamaları, platform-wide audit (sənəd
+  status düzəlişləri `83c5f91` + npm audit fix `297377e`) — daxil
+  olmaqla). Hazırda commit edilməmiş kod dəyişikliyi YOXDUR. Ətraflı,
+  kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md` (`## Unreleased`
+  bölməsi) və yuxarıdakı "Tamamlanan" qeydləri. AGENTS.md qaydasına görə
+  hər yeni dəyişikliyin push-u istifadəçinin ayrıca açıq təsdiqini
+  gözləyəcək.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni

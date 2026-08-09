@@ -1,5 +1,38 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Platform-wide audit: köhnə sənəd statusları düzəldildi, npm audit boşluqları həll edildi
+
+- İstifadəçi "platformani umumi ceklist et" dedi — nə qalıb/uyğunsuzdur,
+  onları yekunlaşdıraq, sonra qalan iş siyahısı ver.
+- Yoxlanıldı, sağlam tapıldı: backend `537 passed`, frontend lint/build/
+  `17/17` test, `TODO/FIXME/XXX/HACK` yoxdur, real production DB
+  (migration `0001`-`0011`, `quick_check=ok`), real backend/frontend
+  (8000/3000, hər ikisi `200`).
+- Tapılıb düzəldilib (docs commit `83c5f91`, push edilib):
+  - `PHASE_2_WORKER_SCHEDULER_CONTRACT.md` və
+    `PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`-in "DESIGN READY — NOT
+    IMPLEMENTED" statusu → IMPLEMENTED (hər ikisi bu sessiyada tam
+    qurulub, test edilib, frontend-i də var).
+  - `SESSION_HANDOFF.md`/`NEXT_TASK.md`-də artıq push edilmiş async-job-
+    resursu və hərəkətli-ortalama işləri üçün köhnə "hələ commit
+    edilməyib" işarələri düzəldildi.
+  - Köhnə, izlənilməyən `.tmp/` qovluğu (19MB, 2026-08-05 pytest scratch)
+    `.gitignore`-a əlavə edildi.
+- `npm audit` (npm audit fix commit `297377e`, push edilib): production
+  asılılıqlarında (`--omit=dev`) 4 HIGH boşluq (`next`/`postcss`/`sharp`)
+  tapıldı. Əvvəlcə "major/breaking `next` yüksəlişi" kimi düşünülmüşdü,
+  amma yoxlayanda faktiki düzəliş `16.2.6 → 16.3.0` (eyni major daxilində
+  kiçik yüksəliş) oldu. `next` + `eslint-config-next` birlikdə
+  yüksəldildi, `js-yaml`/`fast-uri`/`brace-expansion`/`@babel/core` üçün
+  təhlükəsiz (`--force` olmadan) transitive düzəlişlər tətbiq edildi.
+  Production asılılıqları indi `0 boşluq`. Qalan 11 tapıntı yalnız
+  dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin` və s.,
+  production-a getmir) — düzəlişi Cloudflare deploy pipeline-ına təsir
+  edə biləcək `--force` breaking dəyişikliklər tələb etdiyi üçün ayrıca
+  saxlanıldı. **Canlı yoxlandı**: real frontend (3000) yeni asılılıqlarla
+  yenidən başladıldı, `vinext build`/`vinext dev` uğurlu, login səhifəsi
+  düzgün render olundu, konsol xətası yox.
+
 ## 2026-08-09 — Canlı konsensus panelinin hərəkətli ortalamaları genişləndirildi (1 EMA → 8 SMA/EMA)
 
 - İstifadəçi "davam et, plan üzrə" dedi. Bu münasibətlə əvvəlcə

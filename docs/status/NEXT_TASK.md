@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əsasən tamamlanıb
+Mərhələ: Phase 3/4 tam tamamlanıb, platform-wide audit bitdi — Phase 5 (Visual AI) və ya kiçik namizədlər arasından seçim gözlənilir
 
 ## Tamamlanan (bu sessiya)
 
@@ -327,6 +327,26 @@ tempində qaldı (storm yox). Yeni `test_moving_averages.py` (8 test),
 regressiyası: `537 passed`. Frontend: lint təmiz, `17/17` test, build
 uğurlu.
 
+**Platform-wide audit (istifadəçinin "ümumi checklist" tapşırığı)** (docs
+commit `83c5f91` + npm audit fix commit `297377e`, hər ikisi push edilib,
+CI yaşıl) — backend (537 test), frontend (lint/build/`17/17` test),
+real production DB (migration `0001`-`0011`, `quick_check=ok`) və real
+xidmətlər (8000/3000, hər ikisi `200`) yoxlanıldı, hamısı sağlam.
+`TODO/FIXME/XXX/HACK` axtarışı təmiz. Tapılıb düzəldilən: (1)
+`PHASE_2_WORKER_SCHEDULER_CONTRACT.md` və
+`PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`-in köhnə "DESIGN READY — NOT
+IMPLEMENTED" statusu → IMPLEMENTED-ə düzəldildi; (2)
+`SESSION_HANDOFF.md`/`NEXT_TASK.md`-də artıq push edilmiş işlər üçün
+köhnə "hələ commit edilməyib" işarələri düzəldildi; (3) izlənilməyən,
+köhnə `.tmp/` qovluğu (19MB) `.gitignore`-a əlavə edildi; (4) `npm audit`
+— production asılılıqlarında (`next`/`postcss`/`sharp`) 4 HIGH boşluq
+tapıldı, `next` yalnız `16.2.6 → 16.3.0` (kiçik, eyni-major yüksəliş,
+əvvəlcə düşünüldüyü kimi major/breaking DEYİL) + təhlükəsiz transitive
+düzəlişlərlə (`js-yaml`/`fast-uri`/`brace-expansion`/`@babel/core`) həll
+edildi, production asılılıqları indi `0 boşluq`. Canlı yoxlandı: real
+frontend (3000) yenidən başladıldı, login səhifəsi düzgün render olundu,
+konsol xətası yox.
+
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 3/4, `PROJECT_ROADMAP.md`-dən)
@@ -371,6 +391,22 @@ uğurlu.
   tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
+- **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
+  (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
+  yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/
+  `undici`/`ws`/`esbuild`/`vinext`-in `image-size`-ı/`react-server-dom-
+  webpack`, production-a getmir) — düzəlişi `--force` ilə breaking
+  dəyişikliklər (bəziləri hətta downgrade) tələb edir, Cloudflare deploy
+  pipeline-ına təsir riski var, ayrıca qərar kimi saxlanıldı. Digər
+  `docs/architecture/PHASE_2_*` alt-müqavilələrinin (API, Observability,
+  Audit Evidence Export, Access Control, Configuration Startup,
+  Performance Test, Retention Backup) status başlıqları da "DESIGN
+  READY" göstərir — `PHASE_2_STABLE.md`-yə görə Stable qərarı YALNIZ
+  replay/keyfiyyət qatına aiddir, ona görə bunların hər biri statusu
+  dəyişdirilmədən əvvəl ayrıca yoxlanmalıdır.
+  `PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`-in "PARTIALLY
+  IMPLEMENTED" başlığı da roadmap-ın Phase 4 COMPLETED qeydi ilə
+  müqayisədə yoxlanılmalıdır.
 
 ## Vizual yoxlama qeydi
 

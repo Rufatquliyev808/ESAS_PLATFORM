@@ -8,6 +8,43 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Platform-wide audit: stale docs and npm audit vulnerabilities
+
+- User asked for a general checklist/audit of the platform: fix whatever
+  is inconsistent or erroneous, then list what's left.
+- Verified backend (537 tests) and frontend (lint, build, 17 tests) are
+  all green, production DB migrations 0001-0011 all applied with
+  `quick_check=ok`, and no `TODO/FIXME/XXX/HACK` markers anywhere.
+- Fixed stale `Status:` headers in
+  `docs/architecture/PHASE_2_WORKER_SCHEDULER_CONTRACT.md` and
+  `docs/architecture/PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md` (both
+  said "DESIGN READY -- NOT IMPLEMENTED" despite being fully built,
+  tested, and shipped with frontend UI this session).
+- Fixed two stale "hələ commit edilməyib" markers in
+  `docs/status/SESSION_HANDOFF.md`/`NEXT_TASK.md` for already-pushed
+  work, and rewrote `SESSION_HANDOFF.md`'s commit/push section (had
+  drifted into a long, repetitive, staleness-prone bullet list) into one
+  accurate statement.
+- Added the untracked, stale `.tmp/` pytest scratch directory (19 MB,
+  2026-08-05) to `.gitignore`.
+- `npm audit --omit=dev` found 4 HIGH severity vulnerabilities in
+  `next`/`postcss`/`sharp`. The fix was smaller than it first looked --
+  `next` only needed a minor bump (16.2.6 -> 16.3.0, same major version),
+  not the major/breaking upgrade initially flagged. Bumped `next` and
+  `eslint-config-next` together, plus safe (non-`--force`) transitive
+  fixes for `js-yaml`/`fast-uri`/`brace-expansion`/`@babel/core`.
+  Production deps now audit clean (0 vulnerabilities). Verified: lint,
+  build, full frontend test suite (17/17), and a live smoke check on the
+  restarted real dev server (port 3000, no console errors) all pass.
+- Not fixed, left as open findings (see `docs/status/NEXT_TASK.md`):
+  11 remaining `npm audit` findings are all dev-only tooling
+  (`vite`/`wrangler`/`@cloudflare/vite-plugin`/etc., not shipped to
+  production) that would require forcing breaking changes to the
+  Cloudflare deploy pipeline; several other `docs/architecture/PHASE_2_*`
+  sub-contract status headers and `PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`
+  need individual verification before their status headers can be
+  safely corrected.
+
 ### Added — Moving-average expansion for the live indicator consensus panel
 
 - The live consensus panel had one moving average (EMA) against
