@@ -1,5 +1,43 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5 (Visual AI) başladı: deterministik kanonik qrafik renderi
+
+- İstifadəçi platform-wide audit-dən sonra "phase 5" dedi. Müqavilə
+  (`PHASE_5_VISUAL_AI_CONTRACT.md`) böyük həcmdə iş tələb etdiyi üçün
+  (render → dataset lineage → API/lifecycle → model təlimi → frontend)
+  Phase 3-dəki kimi kiçik addımlara bölünməsi təklif edildi.
+  İstifadəçi ilk addım kimi **deterministik qrafik renderini** seçdi (heç
+  bir ML asılılığı yoxdur, tam testlənə bilər, hər şey bundan asılıdır).
+- Yeni `backend/app/analysis/visual_render.py`:
+  `render_canonical_chart(bars, *, bar_fingerprint, spec)` yalnız Phase
+  4-ün bağlanmış `MarketBar`-larından şam qrafiki PNG-si yaradır — heç
+  vaxt label, nəticə və ya gələcək bar qəbul etmir, ona görə müqavilənin
+  səbəbiyyət sərhədi TİKİNTİ İLƏ (konstruksiya ilə) qorunur. **Heç bir
+  yeni asılılıq YOXDUR** — PNG encoding stdlib `zlib`/`struct`-dan əl ilə
+  yazılıb (sabit filter tipi, timestamp chunk-ları yoxdur).
+  `image_checksum` PNG-ə sıxılmış bytes üzərində deyil, xam piksel
+  buferi üzərində hesablanır — müqavilənin "eyni PİKSEL checksum-u"
+  ifadəsinə dəqiq uyğundur və zlib versiyasından/platformadan asılı
+  deyil.
+- `RenderSpec` konfiqurasiya edilə bilən geometriya/rəng sahələrini
+  daşıyır; kanal sayı (3) və rəng məkanı (`rgb8`) sabit konstantlardır
+  (çağıran tərəfindən dəyişdirilə bilməz) ki, format kanonik qalsın.
+  `render_spec_id()` eksperiment qeydiyyatı üçün spec-i hash-ləyir.
+- `CanonicalImage` müqavilənin tələb etdiyi hər şeyi qeyd edir: pəncərə
+  ilk/son bar lineage-i, `known_at` (son barın öz `end_at`-i — hər
+  pikselin real mövcud ola biləcəyi ən erkən an), qiymət şkalası,
+  layer-lər, və bar-lar arasındakı boşluğu FABRİKASİYA EDİLMİŞ şam
+  ƏLAVƏ ETMƏDƏN işarələyən missing-data maskası
+  (`missing_bar_indices`/`quality_flags`).
+- Yeni `test_visual_render.py` (16 test): validasiya, determinizm (eyni
+  giriş+spec → eyni checksum və PNG bytes; fərqli spec → fərqli
+  `render_spec_id`/checksum), boşluq aşkarlanması, səbəbiyyət
+  (`known_at`/lineage), və real PNG bytes-dən dekodlanmış piksel
+  rənglərinin (bullish/bearish şam gövdəsi, arxa fon) yoxlanması (test
+  üçün yazılmış kiçik, yalnız-stdlib PNG dekoderi ilə). Tam backend
+  regressiyası: `553 passed`. Frontend toxunulmayıb — qəsdən kiçik
+  saxlanıldı (Phase 3-ün SA-001 ilə başladığı eyni prinsip).
+
 ## 2026-08-09 — Platform-wide audit: köhnə sənəd statusları düzəldildi, npm audit boşluqları həll edildi
 
 - İstifadəçi "platformani umumi ceklist et" dedi — nə qalıb/uyğunsuzdur,

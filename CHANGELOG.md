@@ -8,6 +8,46 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 Visual AI started: deterministic canonical chart renderer
+
+- User chose to start Phase 5 (Visual AI) after the platform-wide audit
+  wrapped up, and picked the deterministic image renderer as the first
+  increment (no ML dependency, fully testable, everything else in the
+  Phase 5 contract depends on it) over the dataset-lineage layer or a
+  full up-front plan.
+- New `backend/app/analysis/visual_render.py`:
+  `render_canonical_chart(bars, *, bar_fingerprint, spec)` renders a
+  candlestick PNG from Phase 4's already-closed `MarketBar` tuples only
+  -- never a label, outcome, or future bar, so the contract's causality
+  boundary holds by construction. No new third-party dependency: PNG
+  encoding is hand-rolled from stdlib `zlib`/`struct` (fixed filter type,
+  no timestamp chunks). `image_checksum` is computed over the raw pixel
+  buffer (not the compressed PNG bytes), matching the contract's "eyni
+  piksel checksum-u" (same *pixel* checksum) wording exactly and staying
+  independent of any zlib version/platform differences.
+- `RenderSpec` carries the configurable geometry/colour fields (width,
+  height, padding, candle colours); channel count (3) and colour space
+  (`rgb8`) are fixed renderer constants, not caller-configurable, so the
+  format stays canonical. `render_spec_id()` hashes the spec for
+  experiment-registration lineage.
+- `CanonicalImage` records everything the contract's "Kanonik görüntü
+  müqaviləsi" section requires: window first/last bar lineage
+  (`window_first_event_id`/`window_last_event_id`), `known_at` (the last
+  bar's own `end_at` -- the earliest instant every pixel could actually
+  exist), price scale, layers, and a missing-data mask
+  (`missing_bar_indices`/`quality_flags`) that flags gaps between
+  consecutive bars WITHOUT fabricating a candle for them.
+- New `tests/backend/test_visual_render.py` (16 tests): validation
+  (empty bars, mixed symbol/timeframe, empty fingerprint, spec too small
+  for padding), determinism (same input+spec -> identical checksum and
+  PNG bytes; different spec -> different `render_spec_id` and checksum),
+  gap detection, causality (`known_at`/lineage fields), and actual pixel
+  colour assertions (bullish/bearish candle body, background) decoded
+  from the real PNG bytes via a small stdlib-only decoder written for
+  the test. Full backend regression: `553 passed`. Frontend untouched
+  (backend-only foundation, no API/UI wiring yet -- deliberately kept
+  small, matching how Phase 3 started with SA-001 alone).
+
 ### Fixed — Platform-wide audit: stale docs and npm audit vulnerabilities
 
 - User asked for a general checklist/audit of the platform: fix whatever

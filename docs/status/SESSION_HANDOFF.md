@@ -25,7 +25,10 @@ Son yenilənmə: 2026-08-09
   (backend + frontend + async job resursu, bax aşağı). **Phase 9: hələ
   "DESIGN READY — NOT IMPLEMENTED"** — yalnız persistence skeleti + admin
   API/frontend tikilib (manifest + event reyestri + nəzəri
-  portfolio/risk ledger), canlı qərar generatoru yoxdur.
+  portfolio/risk ledger), canlı qərar generatoru yoxdur. **Phase 5
+  (Visual AI): BAŞLADI** — yalnız deterministik kanonik qrafik renderi
+  (`visual_render.py`) tamamlanıb, dataset lineage, API, model təlimi və
+  frontend hələ yoxdur (bax `docs/status/NEXT_TASK.md`).
 - Pattern namizədi işi bu qatlardan ibarətdir:
   1. **Draft generator** — hesablama-zamanı 6 hipotez slotu.
   2. **Persistence/`registered`** — migration `0005`.
