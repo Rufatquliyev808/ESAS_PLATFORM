@@ -55,8 +55,8 @@ def test_migration_adds_versioned_replay_index_without_changing_ticks(
         application_version="0.3.0",
     )
 
-    assert result.applied_versions == ("0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012")
-    assert result.current_version == "0012"
+    assert result.applied_versions == ("0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012", "0013")
+    assert result.current_version == "0013"
     assert raw_tick_snapshot(isolated_database) == before
 
     with sqlite3.connect(isolated_database) as connection:
@@ -102,13 +102,13 @@ def test_second_migration_run_is_a_safe_no_op(
     first = apply_migrations(isolated_database, application_version="0.3.0")
     second = apply_migrations(isolated_database, application_version="0.3.0")
 
-    assert first.applied_versions == ("0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012")
+    assert first.applied_versions == ("0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012", "0013")
     assert second.applied_versions == ()
     with sqlite3.connect(isolated_database) as connection:
         count = connection.execute(
             "SELECT COUNT(*) FROM schema_migrations;"
         ).fetchone()[0]
-    assert count == 12
+    assert count == 13
 
 
 def test_changed_migration_checksum_fails_closed(

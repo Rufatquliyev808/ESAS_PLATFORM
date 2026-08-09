@@ -8,6 +8,49 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: registered -> rendering job/lifecycle persistence
+
+- User granted full execution authority for this step, explicitly
+  scoped as "materializer wiring only" (not training, not frontend, not
+  production DB writes).
+- New migration `0013_visual_dataset_samples.sql` (test/scratch DB
+  only, same as `0012` -- not applied to real production):
+  `visual_dataset_samples` (one row per materialized sample: lineage,
+  checksums, split, label -- deliberately NOT raw PNG bytes; where
+  images actually live long-term -- filesystem/blob -- stays a
+  separate, not-yet-made decision) and `visual_dataset_manifests` (one
+  row per experiment, keyed by `experiment_id`).
+- `visual_dataset_repository.py`: `persist_materialized_samples()`
+  (idempotent `INSERT OR IGNORE` keyed on the deterministic
+  `sample_id`, so re-running materialization is safe) and
+  `persist_dataset_manifest()` (idempotent for an identical
+  `dataset_fingerprint`; raises `VisualDatasetManifestConflictError` if
+  an experiment already has a manifest with a *different* fingerprint
+  -- a real integrity signal, refused rather than silently overwritten).
+- `visual_experiment_repository.py` gained `start_rendering()`
+  (`registered -> rendering`) and `mark_rendering_failed()`
+  (`rendering -> failed`), mirroring `archive_visual_experiment()`'s
+  existing ownership/optimistic-concurrency/audit pattern exactly.
+- New `backend/app/strategies/visual_experiment_materialization.py`:
+  `render_visual_experiment()` orchestrates the whole step -- rebuilds
+  the replay session's bars (same dataset-snapshot-drift check
+  `replay_analysis.py`/`statistical_analysis.py` already use),
+  transitions to `rendering`, runs the existing materializer, and
+  persists samples + manifest. On any failure (dataset drift,
+  bar-fingerprint mismatch, or other materialization error) the
+  experiment moves to `failed` and the original exception is
+  re-raised -- never left silently stuck in `rendering`. No new
+  computation logic here; this module is pure orchestration around
+  already-tested pieces.
+- 17 new tests across three files (7 dataset-repository, 5
+  experiment-repository transition tests, 5 end-to-end orchestration
+  tests using a real seeded replay session -- success, fail-closed
+  fingerprint mismatch leading to `failed` state, incomplete-session
+  rejection, ownership rejection, and "cannot re-render once already
+  rendering"). Full backend regression: `669 passed`. Real production
+  database and services (8000/3000) confirmed untouched throughout
+  (still at migration `0011`).
+
 ### Added — Phase 5: Deterministic Visual Dataset Materializer v1
 
 - User gave a precisely-scoped task spec: read closed bars from a

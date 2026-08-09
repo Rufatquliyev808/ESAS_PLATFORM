@@ -42,11 +42,16 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   `visual_experiment_repository.py`, 4 endpoint — register/get/list/archive)
   VƏ frontend paneli (`visual-experiments-panel.tsx`) tamamlanıb.
   **Deterministic Visual Dataset Materializer v1** (`visual_materializer.py`)
-  də tamamlandı: real render→dataset→label icrası, purge/embargo split,
-  manifest+dataset fingerprint, fail-closed bar-fingerprint yoxlaması —
-  scratch bazada real replay nümunəsi ilə uçdan-uca doğrulandı. Yalnız
-  `registered ↔ archived` keçidi işlək — materializer hələ DB/lifecycle-ə
-  bağlı deyil (bu, ayrıca, gələcək addımdır). **AKTİV PRİORİTET.**
+  və **`registered → rendering` job/lifecycle persistence** (migration
+  `0013`, `visual_dataset_repository.py`, `start_rendering()`/
+  `mark_rendering_failed()`, `render_visual_experiment()` orkestrasiyası
+  `strategies/visual_experiment_materialization.py`-da) də tamamlandı:
+  real render→dataset→label icrası, purge/embargo split, manifest+dataset
+  fingerprint, fail-closed bar-fingerprint yoxlaması, nümunə/manifest
+  persistence — hər ikisi real seed edilmiş replay sessiyası ilə
+  uçdan-uca doğrulandı. İndi `registered ↔ archived ↔ rendering ↔ failed`
+  keçidləri işlək. Migration `0012`/`0013` YALNIZ test bazasındadır.
+  **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin
   öz "Tətbiq şərti: Phase 1–6 bağlanmalıdır" şərti ilə istifadəçinin
@@ -332,11 +337,12 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 
 ## Commit/push vəziyyəti
 
-- **`origin/main` = `c6d75c1`** (bu HEAD push edilib). **Push edilməmiş
-  YEREL commit-lər var**: `a56fd44` (tick-axını diaqnostikası + Phase 7
-  dayandırma qərarının sənədləşdirilməsi) + Phase 5 materializer commit-i
-  (bu turda edilir, `652 passed`). Real production baza HƏLƏ `0011`-dədir
-  — migration `0012` istifadəçinin açıq qərarı ilə tətbiq edilmədi.
+- **`origin/main` = `ff4a57e`** (bu HEAD push edilib — tick-axını
+  diaqnostikası, Phase 7 dayandırma qərarı VƏ Phase 5 materializer v1
+  daxil olmaqla). **Push edilməmiş YEREL commit** olacaq: Phase 5
+  `registered → rendering` job/lifecycle persistence (bu turda edilir,
+  `669 passed`). Real production baza HƏLƏ `0011`-dədir — migration
+  `0012`/`0013` istifadəçinin açıq qərarı ilə tətbiq edilmədi.
   İstifadəçinin qaydasına görə push yalnız açıq tapşırıqla ediləcək.
   Ətraflı, kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md`
   (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan" qeydləri.

@@ -1,5 +1,46 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5: `registered → rendering` job/lifecycle persistence
+
+- İstifadəçi bu addım üçün tam icra icazəsi verdi ("materializer
+  bağlanması" ilə sərhədlənmiş — model təlimi, frontend, production
+  bazaya yazma yox).
+- Yeni migration `0013_visual_dataset_samples.sql` (yalnız test/scratch
+  bazada, `0012` kimi — real production-a tətbiq edilməyib):
+  `visual_dataset_samples` (hər materiallaşdırılmış nümunə üçün bir
+  sətir: lineage, checksum-lar, split, label — qəsdən xam PNG bytes-ı
+  YOX, şəkillərin uzunmüddətli harada saxlanacağı — fayl sistemi/blob —
+  hələ ayrı, verilməmiş qərardır) və `visual_dataset_manifests` (hər
+  eksperiment üçün bir sətir, `experiment_id`-lə).
+- `visual_dataset_repository.py`: `persist_materialized_samples()`
+  (idempotent `INSERT OR IGNORE`, deterministik `sample_id`-ə əsaslanır
+  — materiallaşdırmanı təkrar işə salmaq təhlükəsizdir) və
+  `persist_dataset_manifest()` (eyni `dataset_fingerprint` üçün
+  idempotent; FƏRQLİ fingerprint-lə mövcud manifest varsa
+  `VisualDatasetManifestConflictError` atır — real bütövlük siqnalı,
+  səssizcə üzərinə yazılmır).
+- `visual_experiment_repository.py`-ə `start_rendering()`
+  (`registered → rendering`) və `mark_rendering_failed()`
+  (`rendering → failed`) əlavə edildi — `archive_visual_experiment()`-in
+  mövcud ownership/optimistic-concurrency/audit nümunəsini dəqiq
+  təkrarlayır.
+- Yeni `backend/app/strategies/visual_experiment_materialization.py`:
+  `render_visual_experiment()` bütün addımı orkestrasiya edir — replay
+  sessiyasının bar-larını yenidən qurur (eyni dataset-snapshot-drift
+  yoxlaması `replay_analysis.py`/`statistical_analysis.py`-ın artıq
+  istifadə etdiyi), `rendering`-ə keçir, mövcud materializer-i işə
+  salır, nümunələr+manifest-i saxlayır. İSTƏNİLƏN uğursuzluqda (dataset
+  drift, bar-fingerprint uyğunsuzluğu) eksperiment `failed`-ə keçir,
+  orijinal xəta yenidən atılır — `rendering`-də səssizcə ilişib
+  qalmır. Heç bir yeni hesablama məntiqi yoxdur — saf orkestrasiya.
+- 17 yeni test (3 fayl üzrə): 7 dataset-repository, 5 experiment-
+  repository keçid testi, 5 uçdan-uca orkestrasiya testi (real seed
+  edilmiş replay sessiyası ilə — uğur, fail-closed fingerprint
+  uyğunsuzluğu → `failed`, tamamlanmamış sessiya rəddi, ownership
+  rəddi, "artıq rendering-dədirsə təkrar işə salına bilməz"). Tam
+  backend regressiyası: `669 passed`. Real production baza və
+  xidmətlər (8000/3000) toxunulmadan qaldı (hələ migration `0011`-də).
+
 ## 2026-08-09 — Phase 5: Deterministic Visual Dataset Materializer v1
 
 - İstifadəçi dəqiq sərhədlənmiş tapşırıq verdi (9 tələb, 5 qadağa) və

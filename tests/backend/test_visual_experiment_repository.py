@@ -14,7 +14,9 @@ from backend.app.database.visual_experiment_repository import (
     archive_visual_experiment,
     get_visual_experiment,
     list_visual_experiments,
+    mark_rendering_failed,
     register_visual_experiment,
+    start_rendering,
 )
 
 
@@ -214,5 +216,75 @@ def test_archive_by_another_user_is_rejected(isolated_database: Path) -> None:
     with pytest.raises(VisualExperimentOwnershipError):
         archive_visual_experiment(
             experiment_id=experiment.experiment_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=experiment.state_version,
+        )
+
+
+def test_start_rendering_transitions_from_registered(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    assert rendering.lifecycle_state == "rendering"
+    assert rendering.state_version == experiment.state_version + 1
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM visual_experiment_audit "
+            "WHERE experiment_id = ? ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()
+    assert audit["action"] == "start_rendering"
+    assert audit["previous_state"] == "registered"
+    assert audit["next_state"] == "rendering"
+
+
+def test_start_rendering_rejects_non_registered_state(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    archived = archive_visual_experiment(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    with pytest.raises(VisualExperimentConflictError):
+        start_rendering(
+            experiment_id=archived.experiment_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=archived.state_version,
+        )
+
+
+def test_start_rendering_by_another_user_is_rejected(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    with pytest.raises(VisualExperimentOwnershipError):
+        start_rendering(
+            experiment_id=experiment.experiment_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=experiment.state_version,
+        )
+
+
+def test_mark_rendering_failed_transitions_from_rendering(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    failed = mark_rendering_failed(
+        experiment_id=rendering.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=rendering.state_version,
+    )
+    assert failed.lifecycle_state == "failed"
+    assert failed.state_version == rendering.state_version + 1
+
+
+def test_mark_rendering_failed_rejects_from_registered(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    with pytest.raises(VisualExperimentConflictError):
+        mark_rendering_failed(
+            experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
             expected_state_version=experiment.state_version,
         )

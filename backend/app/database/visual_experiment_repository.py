@@ -22,6 +22,8 @@ class VisualExperimentConflictError(RuntimeError):
 
 
 ARCHIVABLE_STATES = frozenset({"registered"})
+RENDERABLE_FROM_STATES = frozenset({"registered"})
+FAILABLE_FROM_STATES = frozenset({"rendering"})
 
 
 @dataclass(frozen=True)
@@ -338,3 +340,92 @@ def archive_visual_experiment(
             (normalized_experiment_id,),
         ).fetchone()
     return _row_to_experiment(result_row)
+
+
+def _transition(
+    *,
+    experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+    allowed_from_states: frozenset[str], next_state: str, action: str,
+) -> PersistedVisualExperiment:
+    normalized_experiment_id = _required_text(experiment_id, "experiment_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+        row = connection.execute(
+            "SELECT * FROM visual_experiments WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+        if row is None:
+            raise VisualExperimentNotFoundError("visual experiment was not found")
+        if row["created_by"] != normalized_actor:
+            raise VisualExperimentOwnershipError("visual experiment belongs to another user")
+        if row["state_version"] != expected_state_version:
+            raise VisualExperimentConflictError("visual experiment changed since it was loaded")
+        if row["lifecycle_state"] not in allowed_from_states:
+            raise VisualExperimentConflictError(
+                f"cannot transition to {next_state} from state {row['lifecycle_state']}"
+            )
+        previous_state = row["lifecycle_state"]
+
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        updated = connection.execute(
+            """
+            UPDATE visual_experiments
+            SET lifecycle_state = ?, state_version = state_version + 1, updated_at = ?
+            WHERE experiment_id = ? AND state_version = ?;
+            """,
+            (next_state, now, normalized_experiment_id, expected_state_version),
+        )
+        if updated.rowcount != 1:
+            raise VisualExperimentConflictError("visual experiment changed during transition")
+
+        connection.execute(
+            """
+            INSERT INTO visual_experiment_audit
+            (experiment_id, actor, actor_role, action, previous_state, next_state, occurred_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+            """,
+            (normalized_experiment_id, normalized_actor, normalized_role, action, previous_state, next_state, now),
+        )
+        result_row = connection.execute(
+            "SELECT * FROM visual_experiments WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+    return _row_to_experiment(result_row)
+
+
+def start_rendering(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """registered -> rendering. Marks that materialization has begun; does
+    not itself render anything -- callers run the materializer separately
+    and then call `mark_rendering_failed` on error. There is no
+    `mark_rendering_complete`: the experiment simply stays in `rendering`
+    once materialization succeeds, since the Phase 5 contract's next named
+    state (`training`) requires model-training infrastructure this
+    increment deliberately does not build.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=RENDERABLE_FROM_STATES, next_state="rendering", action="start_rendering",
+    )
+
+
+def mark_rendering_failed(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """rendering -> failed. The specific failure reason (bar-fingerprint
+    mismatch, dataset drift, etc.) is not re-stored here -- it is already
+    the caller's raised exception; the audit action name itself is the
+    persisted signal that a rendering attempt failed, matching how
+    `block_pattern_candidate_for_data_quality` documents the same
+    "the transition itself is the record" convention.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=FAILABLE_FROM_STATES, next_state="failed", action="mark_rendering_failed",
+    )
