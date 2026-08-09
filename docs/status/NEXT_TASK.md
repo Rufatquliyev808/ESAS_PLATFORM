@@ -1,8 +1,8 @@
 # ESAS Platform — Növbəti tapşırıq
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
-Prioritet: istifadəçi 2026-08-09-da Phase 3→4→7→8→9→10 prioritet sırasını verdi (real ticarətə hazır analiz sistemi, Phase 5/6 siyahıda yoxdur). Phase 3/4 artıq tamamlanıb.
-Mərhələ: Phase 7 (Knowledge Base) başladı — knowledge claim data modeli (`knowledge_claim.py`) tamamlanıb, persistence/API/frontend hələ yoxdur. Phase 5 (Visual AI) əvvəlki sessiyada qismən irəlilədilmişdi (renderer+dataset+label+qeydiyyat API-si), hazırda dayandırılıb.
+Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si (real spec saxlanması ilə)+frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi/render-training state keçidləri qalıb. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -430,6 +430,18 @@ Yeni `test_knowledge_claim.py` (30 test). Tam backend regressiyası:
 `639 passed`. Persistence/API/frontend hələ YOXDUR — qəsdən kiçik ilk
 addım.
 
+**Qərar: Phase 7 dayandırıldı, Phase 5-ə qayıdıldı** — istifadəçiyə
+Phase 7-nin öz müqaviləsindəki "Tətbiq şərti: Phase 1–6 bağlanmalıdır"
+şərti ilə istifadəçinin prioritet sırası (Phase 5/6 ötürülür) arasındakı
+ziddiyyət açıq şəkildə bildirildi. İki seçim təklif edildi: (a) 7 hazır
+claim növü ilə davam et, (b) müqavilənin şərtinə sərt riayət et.
+**İstifadəçi (b)-ni seçdi.** Nəticə: Phase 7 hazırkı `knowledge_claim.py`
+vəziyyətində qalır (test edilib, commit edilib), əlavə iş dayandırılır.
+Eyni zamanda: migration `0012`-nin real production bazaya tətbiqi
+haqqında da soruşuldu — **istifadəçi "yox, gözləsin" dedi**, yalnız test
+bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
+`c6d75c1`) istifadəçinin açıq tapşırığı ilə push edildi.
+
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 3/4, `PROJECT_ROADMAP.md`-dən)
@@ -474,7 +486,8 @@ addım.
   tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
-- **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer, dataset
+- **Phase 5 (Visual AI) — İNDİ YENİDƏN AKTİV PRİORİTET** (Phase 7
+  dayandırılandan sonra, 2026-08-09): renderer, dataset
   lineage/manifest qatı, label hesablanması, eksperiment
   qeydiyyatı/persistence API-si VƏ frontend paneli tamamlandı (yalnız
   `registered ↔ archived` keçidi işlək; `rendering/training/evaluated/...`

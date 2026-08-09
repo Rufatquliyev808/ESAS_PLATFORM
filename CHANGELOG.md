@@ -8,6 +8,26 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Decided — Phase 7 paused, honoring its own contract prerequisite; migration 0012 stays out of production
+
+- Flagged a real tension: `PHASE_7_KNOWLEDGE_BASE_CONTRACT.md` states
+  "Tətbiq şərti: Phase 1–6 qəbul qapılarının bağlanması" (Phase 1-6
+  acceptance gates must close first), but the user's priority order
+  (Phase 3 -> 4 -> 7 -> 8 -> 9 -> 10) skips Phase 5/6 entirely. Offered
+  a partial-resolution option (7 of the contract's 9 claim types only
+  depend on Phase 1-4, already done) vs. strict adherence. **User chose
+  strict adherence**: Phase 7 work pauses here; the small
+  `knowledge_claim.py` slice already built stays as-is (tested, merged)
+  but no further Phase 7 work happens until Phase 5 (and Phase 6) are
+  actually complete.
+- Also decided: migration `0012` (Phase 5's `visual_experiments` table)
+  stays applied to the test database only -- explicitly NOT applied to
+  the real production database yet, since Phase 5 itself isn't the
+  active priority right now either.
+- Pushed the 3 commits that had accumulated locally (`71f67f0` roadmap
+  fix, `6b6fb3d` Phase 5 spec-storage fix, `c6d75c1` Phase 7 knowledge
+  claim model) to `origin/main` on explicit request.
+
 ### Added — Phase 7 Knowledge Base started: knowledge claim data model
 
 - User's priority order (Phase 3 → 4 → 7 → 8 → 9 → 10, given to reach a

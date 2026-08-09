@@ -182,7 +182,10 @@ fundamental vintage, entity mapping və causal təsir ölçümü müqaviləsi:
 
 # Phase 7 — Knowledge Base
 
-Status: PLANNED
+Status: PLANNED (2026-08-09-da bir kiçik ilkin addım - saf
+`knowledge_claim.py` data modeli - başlanmışdı, amma müqavilənin özünün
+"Tətbiq şərti: Phase 1–6 qəbul qapılarının bağlanması" tələbinə sərt
+riayət qərarı ilə DAYANDIRILDI. Phase 5/6 tamamlanmadan davam etmir.)
 
 Versiyalanmış bilik claim-i, sübut qrafı, scope və rejim uyğunluğu, etibarlılıq
 müddəti, conflict, REVIEW və təhlükəsiz retrieval müqaviləsi:

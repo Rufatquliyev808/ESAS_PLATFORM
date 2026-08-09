@@ -1,5 +1,29 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Canlı tick axını diaqnostikası + Phase 7 dayandırıldı, Phase 5-ə qayıdıldı
+
+- İstifadəçinin planına uyğun, canlı tick axınının niyə köhnəldiyi
+  araşdırıldı (real bazaya yazmadan, yalnız oxuma): son tick cümə
+  2026-08-07T20:57:59 UTC-də (broker bağlanış vaxtına dəqiq uyğun),
+  MT5 terminal (`terminal64.exe`) işləyir, backend log-unda bridge
+  5960 dəfə `/status/bridge` heartbeat göndərib (hamısı qəbul edilib),
+  eyni müddətdə 0 `/tick` POST-u. **Nəticə: bu, adi həftəsonu bazar
+  bağlanışıdır, pipeline xətası deyil** — kod dəyişikliyi tələb
+  olunmadı.
+- İstifadəçiyə Phase 7-nin öz müqaviləsindəki "Tətbiq şərti: Phase 1–6
+  bağlanmalıdır" şərti ilə istifadəçinin prioritet sırası (Phase 5/6
+  ötürülür) arasındakı ziddiyyət açıq bildirildi, iki seçim təklif
+  edildi. **İstifadəçi müqaviləyə sərt riayəti seçdi: Phase 7
+  dayandırıldı**, `knowledge_claim.py` hazırkı vəziyyətində qalır,
+  Phase 5-ə (sonra Phase 6-ya) qayıdıldı.
+- Migration `0012` (Phase 5 `visual_experiments`) haqqında da soruşuldu
+  — **istifadəçi real production bazaya tətbiqini rədd etdi**, yalnız
+  test bazasında qalır.
+- 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`, `c6d75c1`)
+  istifadəçinin açıq tapşırığı ilə `origin/main`-ə push edildi.
+  `PROJECT_ROADMAP.md`-in Phase 7 bölməsi bu dayandırma qərarını əks
+  etdirmək üçün yeniləndi.
+
 ## 2026-08-09 — Phase 7 (Knowledge Base) başladı: knowledge claim data modeli
 
 - İstifadəçi "phase 7" dedi — prioritet siyahısı (Phase 3→4→7→8→9→10,
