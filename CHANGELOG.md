@@ -8,6 +8,38 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 Visual AI: label computation
+
+- Direct continuation ("davam et") of the dataset lineage layer. New
+  `backend/app/analysis/visual_label.py`: `compute_label(bars, *,
+  observation_end_at, spec)` classifies the return from the observation
+  window's last close to the close `spec.horizon_bars` bars later as
+  UP/DOWN/FLAT against a pre-registered `LabelSpec` threshold. `bars`
+  must be the full historical series (observation window AND the bars
+  that follow it) -- the renderer itself never sees these future bars,
+  only this separate pass does, matching the contract's "Label ...
+  şəkil yaradılmasına təsir etmir" rule.
+- `LabelSpec` has no dataset-wide fitting logic anywhere in this module
+  by construction (it only ever looks at one sample's own bars) --
+  that's how "class həddi bütün datasetə baxılaraq optimallaşdırılmır"
+  is satisfied: there is nowhere for such optimization to happen.
+- If the horizon bar doesn't exist yet in `bars`, the result is
+  `INCOMPLETE_HORIZON` (`label_value=None`) rather than guessed, so it
+  feeds directly into `visual_dataset.py`'s existing
+  `PENDING_HORIZON` handling. `label_available_at` is the horizon bar's
+  own `end_at` -- the earliest instant the label could actually be
+  known, since it depends on that bar's close.
+- Found and fixed during testing: exact-boundary threshold values (bps
+  return landing precisely on `up_threshold_bps`/`down_threshold_bps`)
+  could misclassify as FLAT due to ordinary floating-point rounding
+  noise in the return calculation. Added a `1e-9` epsilon to the
+  threshold comparisons -- purely a float-noise guard, not a behaviour
+  change for real (non-boundary) data.
+- New `tests/backend/test_visual_label.py` (12 tests): validation,
+  incomplete-horizon handling, hand-verified UP/DOWN/FLAT
+  classification, both exact-threshold boundaries, and `label_spec_id`
+  determinism. Full backend regression: `583 passed`.
+
 ### Added — Phase 5 Visual AI: dataset lineage/manifest layer
 
 - Direct continuation of the canonical renderer (user said "davam et").

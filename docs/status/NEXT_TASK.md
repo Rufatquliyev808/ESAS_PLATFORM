@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest qatı tamamlanıb, API/model/frontend hələ yoxdur
+Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması tamamlanıb, API/model/frontend hələ yoxdur
 
 ## Tamamlanan (bu sessiya)
 
@@ -358,17 +358,30 @@ Phase 4-ün bağlanmış barlarından PNG şam qrafiki, heç bir yeni asılılı
 `test_visual_render.py` (16 test). Tam backend regressiyası:
 `553 passed`.
 
-**Phase 5 — dataset lineage/manifest qatı** (hələ commit edilməyib) —
-istifadəçinin "davam et" tapşırığı, renderin təbii davamı. Yeni
-`backend/app/analysis/visual_dataset.py`: müqavilənin lineage zəncirini
-(`sample_id → ... → split_id`) tətbiq edir; `build_visual_sample()`
-(label DƏYƏRİ hesablanmır, qəsdən kənarda — yalnız çağıranın verdiyini
-qeyd edir və səbəbiyyəti yoxlayır); `assign_time_based_splits()`
-(zaman-əsaslı, TƏSADÜFİ DEYİL, sərhəd-kəsən nümunələr purge edilir,
-səssiz silinmir); `build_dataset_manifest()` (heç nə silinmir). Yeni
-`test_visual_dataset.py` (18 test). Tam backend regressiyası:
-`571 passed`. Frontend/API/model təlimi hələ YOXDUR — qəsdən kiçik
-saxlanıldı.
+**Phase 5 — dataset lineage/manifest qatı** (commit `a736cc1`, push
+edilib, CI yaşıl) — istifadəçinin "davam et" tapşırığı, renderin təbii
+davamı. Yeni `backend/app/analysis/visual_dataset.py`: müqavilənin
+lineage zəncirini (`sample_id → ... → split_id`) tətbiq edir;
+`build_visual_sample()` (label DƏYƏRİ hesablanmır, qəsdən kənarda —
+yalnız çağıranın verdiyini qeyd edir və səbəbiyyəti yoxlayır);
+`assign_time_based_splits()` (zaman-əsaslı, TƏSADÜFİ DEYİL, sərhəd-kəsən
+nümunələr purge edilir, səssiz silinmir); `build_dataset_manifest()`
+(heç nə silinmir). Yeni `test_visual_dataset.py` (18 test). Tam backend
+regressiyası: `571 passed`.
+
+**Phase 5 — label hesablanması** (hələ commit edilməyib) —
+istifadəçinin "davam et" tapşırığı, dataset lineage qatının davamı.
+Yeni `backend/app/analysis/visual_label.py`: `compute_label()`
+əvvəlcədən qeydə alınmış `LabelSpec` həddinə görə UP/DOWN/FLAT
+təsnifatı, horizon tamamlanmayıbsa `INCOMPLETE_HORIZON`
+(`visual_dataset.py`-ın `PENDING_HORIZON`-una bağlanır). Dataset-üzrə
+optimallaşdırma məntiqi heç yerdə yoxdur (kod strukturu ilə qorunur).
+Test zamanı tapılan float dəyirmiləşdirmə bug-ı (dəqiq sərhəd
+dəyərləri) `1e-9` epsilon ilə düzəldildi. Yeni `test_visual_label.py`
+(12 test). Tam backend regressiyası: `583 passed`. Bununla Phase 5-in
+render→dataset→label əsas backend zənciri tamamlandı; qalan: eksperiment
+lifecycle/persistence API-si (DB miqrasiyası tələb edir, istifadəçinin
+ayrıca açıq təsdiqini gözləyəcək), model təlimi, frontend.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -414,16 +427,18 @@ saxlanıldı.
   tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
-- **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer VƏ dataset
-  lineage/manifest qatı tamamlandı. Növbəti təbii addımlar: (1)
-  eksperiment qeydiyyatı/lifecycle API-si (`draft → registered →
-  rendering → training → evaluated → accepted_for_shadow | rejected →
-  archived`, Pattern namizədi lifecycle-ı ilə eyni nümunə) və `POST
-  /api/v2/visual-datasets`/`visual-experiments` endpoint-ləri; (2) label
-  DƏYƏRİ hesablanması (bu ana qədər qəsdən kənarda saxlanılıb — Phase
-  4-ün hipotez/nəticə qaydasına uyğun ayrıca modul tələb edir); (3) model
-  təlimi (ML asılılığı, GPU qərarı) — daha sonrakı, daha böyük addımdır,
-  ayrıca istifadəçi qərarı tələb edir.
+- **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer, dataset
+  lineage/manifest qatı VƏ label hesablanması tamamlandı — bütöv
+  render→dataset→label backend zənciri hazırdır (hələ heç bir DB
+  cədvəli/API/frontend yoxdur, hər şey saf funksiyalardır). Növbəti
+  təbii addım: **eksperiment qeydiyyatı/lifecycle API-si** (`draft →
+  registered → rendering → training → evaluated → accepted_for_shadow |
+  rejected → archived`, Pattern namizədi lifecycle-ı ilə eyni nümunə) +
+  `POST /api/v2/visual-datasets`/`visual-experiments` endpoint-ləri —
+  BUNUN ÜÇÜN YENİ DB MİQRASİYASI TƏLƏB OLUNUR, AGENTS.md qaydasına görə
+  başlamazdan əvvəl istifadəçinin ayrıca açıq təsdiqi lazımdır. Ondan
+  sonra: model təlimi (ML asılılığı, GPU qərarı) — daha böyük, ayrıca
+  qərar tələb edən addım.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
   (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
   yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/

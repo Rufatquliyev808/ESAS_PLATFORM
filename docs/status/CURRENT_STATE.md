@@ -1,5 +1,29 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5 (Visual AI): label hesablanması
+
+- İstifadəçi "davam et" dedi — dataset lineage qatının təbii davamı.
+- Yeni `backend/app/analysis/visual_label.py`: `compute_label(bars, *,
+  observation_end_at, spec)` müşahidə pəncərəsinin son close-undan
+  `spec.horizon_bars` bar sonrakı close-a qədər return-u
+  UP/DOWN/FLAT kimi təsnifləndirir, əvvəlcədən qeydə alınmış
+  `LabelSpec` həddinə görə. `bars` tam tarixi seriya olmalıdır (müşahidə
+  pəncərəsi VƏ ondan sonrakı bar-lar) — renderer bu gələcək bar-ları
+  HEÇ VAXT görmür, yalnız bu ayrıca keçid görür.
+- `LabelSpec`-də dataset-üzrə optimallaşdırma məntiqi HEÇ YERDƏ yoxdur
+  (yalnız bir nümunənin öz bar-larına baxır) — "class həddi bütün
+  datasetə baxılaraq optimallaşdırılmır" qaydası belə təmin olunur.
+- Horizon bar hələ mövcud deyilsə → `INCOMPLETE_HORIZON`
+  (`label_value=None`), təxmin edilmir — birbaşa `visual_dataset.py`-ın
+  mövcud `PENDING_HORIZON` məntiqinə bağlanır.
+- **Test zamanı tapılıb düzəldilən:** dəqiq sərhəd dəyərləri (bps
+  return tam `up_threshold_bps`/`down_threshold_bps`-ə düşəndə) adi
+  float dəyirmiləşdirmə səs-küyü səbəbindən səhvən FLAT təsnif oluna
+  bilirdi. `1e-9` epsilon əlavə edildi (yalnız float-səs-küyü qorunması,
+  real data üçün davranış dəyişmir).
+- Yeni `test_visual_label.py` (12 test). Tam backend regressiyası:
+  `583 passed`.
+
 ## 2026-08-09 — Phase 5 (Visual AI): dataset lineage/manifest qatı
 
 - İstifadəçi "davam et" dedi — renderin təbii davamı.
