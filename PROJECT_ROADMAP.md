@@ -1,10 +1,12 @@
 # ESAS Platform — Project Roadmap
 
 Son yenilənmə: 2026-08-09
-Cari mərhələ: Phase 3 tamamlandı (backend + frontend + async job resursu);
-Phase 4-ün namizəd lifecycle-ı da tamamlandı (job-queue frontend səthi
-daxil). Növbəti mərhələ (Phase 5, Visual AI) istifadəçinin ayrıca
-təsdiqini gözləyir.
+Cari mərhələ: Phase 3 və Phase 4 tam tamamlanıb (backend + frontend +
+async job resursu, job-queue frontend səthi daxil). Phase 5 (Visual AI)
+istifadəçinin təsdiqi ilə başlayıb: deterministik qrafik renderi,
+dataset lineage/manifest, label hesablanması və eksperiment
+qeydiyyatı/persistence API-si + frontend paneli hazırdır. Real
+render→dataset icrası, model təlimi və SHADOW yoxlaması hələ yoxdur.
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -150,15 +152,17 @@ hazırlığı müqaviləsi:
 
 # Phase 5 — Visual AI
 
-Status: PLANNED
+Status: IN PROGRESS (renderer, dataset lineage/label, eksperiment
+qeydiyyatı/API + frontend paneli tamamlanıb, 2026-08-09; real
+render→dataset icrası, model təlimi və SHADOW yoxlaması hələ yoxdur)
 
 Deterministik qrafik renderi, visual dataset lineage-i, leakage qoruması, zaman əsaslı
 bölgü, model audit və statistik baseline müqayisəsi müqaviləsi:
 `docs/architecture/PHASE_5_VISUAL_AI_CONTRACT.md`
 
-- [ ] Qrafik görüntülərinin standartlaşdırılması
-- [ ] Visual pattern məlumat dəsti
-- [ ] Visual AI eksperimentləri
+- [x] Qrafik görüntülərinin standartlaşdırılması (`visual_render.py` — deterministik PNG, xam piksel checksum-u, heç bir yeni asılılıq)
+- [x] Visual pattern məlumat dəsti (`visual_dataset.py` lineage/manifest + `visual_label.py` label hesablanması — purge/embargo ilə zaman-əsaslı split, təsadüfi split qadağan)
+- [~] Visual AI eksperimentləri — YALNIZ qeydiyyat/persistence (migration `0012`, `visual_experiment_repository.py`, `POST/GET/archive` + frontend paneli) tamamlanıb; real render→dataset icrası, `rendering`/`training` keçidləri və model təlimi hələ YOXDUR
 - [ ] Statistik analizlə müqayisə
 - [ ] SHADOW rejimində yoxlama
 
@@ -260,15 +264,19 @@ multiple-testing, arxivləşdirmə, job-queue + frontend) tam tamamlanıb. Phase
 ilə tam tamamlanıb. Phase 9 SHADOW skeleti + admin panel əvvəlcədən tikilib
 (hələ "DESIGN READY — NOT IMPLEMENTED", real qərar generatoru yoxdur).
 
-Ümumi inkişaf axınına görə ("Statistical Analysis → Pattern Discovery →
-Knowledge Base → ...") növbəti böyük mərhələ **Phase 5 — Visual AI**-dır
-(hələ PLANNED, deterministik qrafik render, visual pattern dataset-i,
-visual AI eksperimentləri). Bu, əhəmiyyətli yeni həcmdə işdir və
-başlanmazdan əvvəl istifadəçinin ayrıca təsdiqini tələb edir. Alternativ
-olaraq, Phase 3/4 daxilində qalan kiçik, "yalnız istəsə" namizədlər də var
-(real broker təqvimi ilə SA-006-nı rəsmi rejimə keçirmək, canlı konsensus
-panelinin hərəkətli ortalamalarının genişləndirilməsi, likvidlik
-seqmentasiyasına əlavə şərtlər) — bunlar Phase 5-dən daha kiçik addımlardır.
+**Phase 5 — Visual AI istifadəçinin təsdiqi ilə başlayıb və davam edir.**
+Deterministik qrafik renderi, dataset lineage/manifest, label hesablanması
+və eksperiment qeydiyyatı/persistence API-si (backend + frontend)
+tamamlanıb. Növbəti addım: real render→dataset icrası üçün əvvəlcə
+`RenderSpec`/`LabelSpec`-in faktiki dəyərlərinin (təkcə hash yox) haradan
+bərpa ediləcəyi həll edilməlidir (mümkün yeni sxem dəyişikliyi), sonra
+`rendering`/`training` lifecycle keçidləri, sonra model təlimi (ML
+asılılığı, GPU qərarı — ayrıca böyük qərar).
+
+Alternativ olaraq, Phase 3/4 daxilində qalan kiçik, "yalnız istəsə"
+namizədlər də var (real broker təqvimi ilə SA-006-nı rəsmi rejimə
+keçirmək, likvidlik seqmentasiyasına əlavə şərtlər) — bunlar Phase 5-dən
+daha kiçik addımlardır.
 
 Ətraflı tapşırıq:
 
