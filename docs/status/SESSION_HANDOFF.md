@@ -273,9 +273,9 @@ Son yenilənmə: 2026-08-07
   `statistical-analysis-ui.test.mjs`. Frontend: lint təmiz, `14/14` test,
   build uğurlu. Bu ilə Phase 3-ün SA-001-SA-007 müqaviləsi HƏM backend HƏM
   frontend baxımından tam əhatə olundu.
-- **YENİ, HƏLƏ COMMIT EDİLMƏYİB: Phase 3 statistik analiz üçün async
-  job/persistence resursu.** İstifadəçi "Async job resursu (tövsiyə)"
-  seçdi. Ətraflı: `docs/status/CURRENT_STATE.md`. Qısaca: **icrası zamanı
+- **Phase 3 statistik analiz üçün async job/persistence resursu**
+  (commit `af8eb7c`, PUSH EDİLİB, CI yaşıl). İstifadəçi "Async job resursu
+  (tövsiyə)" seçdi. Qısaca: **icrası zamanı
   real maneə aşkarlandı** — `analysis_jobs` (migration `0007`) real
   bazaya artıq tətbiq edilib, `job_type` CHECK-i yalnız
   `pattern_candidate_backtest`-i qəbul edir, migration sistemi
@@ -303,26 +303,14 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `348717e`-ə qədər (job-queue,
-  multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
-  real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
-  portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
-  seriyası, Phase 3 SA-002 volatilite, əsas ekranın canlı indikator
-  konsensusu paneli (RSI+EMA), 5 yeni osilator, boş CI-düzəliş commit-i,
-  likvidlik-səviyyəsi reaksiya statistikası (yalnız backend), likvidlik
-  sisteminin qalan 3 addımı, tarixi hərəkət diapazonu, Phase 3 SA-003
-  spread davranışı, Phase 3 SA-004 tick sürəti, Phase 3 SA-005
-  tick-volume/flags, Phase 3 SA-002 tamamlanması (tick-to-tick return
-  std), Phase 3 SA-007 bazar rejimi namizədləri, Phase 3 SA-006 sessiya
-  müqayisəsi, Phase 3 SA-001-SA-007 üçün frontend panel, Phase 3 async
-  job/persistence resursu (migration `0011`), migration `0010`/`0011`-in
-  real bazaya tətbiqinin sənədləşdirilməsi, job-queue-nun frontend səthi,
-  `PROJECT_ROADMAP.md`-nin faktiki vəziyyətə uyğunlaşdırılması — hamısı
-  push edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Canlı konsensus panelinin hərəkətli
-  ortalamalarının genişləndirilməsi (kod + testlər + sənədlər), yuxarıda
-  təsvir edilib. AGENTS.md qaydasına görə commit/push istifadəçinin
-  ayrıca açıq təsdiqini gözləyir.
+- **`main` origin ilə tam sinxrondur, HEAD = `7a6f1b7`** (bu sessiyanın
+  bütün işi — Phase 3 SA-001-SA-007 (backend+frontend+async job resursu),
+  job-queue frontend səthi, `PROJECT_ROADMAP.md` yeniləməsi, canlı
+  konsensus panelinin hərəkətli ortalamaları — daxil olmaqla). Hazırda
+  commit edilməmiş kod dəyişikliyi YOXDUR. Ətraflı, kronoloji dəyişiklik
+  siyahısı üçün: `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı
+  "Tamamlanan" qeydləri. AGENTS.md qaydasına görə hər yeni dəyişikliyin
+  push-u istifadəçinin ayrıca açıq təsdiqini gözləyəcək.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni

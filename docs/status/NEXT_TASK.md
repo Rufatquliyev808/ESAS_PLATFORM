@@ -307,8 +307,8 @@ bitmişdi). Növbəti böyük mərhələ (Phase 5, Visual AI) qeyd edildi,
 istifadəçinin ayrıca təsdiqini gözləyir.
 
 **Canlı konsensus panelinin hərəkətli ortalamaları genişləndirildi**
-(hələ commit edilməyib) — istifadəçinin seçimi (Phase 5-dən əvvəl kiçik
-namizəd). Yeni `backend/app/analysis/moving_averages.py`:
+(commit `7a6f1b7`, push edilib, CI yaşıl) — istifadəçinin seçimi
+(Phase 5-dən əvvəl kiçik namizəd). Yeni `backend/app/analysis/moving_averages.py`:
 `calculate_sma()` (yeni) + `build_moving_average_set()` (4 dövr ×
 SMA/EMA = 8 seriya; `indicators.py`-a TOXUNMUR, `calculate_ema()`-nı
 birbaşa çağırır, təkrar EMA implementasiyası yoxdur).

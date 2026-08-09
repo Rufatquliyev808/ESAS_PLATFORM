@@ -1,7 +1,7 @@
 # ESAS Platform — Phase 2 worker və scheduler müqaviləsi
 
 Versiya: 1.0  
-Status: **DESIGN READY — NOT IMPLEMENTED**  
+Status: **IMPLEMENTED — job növbəsi, worker, claim/lease/fencing/retry və frontend job-queue səthi tamamlanıb**  
 Tətbiq şərti: Phase 1-in bütün qəbul qapılarının uğurla bağlanması
 
 ## Məqsəd
