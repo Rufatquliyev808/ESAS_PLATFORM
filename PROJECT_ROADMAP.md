@@ -1,7 +1,10 @@
 # ESAS Platform — Project Roadmap
 
-Son yenilənmə: 2026-08-06
-Cari mərhələ: Phase 3 (Phase 4-ün namizəd lifecycle-ı əsasən tamamlanıb)
+Son yenilənmə: 2026-08-09
+Cari mərhələ: Phase 3 tamamlandı (backend + frontend + async job resursu);
+Phase 4-ün namizəd lifecycle-ı da tamamlandı (job-queue frontend səthi
+daxil). Növbəti mərhələ (Phase 5, Visual AI) istifadəçinin ayrıca
+təsdiqini gözləyir.
 Ümumi status: IN PROGRESS
 
 ## Missiya
@@ -109,7 +112,10 @@ Rəsmi qəbul sübutu və qərar: `docs/releases/PHASE_2_STABLE.md`
 
 # Phase 3 — Statistik analiz
 
-Status: IN PROGRESS
+Status: COMPLETED (SA-001-SA-007 müqaviləsi backend + frontend + async job
+resursu ilə tam əhatə olunub, 2026-08-09; SA-006 təqvim-yoxdur
+deqradasiya rejimindədir — real broker təqvimi qurulmayıb). Rəsmi
+`STABLE` elanı (Phase 2 üçün olduğu kimi) hələ edilməyib.
 
 Tədqiqat qeydiyyatı, məlumat sızması, zaman bölgüsü, holdout, walk-forward,
 multiple-testing, xərclər və qəbul qapıları:
@@ -118,28 +124,29 @@ multiple-testing, xərclər və qəbul qapıları:
 Volatilite, spread, tick sürəti, sessiya və bazar rejimi nəticə müqaviləsi:
 `docs/architecture/PHASE_3_STATISTICAL_ANALYSIS_CONTRACT.md`
 
-- [ ] Volatilite analizi
-- [ ] Spread davranışı
-- [ ] Həcm analizi
-- [ ] Sessiya müqayisələri
-- [ ] Bazar rejimlərinin aşkarlanması
-- [ ] Statistik hipotezlərin yoxlanması
-- [ ] Nəticələrin etibarlılıq göstəriciləri
+- [x] Volatilite analizi (SA-002 — pəncərə range-i, tick-to-tick return std-i, robust MAD)
+- [x] Spread davranışı (SA-003)
+- [x] Həcm analizi (SA-005 — MT5 tick-volume, real birja həcmi kimi etiketlənmədən)
+- [x] Sessiya müqayisələri (SA-006 — təqvim-yoxdur deqradasiya rejimində, yalnız UTC saat qrupları)
+- [x] Bazar rejimlərinin aşkarlanması (SA-007 — neytral, dataset-daxili rejim qrupları)
+- [x] Statistik hipotezlərin yoxlanması (baseline müqayisələri, Bonferroni-düzəlişli seqmentasiya, purge/embargo)
+- [x] Nəticələrin etibarlılıq göstəriciləri (hər modulda n/insufficient_data/etibar intervalı)
 
 # Phase 4 — Pattern və texniki analiz
 
-Status: IN PROGRESS
+Status: COMPLETED (namizəd lifecycle-ı, backtest v1, job-queue və frontend
+tam işlək, 2026-08-09). Rəsmi `STABLE` elanı hələ edilməyib.
 
 Deterministik bar, causal indikator, pattern namizədi, realist backtest və SHADOW
 hazırlığı müqaviləsi:
 `docs/architecture/PHASE_4_PATTERN_TECHNICAL_ANALYSIS_CONTRACT.md`
 
-- [ ] Pattern namizədlərinin yaradılması
+- [x] Pattern namizədlərinin yaradılması (draft generator, 6 hipotez, qeydiyyat)
 - [x] Texniki analiz modulları
-- [ ] Backtesting
+- [x] Backtesting (v1, bütün 6 hipotez, 4/4 baseline müqayisəsi, purge/embargo, job-queue + UI)
 - [x] Nəticələrin statistik müqayisəsi
-- [ ] Uğursuz eksperimentlərin arxivləşdirilməsi
-- [ ] SHADOW mərhələsi üçün hazırlıq
+- [x] Uğursuz eksperimentlərin arxivləşdirilməsi (`archived`, `rejected`, `insufficient_evidence`, `invalid_leakage`, `blocked_by_data_quality`)
+- [x] SHADOW mərhələsi üçün hazırlıq (`accepted_for_shadow` klassifikasiyası hazırdır; Phase 9-un özü hələ PLANNED-dır)
 
 # Phase 5 — Visual AI
 
@@ -248,12 +255,20 @@ Knowledge Base governance-i və deterministik rollback müqaviləsi:
 ## Cari növbəti tapşırıq
 
 Phase 4-ün namizəd lifecycle-ı (persistence, backtest v1, baseline müqayisəsi,
-multiple-testing, arxivləşdirmə, job-queue) əsasən tamamlanıb; Phase 9 SHADOW
-skeleti + admin panel də əvvəlcədən tikilib. Cari iş Phase 3-ə (statistik
-analiz) keçib: ilk artım kimi pəncərə/resampling təməli və SA-001 (gəlir
-seriyası) tamamlandı. Qalan SA-002-SA-007 (volatilite, spread, tick sürəti,
-tick-volume, sessiya, rejim) növbəti addımlardır. Növbəti konkret addım
-istifadəçinin ayrıca təsdiqi ilə seçilir.
+multiple-testing, arxivləşdirmə, job-queue + frontend) tam tamamlanıb. Phase 3
+(statistik analiz, SA-001-SA-007) də backend, frontend və async job resursu
+ilə tam tamamlanıb. Phase 9 SHADOW skeleti + admin panel əvvəlcədən tikilib
+(hələ "DESIGN READY — NOT IMPLEMENTED", real qərar generatoru yoxdur).
+
+Ümumi inkişaf axınına görə ("Statistical Analysis → Pattern Discovery →
+Knowledge Base → ...") növbəti böyük mərhələ **Phase 5 — Visual AI**-dır
+(hələ PLANNED, deterministik qrafik render, visual pattern dataset-i,
+visual AI eksperimentləri). Bu, əhəmiyyətli yeni həcmdə işdir və
+başlanmazdan əvvəl istifadəçinin ayrıca təsdiqini tələb edir. Alternativ
+olaraq, Phase 3/4 daxilində qalan kiçik, "yalnız istəsə" namizədlər də var
+(real broker təqvimi ilə SA-006-nı rəsmi rejimə keçirmək, canlı konsensus
+panelinin hərəkətli ortalamalarının genişləndirilməsi, likvidlik
+seqmentasiyasına əlavə şərtlər) — bunlar Phase 5-dən daha kiçik addımlardır.
 
 Ətraflı tapşırıq:
 
