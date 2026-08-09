@@ -1,5 +1,63 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Job-queue-nun frontend səthi (pattern-candidate-backtest VƏ statistical-analysis job-ları)
+
+- İstifadəçi seçdi: "Job-queue-nun frontend səthi (tövsiyə)" — hər iki
+  job növünün artıq real işlək (VƏ real bazaya tətbiq edilmiş) async
+  API-ları var idi, amma heç birinin UI-si yox idi.
+- Yeni `frontend/app/async-job-panel.tsx`: ortaq, iki job növü arasında
+  paylaşılan `useAsyncJob<TResult>()` hook-u:
+  - `create(body)` — idempotency key (`crypto.randomUUID()`) ilə `POST`,
+    tamamlanmayıbsa avtomatik poll başladır.
+  - Poll: `GET .../{job_id}`, 2 saniyə aralıqla, son vəziyyətə çatana
+    qədər (`completed`/`cancelled`/`failed`).
+  - `cancel()` — `POST .../{job_id}/cancel`.
+  - `onCompleted(result)` — **useEffect-dən DEYİL**, birbaşa poll/create
+    handler-inin özündən çağırılır (React-in "effect body-də setState
+    çağırma" lint qaydasına toxunmamaq üçün — ilk versiyada bu qaydaya
+    toxunmuşdu, ESLint tutdu, `useAsyncJob`-a `onCompleted` parametri
+    əlavə edərək düzəldildi).
+  - `JobStatusBadge` (mövcud `.status-pill`/`.tone-*` CSS-dən istifadə
+    edir) + `isJobCancellable()` helper-i.
+- `statistical-analysis-panel.tsx`-ə: mövcud "Analizi hesabla" düyməsinin
+  yanında yeni "Job kimi başlat (asinxron)" düyməsi (eyni forma
+  state-indən istifadə edir). `onCompleted: setResult` — asinxron nəticə
+  MƏHZ sinxron yolun istifadə etdiyi eyni state-ə axır, ona görə eyni 7
+  SA kartı render olunur, ayrıca/təkrarlanan görünüş yoxdur.
+- `pattern-candidates-panel.tsx`-ə: yeni `BacktestJobCell`
+  sub-komponenti — hər qeydə alınmış namizəd sətri üçün AYRICA
+  `useAsyncJob` nüsxəsi (hook-lar dövr içində birbaşa çağırıla bilmədiyi
+  üçün alt-komponent lazım idi). "Job kimi backtest et" düyməsi mövcud
+  sync "Backtest et" düyməsinin yanında. Tamamlandıqda eyni `backtests`
+  state-i yenilənir və `loadRegistered()` çağırılır — sync yolla EYNİ
+  nəticə göstərilir (ssenari siyahısı, lifecycle keçidi).
+- Minimal yeni CSS: `.async-job-meta` (kiçik flex sətir — status
+  badge/cəhd sayı/ləğv düyməsi), qalan hər şey mövcud class-lardan.
+- **Canlı brauzerdə tam sınandı** (birdəfəlik scratch backend port 8002
+  + scratch SQLite, birdəfəlik frontend port 5173 — port 5174 əvvəlcə
+  sınandı, backend-in CORS allow-list-i (yalnız 3000/5173) tərəfindən
+  rədd edildi, bu, gələcək sessiyalar üçün faydalı bir xatırlatmadır;
+  real production 8000/3000 toxunulmadan): backend-in öz repository
+  funksiyaları ilə tamamlanmış replay sessiyası + qeydə alınmış
+  `structure_break_long` pattern namizədi yaradıldı.
+  - "Job kimi backtest et" klikləndi: job_id `job_` prefiksi ilə qayıtdı
+    (mövcud `analysis_jobs` cədvəli), bir poll dövründə tamamlandı,
+    ssenari siyahısı və lifecycle vəziyyəti ("Backtest edilib") sync
+    yolla eyni göründü, "Nəticələndir" düyməsi düzgün göründü.
+  - Statistik analiz panelində M1-ə keçilib "Job kimi başlat (asinxron)"
+    klikləndi: job_id `saj_` prefiksi ilə qayıtdı (yeni
+    `statistical_analysis_jobs` cədvəli), tamamlandı, bütün 7 SA kartı
+    M1-əsaslı dəyərlərlə yeniləndi (20 pəncərə, defolt M5-dəki 4-dən
+    artıq) — asinxron nəticənin sync ilə EYNİ render yoluna axdığını
+    təsdiqlədi.
+  - Konsol xətası yox, sorğu storm-u yox hər iki halda.
+- Yoxlama: yeni `tests/async-job-panel-ui.test.mjs` (3 test — hook
+  export-ları mövcuddur və buy/sell dili yoxdur, hər iki panel hook-u öz
+  job endpoint-inə bağlayır, statistik analiz panelinin `onCompleted`-i
+  ortaq `setResult`-a axır). Frontend: lint təmiz, `17/17` test,
+  production build uğurlu. Backend toxunulmayıb (hər iki job API-si
+  əvvəlki artımda artıq göndərilib və sınanıb).
+
 ## 2026-08-09 — Migration `0010` və `0011` real bazaya tətbiq edildi
 
 - İstifadəçi "platformanı yenidən işə sal" dedi, sonra migration

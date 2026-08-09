@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { JobStatusBadge, isJobCancellable, useAsyncJob } from "./async-job-panel";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 
@@ -164,6 +165,40 @@ function PatternSlotCard({ slot, registeredCandidateId, registering, onRegister 
   );
 }
 
+function BacktestJobCell({ candidateId, token, onUnauthorized, onCompleted }: {
+  candidateId: string;
+  token: string;
+  onUnauthorized: () => void;
+  onCompleted: (candidateId: string, backtest: PersistedPatternCandidateBacktest) => void;
+}) {
+  const asyncJob = useAsyncJob<PersistedPatternCandidateBacktest>({
+    createUrl: `/api/v2/pattern-candidates/${candidateId}/backtest-jobs`,
+    detailUrlFor: (jobId) => `/api/v2/pattern-candidates/${candidateId}/backtest-jobs/${jobId}`,
+    cancelUrlFor: (jobId) => `/api/v2/pattern-candidates/${candidateId}/backtest-jobs/${jobId}/cancel`,
+    token, onUnauthorized,
+    onCompleted: (backtest) => onCompleted(candidateId, backtest),
+  });
+
+  return (
+    <div className="pattern-candidate-backtest-cell">
+      <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.create({})}>
+        {asyncJob.busy ? "Növbəyə əlavə olunur…" : "Job kimi backtest et"}
+      </button>
+      {asyncJob.job && (
+        <div className="async-job-meta">
+          <JobStatusBadge state={asyncJob.job.state} />
+          <span className="card-detail">Cəhd {asyncJob.job.attempt_count}/{asyncJob.job.max_attempts}</span>
+          {asyncJob.job.error_code && <span className="card-detail danger-text">{asyncJob.job.error_code}</span>}
+          {isJobCancellable(asyncJob.job) && (
+            <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.cancel()}>Ləğv et</button>
+          )}
+        </div>
+      )}
+      {asyncJob.error && <span className="card-detail danger-text">{asyncJob.error}</span>}
+    </div>
+  );
+}
+
 export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("M5");
   const [barLimit, setBarLimit] = useState(500);
@@ -256,6 +291,11 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
       setRegisteredError(failure instanceof Error ? failure.message : "Backtest icra edilə bilmədi.");
     } finally { setBacktestingId(null); }
   }, [loadRegistered, onUnauthorized, token]);
+
+  const handleJobBacktestCompleted = useCallback((candidateId: string, backtest: PersistedPatternCandidateBacktest) => {
+    setBacktests((current) => ({ ...current, [candidateId]: backtest }));
+    void loadRegistered();
+  }, [loadRegistered]);
 
   const classifyCandidate = useCallback(async (candidate: PersistedPatternCandidate) => {
     setClassifyingId(candidate.candidate_id);
@@ -393,6 +433,12 @@ export function PatternCandidatesPanel({ sessionId, symbol, token, onUnauthorize
                                 {classifyingId === candidate.candidate_id ? "Nəticələndirilir…" : "Nəticələndir"}
                               </button>
                             )}
+                            <BacktestJobCell
+                              candidateId={candidate.candidate_id}
+                              token={token}
+                              onUnauthorized={onUnauthorized}
+                              onCompleted={handleJobBacktestCompleted}
+                            />
                           </div>
                         )}
                       </td>

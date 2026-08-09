@@ -277,8 +277,28 @@ Frontend toxunulmayıb (backend-only, API-səviyyəli artım).
 --allow-production`) — ehtiyat nüsxə + doğrulama (`tick_events`/
 `replay_sessions` sayları dəyişməz, `quick_check=ok`), real
 backend/frontend yenidən başladıldı, yeni job endpoint-i `401` (`no such
-table` YOX) qaytardı. Ətraflı: `docs/status/CURRENT_STATE.md`. Kod
-dəyişikliyi deyil, commit tələb olunmadı.
+table` YOX) qaytardı. Kod dəyişikliyi deyil, commit tələb olunmadı.
+
+**Job-queue-nun frontend səthi** (commit hələ göndərilməyib) —
+istifadəçinin seçimi (Phase 3 tam bitdikdən sonra). Yeni
+`async-job-panel.tsx`: ortaq `useAsyncJob()` hook-u (idempotency key ilə
+yaratma, 2s aralıqla `GET .../{job_id}` poll, ləğv, `onCompleted` —
+useEffect-dən DEYİL, birbaşa poll/create handler-indən çağırılır ki,
+"effect içində setState" lint qaydasına toxunmasın) + `JobStatusBadge` +
+`isJobCancellable()`. `statistical-analysis-panel.tsx`-ə "Job kimi
+başlat (asinxron)" düyməsi (nəticə eyni `setResult`-a axır, ayrıca
+görünüş yoxdur). `pattern-candidates-panel.tsx`-ə `BacktestJobCell`
+sub-komponenti (cədvəl sətri başına bir hook nüsxəsi) — "Job kimi
+backtest et" düyməsi, tamamlandıqda eyni `backtests` state-i yenilənir
+və `loadRegistered()` çağırılır (sync yolla eyni nəticə). **Canlı
+brauzerdə tam sınandı** (scratch backend port 8002 + scratch DB,
+scratch frontend port 5173 — port 5174 CORS allow-list-də olmadığı üçün
+rədd edildi, real 8000/3000 toxunulmadan): həm pattern-candidate
+backtest job-u (`job_` prefiksi) həm statistical-analysis job-u (`saj_`
+prefiksi) tam icra olundu, nəticələr sync yol ilə eyni render-ə axdı,
+konsol xətası yox. Yeni `async-job-panel-ui.test.mjs` (3 test).
+Frontend: lint təmiz, `17/17` test, build uğurlu. Backend
+toxunulmayıb.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -296,7 +316,9 @@ dəyişikliyi deyil, commit tələb olunmadı.
   bölmələr (champion/challenger müqayisə mühərriki section 7,
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.
-- Job-queue-nun frontend səthi — yalnız istifadəçi ayrıca istəsə.
+- **Job-queue-nun frontend səthi tamamlandı** (`async-job-panel.tsx`,
+  həm pattern-candidate-backtest həm statistical-analysis job-ları üçün,
+  təfərrüat yuxarıda).
 - **Phase 3 statistik analiz — SA-001-SA-007 müqaviləsi, frontend paneli
   VƏ async job resursu tam əhatə olunub** (pəncərə/resampling təməli +
   SA-001 gəlir seriyası + SA-002 pəncərə volatilitesi (tick-to-tick return

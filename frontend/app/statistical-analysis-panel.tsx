@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { JobStatusBadge, isJobCancellable, useAsyncJob } from "./async-job-panel";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 
@@ -147,6 +148,14 @@ export function StatisticalAnalysisPanel({ sessionId, symbol, token, onUnauthori
     return () => window.clearTimeout(initialLoad);
   }, [loadAnalysis]);
 
+  const asyncJob = useAsyncJob<StatisticalAnalysis>({
+    createUrl: `/api/v2/replay-sessions/${sessionId}/statistical-analysis-jobs`,
+    detailUrlFor: (jobId) => `/api/v2/replay-sessions/${sessionId}/statistical-analysis-jobs/${jobId}`,
+    cancelUrlFor: (jobId) => `/api/v2/replay-sessions/${sessionId}/statistical-analysis-jobs/${jobId}/cancel`,
+    token, onUnauthorized,
+    onCompleted: setResult,
+  });
+
   return (
     <section className="technical-analysis" aria-labelledby="statistical-analysis-title">
       <div className="analysis-heading">
@@ -171,7 +180,22 @@ export function StatisticalAnalysisPanel({ sessionId, symbol, token, onUnauthori
         </label>
         <label>Minimum nümunə<input type="number" min="1" max="10000" value={minimumSampleSize} onChange={(event) => setMinimumSampleSize(Number(event.target.value))} /></label>
         <button type="submit" disabled={loading}>{loading ? "Hesablanır…" : "Analizi hesabla"}</button>
+        <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.create({ timeframe, minimum_sample_size: minimumSampleSize })}>
+          {asyncJob.busy ? "Növbəyə əlavə olunur…" : "Job kimi başlat (asinxron)"}
+        </button>
       </form>
+
+      {asyncJob.job && (
+        <div className="async-job-meta">
+          <JobStatusBadge state={asyncJob.job.state} />
+          <span className="card-detail">Cəhd {asyncJob.job.attempt_count}/{asyncJob.job.max_attempts}</span>
+          {asyncJob.job.error_code && <span className="card-detail danger-text">{asyncJob.job.error_code}</span>}
+          {isJobCancellable(asyncJob.job) && (
+            <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.cancel()}>Job-u ləğv et</button>
+          )}
+        </div>
+      )}
+      {asyncJob.error && <div className="analysis-error" role="alert"><strong>Job xətası</strong><span>{asyncJob.error}</span></div>}
 
       {error && <div className="analysis-error" role="alert"><strong>Analiz göstərilə bilmədi</strong><span>{error}</span><button type="button" onClick={() => void loadAnalysis()}>Yenidən yoxla</button></div>}
 

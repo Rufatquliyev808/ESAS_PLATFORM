@@ -303,7 +303,7 @@ Son yenilənmə: 2026-08-07
 
 ## Commit/push vəziyyəti
 
-- `main` origin ilə sinxrondur `9930dd6`-ə qədər (job-queue,
+- `main` origin ilə sinxrondur `983b2a9`-ə qədər (job-queue,
   multiple-testing, Phase 9 manifest/event skeleti, bütün baseline-lar,
   real DB migrasiyası, `blocked_by_data_quality`, `invalid_leakage`, Phase 9
   portfolio ledger, Phase 9 admin API + frontend, Phase 3 SA-001 gəlir
@@ -315,8 +315,12 @@ Son yenilənmə: 2026-08-07
   tick-volume/flags, Phase 3 SA-002 tamamlanması (tick-to-tick return
   std), Phase 3 SA-007 bazar rejimi namizədləri, Phase 3 SA-006 sessiya
   müqayisəsi, Phase 3 SA-001-SA-007 üçün frontend panel, Phase 3 async
-  job/persistence resursu (migration `0011`) — hamısı push edilib, CI-də
-  yaşıl). Hazırda commit edilməmiş kod dəyişikliyi yoxdur.
+  job/persistence resursu (migration `0011`), migration `0010`/`0011`-in
+  real bazaya tətbiqinin sənədləşdirilməsi — hamısı push edilib, CI-də
+  yaşıl).
+- **Yeni, hələ commit edilməyib:** Job-queue-nun frontend səthi (kod +
+  testlər + sənədlər), yuxarıda təsvir edilib. AGENTS.md qaydasına görə
+  commit/push istifadəçinin ayrıca açıq təsdiqini gözləyir.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni
@@ -337,11 +341,15 @@ Son yenilənmə: 2026-08-07
 
 - Backend: `.venv/Scripts/python -m pytest tests/backend -q` — bu maşında
   `pytest-of-user` temp qovluğuna icazə xətası var; `--basetemp` ilə başqa
-  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Bu artımla (async
-  job resursu) `528 passed`.
-- Frontend bu artımda (async job resursu, yalnız backend) toxunulmayıb,
-  əvvəlki artımda (statistical-analysis-panel.tsx) lint təmiz, `14/14`
-  test, production build uğurlu idi.
+  qovluq göstərmək lazımdır (məs. scratchpad daxilində). Job-queue
+  frontend artımı backend-ə toxunmayıb, `528 passed` dəyişməz qalır.
+- Frontend bu artımla (`async-job-panel.tsx` + iki panelin inteqrasiyası)
+  lint təmiz, `17/17` test, production build uğurlu. **Canlı brauzerdə
+  tam sınandı** — həm pattern-candidate-backtest job-u (`job_` prefiksi)
+  həm statistical-analysis job-u (`saj_` prefiksi) uğurla tamamlandı,
+  nəticələr sync yolla eyni render-ə axdı, konsol xətası yox. Port
+  5174 CORS allow-list-i tərəfindən rədd edildi (yalnız 3000/5173 icazəli
+  — gələcək sessiyalar üçün qeyd).
 - Real production backend/frontend bu sessiyada iki dəfə yenidən
   başladıldı: (1) istifadəçinin sərəncamı ilə (`platformanin backend ve
   frontedini yeniden ise sal`) — kod dəyişikliyini yükləmək üçün; (2)
@@ -415,26 +423,22 @@ Son yenilənmə: 2026-08-07
 ## Növbəti mərhələ
 
 Seçilməyib. **Phase 3-ün SA-001-SA-007 statistik analiz müqaviləsi indi
-backend, frontend VƏ async job resursu baxımından tam əhatə olunub**:
-SA-001 (gəlir seriyası), SA-002 (pəncərə volatilitesi, tick-to-tick
-return std-i daxil), SA-003 (spread davranışı), SA-004 (tick
-sürəti/interval), SA-005 (tick-volume/flags), SA-006 (sessiya
-müqayisəsi, təqvim-yoxdur deqradasiya rejimində — yalnız UTC saat
-dilimləri, adlandırılmış sessiya yox) və SA-007 (bazar rejimi
-namizədləri) — bütün 7 bölmə üçün `statistical-analysis-panel.tsx`
-("Statistik analiz" bölməsi, canlı brauzerdə tam sınanıb) VƏ `POST/GET
-.../statistical-analysis-jobs` (migration `0011` real bazaya tətbiq
-edildi, 2026-08-09); əsas ekrana canlı indikator konsensusu paneli əlavə
-edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD, ADX)
-genişləndirildi; likvidlik-səviyyəsi reaksiya statistikasının
-istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
-canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
-range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`, hamısı
-yalnız istifadəçi ayrıca istəsə): real versiyalanmış broker təqvimi
-qurulsa SA-006-nı "rəsmi" rejimə keçirmək, hərəkətli ortalamaların
-genişləndirilməsi (SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə
-şərtlər, Phase 9-un qalan bölmələri, job-queue-nun
-frontend səthi. İstifadəçinin ayrıca təsdiqi tələb olunur.
+backend, frontend VƏ async job resursu baxımından tam əhatə olunub**
+(SA-001-SA-007 hamısı, `statistical-analysis-panel.tsx`, `POST/GET
+.../statistical-analysis-jobs` — migration `0011` real bazaya tətbiq
+edildi, 2026-08-09) **VƏ job-queue-nun frontend səthi tamamlandı**
+(`async-job-panel.tsx`, həm pattern-candidate-backtest həm
+statistical-analysis job-ları üçün, canlı brauzerdə tam sınanıb); əsas
+ekrana canlı indikator konsensusu paneli əlavə edildi və 5 yeni
+osilatorla (Stochastic, CCI, Williams %R, MACD, ADX) genişləndirildi;
+likvidlik-səviyyəsi reaksiya statistikasının istifadəçinin təsvir etdiyi
+4 addımı da (çox-taymfreym, seqmentasiya, canlı UI, jurnal) tamamlandı,
+üzərinə tarixi hərəkət diapazonu (excursion range) əlavə edildi.
+Namizədlər (`docs/status/NEXT_TASK.md`, hamısı yalnız istifadəçi ayrıca
+istəsə): real versiyalanmış broker təqvimi qurulsa SA-006-nı "rəsmi"
+rejimə keçirmək, hərəkətli ortalamaların genişləndirilməsi (SMA, əlavə
+dövrlər), likvidlik seqmentasiyasına əlavə şərtlər, Phase 9-un qalan
+bölmələri. İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
 

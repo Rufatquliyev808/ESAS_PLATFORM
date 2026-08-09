@@ -8,6 +8,60 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Frontend surface for the job-queue (pattern-candidate-backtest and statistical-analysis jobs)
+
+- Both job-queue-backed endpoint pairs (pattern-candidate backtests,
+  statistical-analysis) had working, tested async APIs but no UI --
+  the user asked for one now that both are real.
+- New `frontend/app/async-job-panel.tsx`: a shared `useAsyncJob()` hook
+  (create with an idempotency key, poll `GET .../{job_id}` every 2s until
+  a terminal state, cancel, an `onCompleted` hook fired from inside the
+  poll/create handler itself -- not a `useEffect` reading `job` state,
+  which would trip the "no setState in an effect body" lint rule) plus a
+  small `JobStatusBadge` (reusing the existing `.status-pill`/`.tone-*`
+  classes) and an `isJobCancellable()` helper. Generic over the result
+  type, since the two job types return entirely different result shapes.
+- `statistical-analysis-panel.tsx`: a new "Job kimi başlat (asinxron)"
+  button next to the existing "Analizi hesabla" button, using the same
+  timeframe/minimum-sample-size form state. The job's `onCompleted` feeds
+  the exact same `setResult` the synchronous path uses, so the async
+  result renders through the identical seven SA-section cards -- no
+  separate/duplicated result view.
+- `pattern-candidates-panel.tsx`: new `BacktestJobCell` sub-component (one
+  `useAsyncJob` instance per registered-candidate table row, since hooks
+  can't be called in a loop) rendering a "Job kimi backtest et" button
+  next to the existing sync "Backtest et" button. On completion it
+  updates the same `backtests` state and re-triggers `loadRegistered()`,
+  so the async path produces byte-identical results to the sync path
+  (verified live: scenario list, lifecycle-state transition to
+  `evaluated`, and the "Nəticələndir" button all appeared exactly as the
+  sync path already did).
+- Minimal new CSS: `.async-job-meta` (a small flex row for the status
+  badge/attempt-count/cancel button), reusing every other class that
+  already existed.
+- **Verified live in browser** (disposable scratch backend on port 8002 +
+  scratch SQLite DB + disposable frontend on port 5173 -- port 5174 was
+  tried first and rejected by the backend's CORS allow-list, a reminder
+  that only 3000/5173 are configured; real production 8000/3000
+  untouched throughout): seeded a completed replay session plus a
+  registered `structure_break_long` pattern candidate via the backend's
+  own repository functions. Clicked "Job kimi backtest et": job_id came
+  back prefixed `job_` (existing pattern-candidate-backtest table),
+  completed in one poll cycle, scenario list and lifecycle-state update
+  matched the sync path exactly. Clicked "Job kimi başlat (asinxron)" on
+  the statistics panel after switching to M1: job_id came back prefixed
+  `saj_` (new statistical-analysis table), completed, and all seven SA
+  cards updated with the M1-derived values (20 windows, up from 4 at the
+  default M5) -- confirming the async result flows through the same
+  render path as the synchronous one. No console errors, no request
+  storm in either case.
+- Verification: new `tests/async-job-panel-ui.test.mjs` (3 tests -- hook
+  exports present with no action-language leaks, both panels wire the
+  hook to their respective job endpoints, the statistics panel's
+  `onCompleted` feeds the shared `setResult`). Frontend: lint clean,
+  `17/17` test, production build successful. Backend untouched (both job
+  APIs already shipped and tested in the previous increment).
+
 ### Applied migrations 0010 and 0011 to the real production database
 
 - User asked to restart the real platform and continue, then explicitly
