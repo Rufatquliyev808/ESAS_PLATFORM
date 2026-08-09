@@ -30,6 +30,7 @@ from backend.app.models.replay_command import ReplayCommandRequest
 from backend.app.models.visual_experiment import (
     VisualExperimentArchiveRequest,
     VisualExperimentRegisterRequest,
+    VisualExperimentRenderingJobRequest,
 )
 from backend.app.models.pattern_candidate import (
     PatternCandidateArchiveRequest,
@@ -1082,6 +1083,77 @@ def visual_experiment_archive(
     except VisualExperimentConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     return {"data": asdict(experiment), "meta": {"api_version": "2"}}
+
+
+@app.post(
+    "/api/v2/visual-experiments/{experiment_id}/rendering-jobs",
+    status_code=202,
+)
+def visual_experiment_rendering_job_create(
+    experiment_id: str,
+    job_request: VisualExperimentRenderingJobRequest,
+    background_tasks: BackgroundTasks,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        experiment = get_visual_experiment(experiment_id)
+    except VisualExperimentNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Visual experiment was not found") from error
+    if experiment.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Visual experiment belongs to another user")
+    try:
+        job = enqueue_job(
+            job_type="visual_experiment_rendering", created_by=user_code,
+            payload={"experiment_id": experiment_id},
+            related_resource_id=experiment_id, idempotency_key=job_request.idempotency_key,
+            priority=job_request.priority,
+        )
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobQueueFullError as error:
+        raise HTTPException(status_code=429, detail=str(error)) from error
+    background_tasks.add_task(
+        drain_queue, worker_id=f"bg-{job.job_id}", job_type="visual_experiment_rendering",
+    )
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/visual-experiments/{experiment_id}/rendering-jobs/{job_id}")
+def visual_experiment_rendering_job_detail(
+    experiment_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != experiment_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    if job.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Analysis job belongs to another user")
+    return {"data": asdict(job), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/visual-experiments/{experiment_id}/rendering-jobs/{job_id}/cancel")
+def visual_experiment_rendering_job_cancel(
+    experiment_id: str,
+    job_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        job = get_job(job_id)
+    except AnalysisJobNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Analysis job was not found") from error
+    if job.related_resource_id != experiment_id:
+        raise HTTPException(status_code=404, detail="Analysis job was not found")
+    try:
+        cancelled = request_cancel(job_id=job_id, actor=user_code)
+    except AnalysisJobOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except AnalysisJobConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(cancelled), "meta": {"api_version": "2"}}
 
 
 # Phase 9 SHADOW validation contract skeleton (docs/architecture/

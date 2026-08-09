@@ -18,17 +18,26 @@ from backend.app.database.pattern_candidate_repository import (
 )
 from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
 from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
+from backend.app.analysis.visual_materializer import BarFingerprintMismatchError
 from backend.app.database.replay_session_repository import (
     ReplaySessionNotFoundError,
     ReplayTransitionConflictError,
     get_replay_session,
 )
+from backend.app.database.visual_dataset_repository import VisualDatasetManifestConflictError
+from backend.app.database.visual_experiment_repository import (
+    VisualExperimentConflictError,
+    VisualExperimentNotFoundError,
+    VisualExperimentOwnershipError,
+)
+from backend.app.storage.artifact_store import ArtifactIntegrityError
 from backend.app.strategies.pattern_candidate_backtest import (
     PatternCandidateBacktestUnsupportedError,
 )
 from backend.app.strategies.replay_pattern_candidates import (
     evaluate_replay_pattern_candidate_backtest,
 )
+from backend.app.strategies.visual_experiment_materialization import render_visual_experiment
 
 
 # Errors that mean "this exact request can never succeed" -- retrying would
@@ -46,6 +55,12 @@ _NON_RETRYABLE_ERRORS = (
     ReplayTransitionConflictError,
     ReplayDatasetChangedError,
     ValueError,
+    VisualExperimentNotFoundError,
+    VisualExperimentOwnershipError,
+    VisualExperimentConflictError,
+    VisualDatasetManifestConflictError,
+    BarFingerprintMismatchError,
+    ArtifactIntegrityError,
 )
 
 
@@ -75,9 +90,18 @@ def _run_statistical_analysis_job(job: AnalysisJob) -> dict[str, object]:
     return asdict(analysis)
 
 
+def _run_visual_experiment_rendering_job(job: AnalysisJob) -> dict[str, object]:
+    payload = job.payload
+    result = render_visual_experiment(
+        str(payload["experiment_id"]), actor=job.created_by, actor_role="operator",
+    )
+    return asdict(result)
+
+
 _DISPATCH = {
     "pattern_candidate_backtest": _run_pattern_candidate_backtest_job,
     "statistical_analysis": _run_statistical_analysis_job,
+    "visual_experiment_rendering": _run_visual_experiment_rendering_job,
 }
 
 

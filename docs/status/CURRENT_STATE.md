@@ -1,5 +1,31 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5: `registered → rendering` üçün asinxron job/API resursu
+
+- "Qalan sıra ilə davam et" tapşırığı — artifact store-dan sonra
+  növbəti addım job queue/API inteqrasiyası idi.
+  `render_visual_experiment()` yalnız sinxron funksiya çağırışı idi,
+  HTTP vasitəsilə çağırmaq/izləmək mümkün deyildi — bu, mövcud
+  job-queue nümunəsini (bu sessiyada artıq 2 dəfə sınanmış:
+  `analysis_jobs`, `statistical_analysis_jobs`) təkrarlayaraq həll
+  edildi.
+- Yeni migration `0014_visual_experiment_rendering_jobs.sql` (yalnız
+  test/scratch bazada, `0012`/`0013` kimi): `visual_experiment_rendering_jobs`
+  + append-only audit — mövcud job cədvəlləri ilə eyni struktur
+  (claim/lease/fencing, retry, idempotency, per-user limit).
+- `analysis_job_repository.py`-a üçüncü job növü əlavə edildi (prefix
+  `vrj_`) — mövcud generic funksiyalar heç bir dəyişiklik tələb
+  etmədi, prefix-əsaslı marşrutlaşdırma pulsuz genişləndi.
+- `analysis_job_worker.py`-a `_run_visual_experiment_rendering_job()`
+  handler-i əlavə edildi, bar-fingerprint uyğunsuzluğu və ownership
+  konfliktləri non-retryable siyahısına əlavə edildi.
+- Yeni `VisualExperimentRenderingJobRequest` + 3 endpoint (`POST/GET
+  .../rendering-jobs`, `POST .../cancel`) — statistical-analysis-jobs
+  nümunəsini dəqiq təkrarlayır.
+- 19 yeni test. Tam backend regressiyası: `696 passed`. Real
+  production baza (`0011`-də qalır) və xidmətlər toxunulmadan
+  təsdiqləndi.
+
 ## 2026-08-09 — Yerli content-addressed artifact store; PNG-lər indi real saxlanılır
 
 - İstifadəçinin öz boşluq analizi düzgün tapdı: "PNG artefaktları

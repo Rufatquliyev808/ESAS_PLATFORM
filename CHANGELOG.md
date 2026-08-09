@@ -8,6 +8,51 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: async job/API resource for `registered -> rendering`
+
+- Continuing the remaining-order plan: job queue/API integration was
+  next after the artifact store. `render_visual_experiment()` was a
+  synchronous function call with no way to invoke it over HTTP or track
+  progress -- this closes that gap using the exact job-queue pattern
+  already proven twice this session (`analysis_jobs` for pattern-
+  candidate backtests, `statistical_analysis_jobs` for Phase 3).
+- New migration `0014_visual_experiment_rendering_jobs.sql` (test/
+  scratch DB only, same as `0012`/`0013` -- not applied to production):
+  `visual_experiment_rendering_jobs` + append-only
+  `visual_experiment_rendering_job_audit`, identical shape to the
+  existing job tables (claim/lease/fencing, retry, idempotency-key
+  dedup, per-user active-job cap) -- a new job type gets its own table
+  rather than widening an already-production-applied CHECK constraint,
+  same reasoning as migrations 0007/0011.
+- `analysis_job_repository.py`: added `"visual_experiment_rendering"`
+  to `JOB_TYPES` and `_JOB_TABLES` (prefix `vrj_`) -- the existing
+  generic `enqueue_job`/`get_job`/`claim_next_job`/`request_cancel`/
+  `queue_metrics` functions needed no other changes; the prefix-based
+  table routing already generalizes to a third job type for free.
+- `analysis_job_worker.py`: new `_run_visual_experiment_rendering_job()`
+  handler calling `render_visual_experiment()` directly, registered in
+  `_DISPATCH`. Added `VisualExperimentNotFoundError`/
+  `VisualExperimentOwnershipError`/`VisualExperimentConflictError`/
+  `VisualDatasetManifestConflictError`/`BarFingerprintMismatchError`/
+  `ArtifactIntegrityError` to the non-retryable error list -- a bar-
+  fingerprint mismatch or ownership conflict will never resolve itself
+  on retry.
+- New `VisualExperimentRenderingJobRequest` model (just
+  `idempotency_key`/`priority` -- every render/label/split parameter is
+  already frozen on the experiment at registration, nothing new to
+  configure at job-creation time) and three endpoints mirroring the
+  statistical-analysis-jobs pattern exactly: `POST
+  /api/v2/visual-experiments/{experiment_id}/rendering-jobs` (202),
+  `GET .../rendering-jobs/{job_id}`, `POST
+  .../rendering-jobs/{job_id}/cancel`.
+- 19 new tests (8 API -- create/idempotency/404s/ownership/cancel-
+  terminal-conflict/fail-closed-via-job, 3 repository-level job-type
+  separation/collision/metrics-independence, plus migration-runner
+  count updates). Full backend regression: `696 passed`. Real
+  production database, services confirmed untouched (still at
+  migration `0011`) -- verified via a fresh `from backend.app.main
+  import app` sanity check and a live health probe.
+
 ### Added — Local content-addressed artifact store; PNG artifacts now actually persisted
 
 - User's own gap analysis after the last increment correctly identified

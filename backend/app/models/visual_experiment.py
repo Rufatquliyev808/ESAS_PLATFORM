@@ -52,3 +52,14 @@ class VisualExperimentArchiveRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     expected_state_version: int = Field(ge=0)
+
+
+class VisualExperimentRenderingJobRequest(BaseModel):
+    """No render/label/split parameters here -- everything the materializer
+    needs is already frozen on the experiment at registration time.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    priority: int = Field(default=3, ge=1, le=5)

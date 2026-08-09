@@ -55,7 +55,10 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   `storage/artifact_store.py`) də tamamlandı — PNG-lər artıq RAM-da
   yox, real diskdə saxlanılır (`artifact_checksum` sütunu ilə,
   `image_checksum`-dan fərqli — wiring zamanı tapılan real bug
-  düzəldildi). Migration `0012`/`0013` YALNIZ test bazasındadır.
+  düzəldildi). **Async job/API resursu** da tamamlandı (migration
+  `0014`, `POST/GET .../visual-experiments/{id}/rendering-jobs`,
+  `vrj_` prefiksi, mövcud job-queue nümunəsinin 3-cü tətbiqi).
+  Migration `0012`/`0013`/`0014` YALNIZ test bazasındadır.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin
@@ -342,14 +345,15 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 
 ## Commit/push vəziyyəti
 
-- **`origin/main` = `e2d1972`** (bu HEAD push edilib — tick-axını
-  diaqnostikası, Phase 7 dayandırma qərarı, Phase 5 materializer v1 VƏ
-  `registered → rendering` job/lifecycle persistence daxil olmaqla).
-  **Push edilməmiş YEREL commit** olacaq: yerli content-addressed
-  artifact store (bu turda edilir, `685 passed`). Real production baza
-  HƏLƏ `0011`-dədir — migration `0012`/`0013` istifadəçinin açıq qərarı
-  ilə tətbiq edilmədi. İstifadəçinin qaydasına görə push yalnız açıq
-  tapşırıqla ediləcək. Ətraflı, kronoloji dəyişiklik siyahısı üçün:
+- **`origin/main` = `78afa71`** (bu HEAD push edilib — tick-axını
+  diaqnostikası, Phase 7 dayandırma qərarı, Phase 5 materializer v1,
+  `registered → rendering` job/lifecycle persistence VƏ yerli
+  content-addressed artifact store daxil olmaqla). **Push edilməmiş
+  YEREL commit** olacaq: async job/API resursu (bu turda edilir,
+  `696 passed`). Real production baza HƏLƏ `0011`-dədir — migration
+  `0012`/`0013`/`0014` istifadəçinin açıq qərarı ilə tətbiq edilmədi.
+  İstifadəçinin qaydasına görə push yalnız açıq tapşırıqla ediləcək.
+  Ətraflı, kronoloji dəyişiklik siyahısı üçün:
   `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan"
   qeydləri.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
