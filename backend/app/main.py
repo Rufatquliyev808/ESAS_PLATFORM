@@ -27,6 +27,10 @@ from backend.app.models.bridge_status import (
 )
 from backend.app.models.replay_session import ReplaySessionCreateRequest
 from backend.app.models.replay_command import ReplayCommandRequest
+from backend.app.models.visual_experiment import (
+    VisualExperimentArchiveRequest,
+    VisualExperimentRegisterRequest,
+)
 from backend.app.models.pattern_candidate import (
     PatternCandidateArchiveRequest,
     PatternCandidateBacktestJobRequest,
@@ -97,6 +101,14 @@ from backend.app.database.analysis_job_repository import (
     get_job,
     queue_metrics,
     request_cancel,
+)
+from backend.app.database.visual_experiment_repository import (
+    VisualExperimentConflictError,
+    VisualExperimentNotFoundError,
+    VisualExperimentOwnershipError,
+    archive_visual_experiment,
+    get_visual_experiment,
+    register_visual_experiment,
 )
 from backend.app.workers.analysis_job_worker import drain_queue
 from backend.app.models.shadow import (
@@ -957,6 +969,75 @@ def analysis_jobs_metrics(
     _: str = Depends(require_dashboard_session),
 ) -> dict[str, object]:
     return {"data": queue_metrics("pattern_candidate_backtest"), "meta": {"api_version": "2"}}
+
+
+# Phase 5 Visual AI experiment registration (docs/architecture/
+# PHASE_5_VISUAL_AI_CONTRACT.md). Registration only persists the frozen
+# render/label/split configuration -- it does not render images, build a
+# dataset, or train anything. Those are separate, later lifecycle
+# transitions not implemented yet.
+@app.post("/api/v2/visual-experiments", status_code=status.HTTP_201_CREATED)
+def visual_experiment_register(
+    register_request: VisualExperimentRegisterRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        session = get_replay_session(register_request.session_id)
+    except ReplaySessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Replay session was not found") from error
+    if session.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Replay session belongs to another user")
+    try:
+        experiment = register_visual_experiment(
+            created_by=user_code, actor_role="operator",
+            replay_session_id=register_request.session_id, symbol=register_request.symbol,
+            timeframe=register_request.timeframe,
+            source_bar_fingerprint=register_request.source_bar_fingerprint,
+            render_spec_id=register_request.render_spec_id,
+            label_spec_id=register_request.label_spec_id,
+            observation_window_bars=register_request.observation_window_bars,
+            train_end_at=register_request.train_end_at,
+            validation_end_at=register_request.validation_end_at,
+        )
+    except VisualExperimentOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"data": asdict(experiment), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/visual-experiments/{experiment_id}")
+def visual_experiment_detail(
+    experiment_id: str,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        experiment = get_visual_experiment(experiment_id)
+    except VisualExperimentNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Visual experiment was not found") from error
+    if experiment.created_by != user_code:
+        raise HTTPException(status_code=403, detail="Visual experiment belongs to another user")
+    return {"data": asdict(experiment), "meta": {"api_version": "2"}}
+
+
+@app.post("/api/v2/visual-experiments/{experiment_id}/archive")
+def visual_experiment_archive(
+    experiment_id: str,
+    archive_request: VisualExperimentArchiveRequest,
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    try:
+        experiment = archive_visual_experiment(
+            experiment_id=experiment_id, actor=user_code, actor_role="operator",
+            expected_state_version=archive_request.expected_state_version,
+        )
+    except VisualExperimentNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Visual experiment was not found") from error
+    except VisualExperimentOwnershipError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except VisualExperimentConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"data": asdict(experiment), "meta": {"api_version": "2"}}
 
 
 # Phase 9 SHADOW validation contract skeleton (docs/architecture/

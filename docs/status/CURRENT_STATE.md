@@ -1,5 +1,38 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5 (Visual AI): eksperiment qeydiyyatı/persistence
+
+- İstifadəçi DB miqrasiyası tələb edən qata başlamağı açıq təsdiqlədi
+  (AGENTS.md qaydasına görə əvvəlcə soruşuldu).
+- Yeni migration `0012_visual_experiments.sql`: `visual_experiments`
+  cədvəli + append-only `visual_experiment_audit` cədvəli,
+  `pattern_candidates`-in strukturunu dəqiq təkrarlayır.
+- **Bu sessiyada əvvəl tapılan `analysis_jobs` CHECK-constraint
+  bloklanmasından çıxarılan dərs tətbiq edildi**: `lifecycle_state`
+  CHECK-i müqavilənin TAM 14 vəziyyətini indi sadalayır (`registered`,
+  `rendering`, `training`, `evaluated`, `accepted_for_shadow`,
+  `rejected`, `archived`, `blocked_by_data_quality`, `invalid_leakage`,
+  `non_reproducible`, `out_of_distribution`, `insufficient_evidence`,
+  `failed`, `cancelled`) — hətta yalnız `registered`/`archived` bu
+  addımda koda bağlı olsa da — çünki CHECK production-a çatandan sonra
+  bu migration sistemi onu genişləndirə bilmir.
+- Yeni `backend/app/database/visual_experiment_repository.py`:
+  `register_visual_experiment()` yalnız DONDURULMUŞ konfiqurasiyanı
+  saxlayır — heç bir şəkil render etmir, dataset qurmur, təlim
+  aparmır. `experiment_id` konfiqurasiyadan deterministik hash-lənir
+  (eyni sxem `render_spec_id`/`sample_id`/`label_spec_id` kimi) — eyni
+  konfiqurasiyanın təkrar qeydiyyatı təbii idempotentdir.
+  `get_visual_experiment()`/`archive_visual_experiment()` (yalnız
+  `registered → archived`, hələlik) tamamlayır.
+- Yeni `backend/app/models/visual_experiment.py` + 3 endpoint
+  `main.py`-da: `POST /api/v2/visual-experiments`, `GET
+  /api/v2/visual-experiments/{experiment_id}`, `POST
+  .../{experiment_id}/archive`.
+- Yeni `test_visual_experiment_repository.py` (12 test) +
+  `test_visual_experiments_api.py` (10 test). Tam backend regressiyası:
+  `605 passed`. Miqrasiya YALNIZ test bazasına tətbiq edildi — real
+  production bazaya YOX (bu, ayrıca açıq təsdiq tələb edəcək).
+
 ## 2026-08-09 — Phase 5 (Visual AI): label hesablanması
 
 - İstifadəçi "davam et" dedi — dataset lineage qatının təbii davamı.

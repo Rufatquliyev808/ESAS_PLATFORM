@@ -8,6 +8,50 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 Visual AI: experiment registration/persistence
+
+- User approved starting the DB-backed layer (asked explicitly per
+  AGENTS.md before creating a migration). New migration
+  `0012_visual_experiments.sql`: `visual_experiments` table +
+  append-only `visual_experiment_audit` table, mirroring
+  `pattern_candidates`'s structure exactly (owner index, session FK,
+  optimistic-concurrency `state_version`, audit triggers).
+- **Lesson applied from the `analysis_jobs` CHECK-constraint blocker
+  found earlier this session**: the `lifecycle_state` CHECK constraint
+  lists the FULL 14-state set from the contract (`registered`,
+  `rendering`, `training`, `evaluated`, `accepted_for_shadow`,
+  `rejected`, `archived`, `blocked_by_data_quality`, `invalid_leakage`,
+  `non_reproducible`, `out_of_distribution`, `insufficient_evidence`,
+  `failed`, `cancelled`) up front, even though only
+  `registered`/`archived` are reachable by code in this increment --
+  once a CHECK constraint reaches production, this migration system
+  can't widen it (no `DROP`/`UPDATE` allowed), so the states had to be
+  named now rather than added piecemeal.
+- New `backend/app/database/visual_experiment_repository.py`:
+  `register_visual_experiment()` persists only the FROZEN configuration
+  (symbol, timeframe, source bar fingerprint, render_spec_id,
+  label_spec_id, observation window size, train/validation split
+  boundaries) -- it does not render images, build a dataset, or train
+  anything; those stay separate, later transitions. `experiment_id` is
+  derived deterministically from the configuration (same hash-based
+  scheme as `render_spec_id`/`sample_id`/`label_spec_id`), so
+  re-registering identical configuration is naturally idempotent.
+  `get_visual_experiment()` and `archive_visual_experiment()` (registered
+  -> archived only, for now) round out the increment.
+- New `backend/app/models/visual_experiment.py` and three endpoints in
+  `main.py`: `POST /api/v2/visual-experiments`, `GET
+  /api/v2/visual-experiments/{experiment_id}`, `POST
+  /api/v2/visual-experiments/{experiment_id}/archive` -- same
+  auth/ownership/error-mapping pattern as the pattern-candidates
+  endpoints.
+- New `tests/backend/test_visual_experiment_repository.py` (12 tests)
+  and `tests/backend/test_visual_experiments_api.py` (10 tests).
+  `test_migration_runner.py` updated for the new migration count/version.
+  Full backend regression: `605 passed`. Migration applied to the test
+  database only (as every test run does) -- NOT applied to the real
+  production database, which per AGENTS.md needs its own separate
+  explicit approval.
+
 ### Added — Phase 5 Visual AI: label computation
 
 - Direct continuation ("davam et") of the dataset lineage layer. New

@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması tamamlanıb, API/model/frontend hələ yoxdur
+Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API tamamlanıb, model təlimi/frontend hələ yoxdur
 
 ## Tamamlanan (bu sessiya)
 
@@ -379,9 +379,23 @@ optimallaşdırma məntiqi heç yerdə yoxdur (kod strukturu ilə qorunur).
 Test zamanı tapılan float dəyirmiləşdirmə bug-ı (dəqiq sərhəd
 dəyərləri) `1e-9` epsilon ilə düzəldildi. Yeni `test_visual_label.py`
 (12 test). Tam backend regressiyası: `583 passed`. Bununla Phase 5-in
-render→dataset→label əsas backend zənciri tamamlandı; qalan: eksperiment
-lifecycle/persistence API-si (DB miqrasiyası tələb edir, istifadəçinin
-ayrıca açıq təsdiqini gözləyəcək), model təlimi, frontend.
+render→dataset→label əsas backend zənciri tamamlandı.
+
+**Phase 5 — eksperiment qeydiyyatı/persistence API-si** (hələ commit
+edilməyib) — istifadəçinin açıq təsdiqi (DB miqrasiyası tələb etdiyi
+üçün əvvəlcə soruşuldu). Yeni migration `0012_visual_experiments.sql`
+(`pattern_candidates`-in strukturunu təkrarlayır; `lifecycle_state`
+CHECK-i TAM 14 vəziyyəti indi sadalayır — `analysis_jobs`
+CHECK-blokundan çıxarılan dərs). Yeni
+`visual_experiment_repository.py`: `register_visual_experiment()`
+(yalnız DONDURULMUŞ konfiqurasiya, `experiment_id` deterministik
+hash-lənir, təbii idempotent), `get_visual_experiment()`,
+`archive_visual_experiment()`. Yeni `models/visual_experiment.py` + 3
+endpoint (`POST/GET .../visual-experiments`, `POST .../archive`). Yeni
+`test_visual_experiment_repository.py` (12 test) +
+`test_visual_experiments_api.py` (10 test). Tam backend regressiyası:
+`605 passed`. **Miqrasiya YALNIZ test bazasına tətbiq edildi, real
+production bazaya YOX** — bu ayrıca açıq təsdiq tələb edəcək.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -428,17 +442,15 @@ ayrıca açıq təsdiqini gözləyəcək), model təlimi, frontend.
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
 - **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer, dataset
-  lineage/manifest qatı VƏ label hesablanması tamamlandı — bütöv
-  render→dataset→label backend zənciri hazırdır (hələ heç bir DB
-  cədvəli/API/frontend yoxdur, hər şey saf funksiyalardır). Növbəti
-  təbii addım: **eksperiment qeydiyyatı/lifecycle API-si** (`draft →
-  registered → rendering → training → evaluated → accepted_for_shadow |
-  rejected → archived`, Pattern namizədi lifecycle-ı ilə eyni nümunə) +
-  `POST /api/v2/visual-datasets`/`visual-experiments` endpoint-ləri —
-  BUNUN ÜÇÜN YENİ DB MİQRASİYASI TƏLƏB OLUNUR, AGENTS.md qaydasına görə
-  başlamazdan əvvəl istifadəçinin ayrıca açıq təsdiqi lazımdır. Ondan
-  sonra: model təlimi (ML asılılığı, GPU qərarı) — daha böyük, ayrıca
-  qərar tələb edən addım.
+  lineage/manifest qatı, label hesablanması VƏ eksperiment
+  qeydiyyatı/persistence API-si tamamlandı (yalnız `registered ↔
+  archived` keçidi işlək; `rendering/training/evaluated/...` state-ləri
+  CHECK-də var, amma koda hələ bağlanmayıb). Növbəti təbii addımlar: (1)
+  real render→dataset→label icrası — qeydiyyatdan keçmiş bir
+  eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq (fayl
+  sistemi/blob saxlanma qərarı tələb edir); (2) `rendering`/`training`
+  state keçidləri; (3) model təlimi (ML asılılığı, GPU qərarı) — daha
+  böyük, ayrıca qərar tələb edən addım; (4) frontend paneli.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
   (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
   yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/
