@@ -16,14 +16,11 @@ from backend.app.database.visual_dataset_repository import get_dataset_manifest,
 from backend.app.database.visual_experiment_repository import (
     PersistedVisualExperiment,
     VisualExperimentOwnershipError,
+    begin_training_atomically,
     block_experiment_for_data_quality,
     get_visual_experiment,
-    start_training,
 )
-from backend.app.database.visual_training_repository import (
-    PersistedVisualTrainingConfig,
-    persist_training_configuration,
-)
+from backend.app.database.visual_training_repository import PersistedVisualTrainingConfig
 from backend.app.storage.artifact_store import ArtifactIntegrityError, get_artifact, has_artifact
 
 
@@ -144,6 +141,12 @@ def start_visual_experiment_training(
     Performs no actual model training, adds no ML dependency, and does not
     touch the frontend or production database -- this increment is the
     lifecycle contract and its safety gates only.
+
+    The `training` transition, its audit row, and the persisted training
+    configuration are written in ONE atomic step
+    (`begin_training_atomically()`) rather than as two separate repository
+    calls -- an experiment can never end up `training` with no recorded
+    configuration, even if the process crashes mid-way.
     """
     validate_model_spec(model_spec)
     validate_training_spec(training_spec)
@@ -171,13 +174,10 @@ def start_visual_experiment_training(
         training_spec_id=computed_training_spec_id,
     )
 
-    trained_experiment = start_training(
+    trained_experiment, training_config = begin_training_atomically(
         experiment_id=experiment.experiment_id, actor=actor, actor_role=actor_role,
         expected_state_version=experiment.state_version,
-    )
-
-    training_config = persist_training_configuration(
-        experiment_id=experiment.experiment_id, model_spec=model_spec, training_spec=training_spec,
+        model_spec=model_spec, training_spec=training_spec,
         model_spec_id=computed_model_spec_id, training_spec_id=computed_training_spec_id,
         training_configuration_checksum=checksum, dataset_fingerprint=manifest.dataset_fingerprint,
     )

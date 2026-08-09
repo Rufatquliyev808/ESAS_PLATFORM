@@ -5,8 +5,13 @@ import json
 
 from backend.app.analysis.bars import TIMEFRAME_SECONDS
 from backend.app.analysis.visual_label import LabelSpec, label_spec_id as compute_label_spec_id
+from backend.app.analysis.visual_model_spec import ModelSpec, TrainingSpec
 from backend.app.analysis.visual_render import RenderSpec, render_spec_id as compute_render_spec_id
 from backend.app.database.connection import get_connection
+from backend.app.database.visual_training_repository import (
+    PersistedVisualTrainingConfig,
+    VisualTrainingConfigConflictError,
+)
 
 
 class VisualExperimentNotFoundError(LookupError):
@@ -465,4 +470,137 @@ def block_experiment_for_data_quality(
         expected_state_version=expected_state_version,
         allowed_from_states=TRAINABLE_FROM_STATES, next_state="blocked_by_data_quality",
         action="block_for_data_quality",
+    )
+
+
+def begin_training_atomically(
+    *,
+    experiment_id: str,
+    actor: str,
+    actor_role: str,
+    expected_state_version: int,
+    model_spec: ModelSpec,
+    training_spec: TrainingSpec,
+    model_spec_id: str,
+    training_spec_id: str,
+    training_configuration_checksum: str,
+    dataset_fingerprint: str,
+) -> tuple[PersistedVisualExperiment, PersistedVisualTrainingConfig]:
+    """Atomically performs the entire `rendering -> training` step: the
+    lifecycle transition, its audit row, and the `visual_training_configs`
+    row, all in ONE SQLite transaction. Replaces what used to be two
+    separate calls from the orchestration layer (`start_training()` then
+    `persist_training_configuration()`) -- if a process crashed between
+    those two calls, an experiment could be left in `training` with no
+    recorded configuration, an unrecoverable in-between state. Here, either
+    every write commits together or none of them do (the `with
+    get_connection()` block rolls back the whole transaction on any
+    exception, exactly like every other transition in this module).
+
+    Idempotent: if a training configuration already exists for this
+    experiment with a MATCHING checksum, this is a no-op that returns the
+    current experiment + that configuration -- safe to retry after a caller
+    is unsure whether a previous attempt committed. A training
+    configuration that already exists with a DIFFERENT checksum is refused
+    (`VisualTrainingConfigConflictError`) -- checked BEFORE the lifecycle
+    state is even inspected, since a configuration mismatch is the more
+    specific, more informative error regardless of what state the
+    experiment happens to be in by then.
+    """
+    normalized_experiment_id = _required_text(experiment_id, "experiment_id")
+    normalized_actor = _required_text(actor, "actor")
+    normalized_role = _required_text(actor_role, "actor_role")
+
+    with get_connection() as connection:
+        connection.execute("BEGIN IMMEDIATE;")
+
+        existing_config = connection.execute(
+            "SELECT * FROM visual_training_configs WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+        if existing_config is not None:
+            if existing_config["training_configuration_checksum"] != training_configuration_checksum:
+                raise VisualTrainingConfigConflictError(
+                    "experiment already has a training configuration with a different checksum"
+                )
+            experiment_row = connection.execute(
+                "SELECT * FROM visual_experiments WHERE experiment_id = ?;",
+                (normalized_experiment_id,),
+            ).fetchone()
+            if experiment_row is None:
+                raise VisualExperimentNotFoundError("visual experiment was not found")
+            return _row_to_experiment(experiment_row), _row_to_training_config(existing_config)
+
+        row = connection.execute(
+            "SELECT * FROM visual_experiments WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+        if row is None:
+            raise VisualExperimentNotFoundError("visual experiment was not found")
+        if row["created_by"] != normalized_actor:
+            raise VisualExperimentOwnershipError("visual experiment belongs to another user")
+        if row["state_version"] != expected_state_version:
+            raise VisualExperimentConflictError("visual experiment changed since it was loaded")
+        if row["lifecycle_state"] not in TRAINABLE_FROM_STATES:
+            raise VisualExperimentConflictError(
+                f"cannot transition to training from state {row['lifecycle_state']}"
+            )
+        previous_state = row["lifecycle_state"]
+
+        now = datetime.now(UTC).isoformat(timespec="microseconds")
+        updated = connection.execute(
+            """
+            UPDATE visual_experiments
+            SET lifecycle_state = 'training', state_version = state_version + 1, updated_at = ?
+            WHERE experiment_id = ? AND state_version = ?;
+            """,
+            (now, normalized_experiment_id, expected_state_version),
+        )
+        if updated.rowcount != 1:
+            raise VisualExperimentConflictError("visual experiment changed during transition")
+
+        connection.execute(
+            """
+            INSERT INTO visual_experiment_audit
+            (experiment_id, actor, actor_role, action, previous_state, next_state, occurred_at)
+            VALUES (?, ?, ?, 'start_training', ?, 'training', ?);
+            """,
+            (normalized_experiment_id, normalized_actor, normalized_role, previous_state, now),
+        )
+
+        model_spec_json = json.dumps(asdict(model_spec), sort_keys=True, separators=(",", ":"))
+        training_spec_json = json.dumps(asdict(training_spec), sort_keys=True, separators=(",", ":"))
+        connection.execute(
+            """
+            INSERT INTO visual_training_configs
+            (
+                experiment_id, model_spec_id, model_spec_json, training_spec_id,
+                training_spec_json, training_configuration_checksum, dataset_fingerprint, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            (
+                normalized_experiment_id, model_spec_id, model_spec_json, training_spec_id,
+                training_spec_json, training_configuration_checksum, dataset_fingerprint, now,
+            ),
+        )
+
+        experiment_row = connection.execute(
+            "SELECT * FROM visual_experiments WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+        config_row = connection.execute(
+            "SELECT * FROM visual_training_configs WHERE experiment_id = ?;",
+            (normalized_experiment_id,),
+        ).fetchone()
+
+    return _row_to_experiment(experiment_row), _row_to_training_config(config_row)
+
+
+def _row_to_training_config(row: object) -> PersistedVisualTrainingConfig:
+    return PersistedVisualTrainingConfig(
+        experiment_id=row["experiment_id"], model_spec_id=row["model_spec_id"],
+        training_spec_id=row["training_spec_id"],
+        training_configuration_checksum=row["training_configuration_checksum"],
+        dataset_fingerprint=row["dataset_fingerprint"], created_at=row["created_at"],
     )

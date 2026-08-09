@@ -1,5 +1,32 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: training başlanğıcının atomikləşdirilməsi
+
+- İstifadəçinin tapdığı risk: əvvəlki addımda `start_training()` və
+  `persist_training_configuration()` İKİ AYRI tranzaksiya idi — proses bu
+  ikisi arasında dayanarsa, eksperiment `training` vəziyyətində, amma
+  konfiqurasiyasız (bərpaolunmaz aralıq vəziyyət) qala bilərdi.
+- `visual_experiment_repository.py`-ə yeni `begin_training_atomically()`:
+  lifecycle keçidi + audit yazısı + `visual_training_configs` INSERT-i
+  EYNİ SQLite tranzaksiyasında (bir `with get_connection()` bloku, bir
+  commit, istənilən xətada tam rollback). Eyni checksum üçün idempotent;
+  fərqli checksum üçün `VisualTrainingConfigConflictError` (lifecycle
+  vəziyyətindən ƏVVƏL yoxlanır). Mövcud `start_training()`/
+  `persist_training_configuration()` dəyişməz qalıb (öz testləri ilə) —
+  yalnız orkestrasiya qatı artıq onları ayrıca çağırmır.
+- `strategies/visual_experiment_training.py` indi tək atomik çağırış
+  edir.
+- 6 yeni test: happy-path + idempotent təkrar + fərqli-checksum konflikt,
+  VƏ 3 parametrləşdirilmiş crash-injection testi (real sqlite3
+  connection-u saran, 3 yazı nöqtəsinin (lifecycle UPDATE, audit INSERT,
+  config INSERT) hər birində tranzaksiya ortasında xəta yaradan) — hər
+  biri təsdiqləyir ki, real SQLite rollback eksperimenti tam əvvəlki
+  vəziyyətə (`rendering`, konfiqurasiyasız, audit-siz) qaytarır. 1 köhnə
+  test yeni idempotent davranışa uyğun 2 testlə əvəz edildi. Tam backend
+  regressiyası: `733 passed`. Yeni migration, ML təlimi, frontend
+  dəyişikliyi yoxdur — yalnız atomiklik düzəlişi. Real production baza
+  (`0011`-də qalır) toxunulmadı.
+
 ## 2026-08-09 — Phase 5: `rendering → training` müqaviləsi və təhlükəsizlik qapıları
 
 - Tapşırıq: dəyişməz `ModelSpec`/`TrainingSpec` yaratmaq, training

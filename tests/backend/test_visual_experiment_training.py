@@ -1,7 +1,11 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+import sqlite3
 
 import pytest
+
+import backend.app.database.visual_experiment_repository as visual_experiment_repository_module
+from backend.app.database.connection import get_connection as real_get_connection
 
 from backend.app.analysis.bars import build_closed_mid_bars
 from backend.app.analysis.visual_label import LabelSpec
@@ -24,13 +28,16 @@ from backend.app.database.replay_session_repository import (
 from backend.app.database.tick_replay_repository import iter_tick_batches
 from backend.app.database.visual_dataset_repository import get_dataset_manifest
 from backend.app.database.visual_experiment_repository import (
-    VisualExperimentConflictError,
     VisualExperimentOwnershipError,
+    begin_training_atomically,
     get_visual_experiment,
     register_visual_experiment,
     start_rendering,
 )
-from backend.app.database.visual_training_repository import get_training_configuration
+from backend.app.database.visual_training_repository import (
+    VisualTrainingConfigConflictError,
+    get_training_configuration,
+)
 from backend.app.storage.artifact_store import artifact_path, has_artifact
 from backend.app.strategies.visual_experiment_materialization import render_visual_experiment
 from backend.app.strategies.visual_experiment_training import (
@@ -165,16 +172,39 @@ def test_start_training_succeeds_when_all_gates_pass(isolated_database: Path) ->
     assert persisted_config.training_configuration_checksum == expected_checksum
 
 
-def test_start_training_cannot_be_rerun_once_training(isolated_database: Path) -> None:
+def test_start_training_is_idempotent_for_identical_configuration(isolated_database: Path) -> None:
+    experiment = _prepare_ready_experiment(isolated_database)
+    first = start_visual_experiment_training(
+        experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        model_spec=DEFAULT_MODEL_SPEC, training_spec=DEFAULT_TRAINING_SPEC,
+    )
+    second = start_visual_experiment_training(
+        experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        model_spec=DEFAULT_MODEL_SPEC, training_spec=DEFAULT_TRAINING_SPEC,
+    )
+    assert second.experiment.lifecycle_state == "training"
+    assert second.training_config.training_configuration_checksum == (
+        first.training_config.training_configuration_checksum
+    )
+    assert second.experiment.state_version == first.experiment.state_version
+
+
+def test_start_training_with_different_configuration_conflicts_once_training(
+    isolated_database: Path,
+) -> None:
     experiment = _prepare_ready_experiment(isolated_database)
     start_visual_experiment_training(
         experiment.experiment_id, actor="TEST-USER", actor_role="operator",
         model_spec=DEFAULT_MODEL_SPEC, training_spec=DEFAULT_TRAINING_SPEC,
     )
-    with pytest.raises(VisualExperimentConflictError):
+    other_training_spec = TrainingSpec(
+        seed=99, optimizer="sgd", loss="cross_entropy", batch_size=16, max_epochs=5,
+        compute_requirement="cpu",
+    )
+    with pytest.raises(VisualTrainingConfigConflictError):
         start_visual_experiment_training(
             experiment.experiment_id, actor="TEST-USER", actor_role="operator",
-            model_spec=DEFAULT_MODEL_SPEC, training_spec=DEFAULT_TRAINING_SPEC,
+            model_spec=DEFAULT_MODEL_SPEC, training_spec=other_training_spec,
         )
 
 
@@ -332,3 +362,111 @@ def test_start_training_blocks_for_corrupted_artifact_checksum(isolated_database
 
 def test_minimum_train_samples_constant_is_positive() -> None:
     assert MINIMUM_TRAIN_SAMPLES > 0
+
+
+class _FailingConnection:
+    """Wraps a real sqlite3 connection and raises the instant `execute()` is
+    called with SQL containing `fail_when`, simulating a process crash
+    mid-transaction. Delegates everything else (including `__enter__`/
+    `__exit__`, which is where sqlite3's own commit/rollback happens) to the
+    real connection, so the surrounding `with get_connection() as
+    connection:` block behaves exactly as it would against a genuine crash:
+    every write already issued in that transaction gets rolled back too.
+    """
+
+    def __init__(self, real_connection: sqlite3.Connection, *, fail_when: str):
+        self._real = real_connection
+        self._fail_when = fail_when
+
+    def execute(self, sql, parameters=()):
+        if self._fail_when in sql:
+            raise sqlite3.OperationalError(f"synthetic failure injected at: {self._fail_when!r}")
+        return self._real.execute(sql, parameters)
+
+    def __enter__(self):
+        self._real.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return self._real.__exit__(exc_type, exc, tb)
+
+
+def _atomic_call_kwargs(experiment, *, model_spec: ModelSpec = DEFAULT_MODEL_SPEC, training_spec: TrainingSpec = DEFAULT_TRAINING_SPEC):
+    manifest = get_dataset_manifest(experiment.experiment_id)
+    assert manifest is not None
+    computed_model_spec_id = model_spec_id(model_spec)
+    computed_training_spec_id = training_spec_id(training_spec)
+    return dict(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+        model_spec=model_spec, training_spec=training_spec,
+        model_spec_id=computed_model_spec_id, training_spec_id=computed_training_spec_id,
+        training_configuration_checksum=training_configuration_checksum(
+            dataset_fingerprint=manifest.dataset_fingerprint,
+            model_spec_id=computed_model_spec_id, training_spec_id=computed_training_spec_id,
+        ),
+        dataset_fingerprint=manifest.dataset_fingerprint,
+    )
+
+
+def test_begin_training_atomically_succeeds_and_is_idempotent(isolated_database: Path) -> None:
+    experiment = _prepare_ready_experiment(isolated_database)
+    kwargs = _atomic_call_kwargs(experiment)
+
+    first_experiment, first_config = begin_training_atomically(**kwargs)
+    assert first_experiment.lifecycle_state == "training"
+
+    second_experiment, second_config = begin_training_atomically(**kwargs)
+    assert second_experiment.lifecycle_state == "training"
+    assert second_experiment.state_version == first_experiment.state_version
+    assert second_config.training_configuration_checksum == first_config.training_configuration_checksum
+
+
+def test_begin_training_atomically_rejects_different_checksum_once_configured(
+    isolated_database: Path,
+) -> None:
+    experiment = _prepare_ready_experiment(isolated_database)
+    begin_training_atomically(**_atomic_call_kwargs(experiment))
+
+    other_training_spec = TrainingSpec(
+        seed=7, optimizer="sgd", loss="cross_entropy", batch_size=16, max_epochs=5,
+        compute_requirement="cpu",
+    )
+    with pytest.raises(VisualTrainingConfigConflictError):
+        begin_training_atomically(**_atomic_call_kwargs(experiment, training_spec=other_training_spec))
+
+
+@pytest.mark.parametrize(
+    "fail_when",
+    [
+        "UPDATE visual_experiments",
+        "INSERT INTO visual_experiment_audit",
+        "INSERT INTO visual_training_configs",
+    ],
+    ids=["lifecycle_update", "audit_insert", "config_insert"],
+)
+def test_begin_training_atomically_leaves_no_partial_state_on_failure(
+    isolated_database: Path, monkeypatch: pytest.MonkeyPatch, fail_when: str,
+) -> None:
+    experiment = _prepare_ready_experiment(isolated_database)
+    kwargs = _atomic_call_kwargs(experiment)
+
+    def failing_get_connection():
+        return _FailingConnection(real_get_connection(), fail_when=fail_when)
+
+    monkeypatch.setattr(visual_experiment_repository_module, "get_connection", failing_get_connection)
+    with pytest.raises(sqlite3.OperationalError):
+        begin_training_atomically(**kwargs)
+    monkeypatch.undo()
+
+    stored = get_visual_experiment(experiment.experiment_id)
+    assert stored.lifecycle_state == "rendering"
+    assert get_training_configuration(experiment.experiment_id) is None
+
+    with get_connection() as connection:
+        last_audit_action = connection.execute(
+            "SELECT action FROM visual_experiment_audit WHERE experiment_id = ? "
+            "ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()["action"]
+    assert last_audit_action != "start_training"

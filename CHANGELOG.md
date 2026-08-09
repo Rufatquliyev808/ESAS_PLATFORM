@@ -8,6 +8,45 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Phase 5: atomic `rendering -> training` transition
+
+- The previous increment's orchestrator called `start_training()` then
+  `persist_training_configuration()` as two separate transactions -- a
+  process crash between them could leave an experiment in `training` with
+  no recorded configuration, an unrecoverable in-between state. New task:
+  make the whole step atomic.
+- `visual_experiment_repository.py`: new `begin_training_atomically()`
+  performs the lifecycle transition, its audit row, AND the
+  `visual_training_configs` insert in ONE SQLite transaction (one
+  `with get_connection()` block, one implicit commit, automatic full
+  rollback on any exception) -- either every write lands together or none
+  of them do. Idempotent for a matching `training_configuration_checksum`
+  (safe to retry); a DIFFERENT checksum for an experiment that already has
+  one is refused (`VisualTrainingConfigConflictError`), checked BEFORE the
+  lifecycle state is even inspected. The existing `start_training()` and
+  `persist_training_configuration()` functions are unchanged and still
+  independently tested -- only the orchestration layer stopped calling
+  them as a separate pair.
+- `strategies/visual_experiment_training.py`: `start_visual_experiment_training()`
+  now calls `begin_training_atomically()` once instead of the previous
+  two-call sequence.
+- 6 new tests: the atomic function's own happy path + idempotent retry +
+  different-checksum conflict, plus 3 parametrized crash-injection tests
+  (`test_begin_training_atomically_leaves_no_partial_state_on_failure`)
+  that wrap a REAL sqlite3 connection and raise mid-transaction at each of
+  the three write points in turn (lifecycle UPDATE, audit INSERT, config
+  INSERT) -- each confirms genuine SQLite rollback leaves the experiment
+  exactly as it was (`rendering`, no config row, no `start_training` audit
+  entry). One existing test
+  (`test_start_training_cannot_be_rerun_once_training`) was replaced by
+  `test_start_training_is_idempotent_for_identical_configuration` +
+  `test_start_training_with_different_configuration_conflicts_once_training`,
+  reflecting the new idempotent-for-identical-config behavior the task
+  explicitly required. Full backend regression: `733 passed`. No new
+  migration, no actual ML training, no frontend change -- lifecycle
+  atomicity fix only. Real production database (still at migration
+  `0011`) untouched.
+
 ### Added — Phase 5: `rendering -> training` contract and safety gates
 
 - New task: freeze a `ModelSpec`/`TrainingSpec` contract and gate the

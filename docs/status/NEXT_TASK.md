@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
-Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu+rendering job-un frontend workflow-a bağlanması+**`rendering → training` müqaviləsi və təhlükəsizlik qapıları** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: training job/API/worker (faktiki icra), model təlimi (ML asılılığı, GPU qərarı). Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0015` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu+rendering job-un frontend workflow-a bağlanması+`rendering → training` müqaviləsi və təhlükəsizlik qapıları+**training başlanğıcının atomikləşdirilməsi** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: training job/API/worker (faktiki icra), model təlimi (ML asılılığı, GPU qərarı). Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0015` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -509,11 +509,15 @@ bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
   `ModelSpec`/`TrainingSpec` + deterministik `training_configuration_checksum`,
   `strategies/visual_experiment_training.py`-da 6 hazırlıq qapısı yoxlayan
   `start_visual_experiment_training()`, uğursuzluqda
-  `blocked_by_data_quality` + `TrainingReadinessError`) tamamlandı.
+  `blocked_by_data_quality` + `TrainingReadinessError`) VƏ **training
+  başlanğıcının atomikləşdirilməsi** (`begin_training_atomically()` —
+  lifecycle keçidi + audit + `visual_training_configs` yazısı EYNİ SQLite
+  tranzaksiyasında, əvvəlki iki-ayrı-çağırış boşluğunu bağlayır) tamamlandı.
   Nümunə lineage+checksum, real PNG faylı, HTTP üzərindən job kimi işə
-  salma, frontend-dən uçdan-uca yaratma/izləmə/bərpa VƏ training-ə keçidin
-  təhlükəsizlik qapıları indi hamısı mövcuddur (yalnız test/scratch
-  bazada — real production-a YOX). Növbəti təbii addımlar: (1) real
+  salma, frontend-dən uçdan-uca yaratma/izləmə/bərpa, training-ə keçidin
+  təhlükəsizlik qapıları VƏ bu keçidin atomikliyi indi hamısı mövcuddur
+  (yalnız test/scratch bazada — real production-a YOX). Növbəti təbii
+  addımlar: (1) real
   production bazaya migration `0012`-`0015` tətbiqi — ayrıca açıq təsdiq
   lazımdır; (2) training job/API/worker (faktiki icra); (3) model təlimi
   (ML asılılığı, GPU qərarı) — daha böyük, ayrıca qərar tələb edən addım.

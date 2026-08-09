@@ -78,7 +78,16 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   burada təkrar istifadə edildi) + `TrainingReadinessError`; yalnız
   hamısı keçəndə `training`. Scratch doğrulamada korlanmış PNG artefaktı
   olan eksperiment `training`-ə HEÇ VAXT çatmadı — düzgün bloklandı.
-  Migration `0012`-`0015` YALNIZ test bazasındadır.
+  **Training başlanğıcının atomikləşdirilməsi** da tamamlandı: istifadəçi
+  düzgün risk tapdı — `start_training()` + `persist_training_configuration()`
+  İKİ AYRI tranzaksiya idi, proses arada dayanarsa eksperiment
+  `training`-də konfiqurasiyasız qala bilərdi. `begin_training_atomically()`
+  (`visual_experiment_repository.py`) hər üçünü (lifecycle keçidi, audit,
+  config) EYNİ tranzaksiyada yazır; real sqlite3 connection-u saran 3
+  crash-injection testi (lifecycle UPDATE/audit INSERT/config INSERT
+  nöqtələrində) real SQLite rollback-in heç bir aralıq vəziyyət
+  qoymadığını təsdiqlədi. Eyni checksum üçün idempotent, fərqli checksum
+  üçün konflikt. Migration `0012`-`0015` YALNIZ test bazasındadır.
   Növbəti addım: training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
