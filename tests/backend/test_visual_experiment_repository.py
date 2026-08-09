@@ -6,10 +6,12 @@ from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
 from backend.app.database.visual_experiment_repository import (
     VisualExperimentConflictError,
+    VisualExperimentListPosition,
     VisualExperimentNotFoundError,
     VisualExperimentOwnershipError,
     archive_visual_experiment,
     get_visual_experiment,
+    list_visual_experiments,
     register_visual_experiment,
 )
 
@@ -164,6 +166,35 @@ def test_archive_twice_conflicts(isolated_database: Path) -> None:
             experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
             expected_state_version=archived.state_version,
         )
+
+
+def test_list_returns_only_owners_experiments_newest_first(isolated_database: Path) -> None:
+    _prepare(isolated_database, session_id="rps_test", created_by="TEST-USER")
+    _prepare(isolated_database, session_id="rps_other", created_by="OTHER-USER")
+    first = _register(train_end_at="2026-08-06T00:00:00+00:00", validation_end_at="2026-08-07T00:00:00+00:00")
+    second = _register(label_spec_id="sha256:label_b", train_end_at="2026-08-06T00:00:00+00:00", validation_end_at="2026-08-07T00:00:00+00:00")
+    _register(session_id="rps_other", created_by="OTHER-USER", label_spec_id="sha256:label_c")
+
+    page = list_visual_experiments(owner="TEST-USER")
+    ids = {item.experiment_id for item in page.items}
+    assert ids == {first.experiment_id, second.experiment_id}
+    assert page.next_position is None
+
+
+def test_list_paginates_with_cursor(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    _register(label_spec_id="sha256:label_a")
+    _register(label_spec_id="sha256:label_b")
+
+    first_page = list_visual_experiments(owner="TEST-USER", page_size=1)
+    assert len(first_page.items) == 1
+    assert first_page.next_position is not None
+
+    second_page = list_visual_experiments(
+        owner="TEST-USER", page_size=1, after=first_page.next_position,
+    )
+    assert len(second_page.items) == 1
+    assert second_page.items[0].experiment_id != first_page.items[0].experiment_id
 
 
 def test_archive_by_another_user_is_rejected(isolated_database: Path) -> None:

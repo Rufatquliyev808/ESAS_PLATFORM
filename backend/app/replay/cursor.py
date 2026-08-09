@@ -11,6 +11,7 @@ CURSOR_SECONDS = 60 * 60
 CURSOR_RESOURCE = "replay_sessions"
 EVENT_CURSOR_RESOURCE = "replay_session_events"
 PATTERN_CANDIDATE_CURSOR_RESOURCE = "pattern_candidates"
+VISUAL_EXPERIMENT_CURSOR_RESOURCE = "visual_experiments"
 
 
 class InvalidReplayCursorError(ValueError):
@@ -193,3 +194,58 @@ def decode_pattern_candidate_cursor(
         json.JSONDecodeError,
     ) as error:
         raise InvalidReplayCursorError("invalid pattern candidate cursor") from error
+
+
+def encode_visual_experiment_cursor(
+    *,
+    created_at: str,
+    experiment_id: str,
+    subject: str,
+) -> str:
+    encoded = _encode_json(
+        {
+            "v": 1,
+            "resource": VISUAL_EXPERIMENT_CURSOR_RESOURCE,
+            "sub": subject,
+            "created_at": created_at,
+            "experiment_id": experiment_id,
+            "exp": int(time.time()) + CURSOR_SECONDS,
+        }
+    )
+    signature = hmac.new(_secret(), encoded.encode(), hashlib.sha256).hexdigest()
+    return f"{encoded}.{signature}"
+
+
+def decode_visual_experiment_cursor(
+    cursor: str,
+    *,
+    subject: str,
+) -> tuple[str, str]:
+    try:
+        encoded, signature = cursor.rsplit(".", 1)
+        expected = hmac.new(
+            _secret(), encoded.encode(), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            raise ValueError("invalid signature")
+        padding = "=" * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(encoded + padding))
+        if payload["v"] != 1 or payload["resource"] != VISUAL_EXPERIMENT_CURSOR_RESOURCE:
+            raise ValueError("invalid cursor context")
+        if payload["sub"] != subject:
+            raise ValueError("invalid cursor subject")
+        if int(payload["exp"]) < int(time.time()):
+            raise ValueError("expired cursor")
+        created_at = str(payload["created_at"]).strip()
+        experiment_id = str(payload["experiment_id"]).strip()
+        if not created_at or not experiment_id:
+            raise ValueError("incomplete cursor")
+        return created_at, experiment_id
+    except (
+        KeyError,
+        binascii.Error,
+        TypeError,
+        ValueError,
+        json.JSONDecodeError,
+    ) as error:
+        raise InvalidReplayCursorError("invalid visual experiment cursor") from error

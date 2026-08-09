@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API tamamlanıb, model təlimi/frontend hələ yoxdur
+Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API + frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi hələ yoxdur
 
 ## Tamamlanan (bu sessiya)
 
@@ -397,6 +397,14 @@ endpoint (`POST/GET .../visual-experiments`, `POST .../archive`). Yeni
 `605 passed`. **Miqrasiya YALNIZ test bazasına tətbiq edildi, real
 production bazaya YOX** — bu ayrıca açıq təsdiq tələb edəcək.
 
+**Phase 5 — frontend paneli** (hələ commit edilməyib) — istifadəçinin
+"frontend panel (tövsiyə)" seçimi. Yeni `visual-experiments-panel.tsx`
++ naviqasiya bağlantısı. Wiring zamanı tapılan boşluq: siyahı endpoint-i
+yox idi — `list_visual_experiments()` + `GET /api/v2/visual-experiments`
++ imzalı cursor əlavə edildi (4 yeni backend test, `609 passed`).
+Canlı brauzerdə tam dövr (qeydiyyat → siyahı → arxivləşdirmə) sınandı,
+real bazaya toxunulmadan. Frontend: lint/build təmiz, `18/18` test.
+
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 3/4, `PROJECT_ROADMAP.md`-dən)
@@ -442,15 +450,17 @@ production bazaya YOX** — bu ayrıca açıq təsdiq tələb edəcək.
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
 - **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer, dataset
-  lineage/manifest qatı, label hesablanması VƏ eksperiment
-  qeydiyyatı/persistence API-si tamamlandı (yalnız `registered ↔
-  archived` keçidi işlək; `rendering/training/evaluated/...` state-ləri
-  CHECK-də var, amma koda hələ bağlanmayıb). Növbəti təbii addımlar: (1)
-  real render→dataset→label icrası — qeydiyyatdan keçmiş bir
-  eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq (fayl
-  sistemi/blob saxlanma qərarı tələb edir); (2) `rendering`/`training`
-  state keçidləri; (3) model təlimi (ML asılılığı, GPU qərarı) — daha
-  böyük, ayrıca qərar tələb edən addım; (4) frontend paneli.
+  lineage/manifest qatı, label hesablanması, eksperiment
+  qeydiyyatı/persistence API-si VƏ frontend paneli tamamlandı (yalnız
+  `registered ↔ archived` keçidi işlək; `rendering/training/evaluated/...`
+  state-ləri CHECK-də var, amma koda hələ bağlanmayıb). Növbəti təbii
+  addımlar: (1) real render→dataset→label icrası — qeydiyyatdan keçmiş
+  bir eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq;
+  ƏVVƏLCƏ həll edilməli sual: RenderSpec/LabelSpec-in faktiki
+  dəyərlərini (təkcə hash yox) haradan bərpa etmək (yeni sxem
+  dəyişikliyi ola bilər); (2) `rendering`/`training` state keçidləri;
+  (3) model təlimi (ML asılılığı, GPU qərarı) — daha böyük, ayrıca
+  qərar tələb edən addım.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
   (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
   yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/

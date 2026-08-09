@@ -1,5 +1,35 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5 (Visual AI): frontend paneli
+
+- İstifadəçi frontend panelini seçdi (dataset materiallaşdırma əvəzinə
+  — o, RenderSpec/LabelSpec-in faktiki dəyərlərinin harada saxlanacağı
+  barədə ayrıca dizayn qərarı tələb edir, açıq qalan namizəd kimi
+  qeyd edildi).
+- Yeni `frontend/app/visual-experiments-panel.tsx`: "Qiymətləndirmə"
+  qrupunda "Visual AI eksperimentləri" bölməsi — form (vaxt çərçivəsi,
+  pəncərə uzunluğu, bar fingerprint/render spec id/label spec id əl ilə
+  mətn sahələri kimi — hələ hesablama endpoint-i yoxdur) + qeydə
+  alınmış eksperimentlərin cədvəli (cursor siyahı) + arxivləşdirmə.
+  Bütün 14 lifecycle state-in Azərbaycanca etiketi var.
+- **Wiring zamanı tapılan backend boşluğu**: `visual_experiment_
+  repository.py`-da yalnız register/get/archive var idi, siyahı funksiyası
+  yox idi — `list_visual_experiments()` (cursor-paginated,
+  `list_pattern_candidates`-i təkrarlayır) + yeni imzalı cursor cütü
+  (`cursor.py`-da) + `GET /api/v2/visual-experiments` endpoint-i əlavə
+  edildi. 4 yeni backend test. Tam backend regressiyası: `609 passed`.
+- `dashboard-navigation.tsx`/`page.tsx`/`replay-panel.tsx` digər bütün
+  sessiya-əsaslı panellərlə eyni qaydada bağlandı. Yeni
+  `visual-experiments-ui.test.mjs` + `dashboard-navigation.test.mjs`-ə
+  əlavə. Frontend: lint təmiz, build təmiz, `18/18` test.
+- **Canlı brauzerdə tam sınandı** (scratch backend port 8004 + scratch
+  SQLite, tamamlanmış replay sessiyası ilə seed edilib, scratch frontend
+  port 5173, real 8000/3000 toxunulmadan): əl ilə daxil edilmiş
+  fingerprint/spec-id dəyərləri ilə eksperiment qeydə alındı, cədvəldə
+  `registered` kimi göründü, arxivləşdirildi, cədvəl `archived`-ə
+  yeniləndi və arxivləşdirmə düyməsi düzgün yoxa çıxdı. Konsol xətası
+  yox.
+
 ## 2026-08-09 — Phase 5 (Visual AI): eksperiment qeydiyyatı/persistence
 
 - İstifadəçi DB miqrasiyası tələb edən qata başlamağı açıq təsdiqlədi

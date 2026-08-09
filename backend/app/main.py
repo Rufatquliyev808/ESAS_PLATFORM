@@ -104,10 +104,12 @@ from backend.app.database.analysis_job_repository import (
 )
 from backend.app.database.visual_experiment_repository import (
     VisualExperimentConflictError,
+    VisualExperimentListPosition,
     VisualExperimentNotFoundError,
     VisualExperimentOwnershipError,
     archive_visual_experiment,
     get_visual_experiment,
+    list_visual_experiments,
     register_visual_experiment,
 )
 from backend.app.workers.analysis_job_worker import drain_queue
@@ -151,6 +153,8 @@ from backend.app.replay.cursor import (
     encode_replay_event_cursor,
     decode_pattern_candidate_cursor,
     encode_pattern_candidate_cursor,
+    decode_visual_experiment_cursor,
+    encode_visual_experiment_cursor,
 )
 from backend.app.database.tick_replay_repository import TickPosition, read_tick_page
 
@@ -1004,6 +1008,44 @@ def visual_experiment_register(
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"data": asdict(experiment), "meta": {"api_version": "2"}}
+
+
+@app.get("/api/v2/visual-experiments")
+def visual_experiments_list(
+    cursor: str | None = None,
+    page_size: int = Query(default=50, ge=1, le=200),
+    user_code: str = Depends(require_dashboard_session),
+) -> dict[str, object]:
+    position = None
+    if cursor is not None:
+        try:
+            created_at, experiment_id = decode_visual_experiment_cursor(
+                cursor, subject=user_code,
+            )
+            position = VisualExperimentListPosition(created_at, experiment_id)
+        except InvalidReplayCursorError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Visual experiment cursor is invalid or expired",
+            ) from error
+
+    page = list_visual_experiments(owner=user_code, page_size=page_size, after=position)
+    next_cursor = None
+    if page.next_position is not None:
+        next_cursor = encode_visual_experiment_cursor(
+            created_at=page.next_position.created_at,
+            experiment_id=page.next_position.experiment_id,
+            subject=user_code,
+        )
+    return {
+        "data": [asdict(item) for item in page.items],
+        "page": {
+            "limit": page_size,
+            "next_cursor": next_cursor,
+            "has_more": page.next_position is not None,
+        },
+        "meta": {"api_version": "2"},
+    }
 
 
 @app.get("/api/v2/visual-experiments/{experiment_id}")

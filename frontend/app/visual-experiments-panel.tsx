@@ -1,0 +1,212 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
+
+type Timeframe = "S1" | "S10" | "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1";
+type VisualExperiment = {
+  experiment_id: string;
+  created_by: string;
+  replay_session_id: string;
+  symbol: string;
+  timeframe: string;
+  source_bar_fingerprint: string;
+  render_spec_id: string;
+  label_spec_id: string;
+  observation_window_bars: number;
+  train_end_at: string;
+  validation_end_at: string;
+  lifecycle_state: string;
+  state_version: number;
+  created_at: string;
+  updated_at: string;
+};
+type Envelope<T> = { data: T };
+type Page<T> = Envelope<T[]>;
+
+const LIFECYCLE_LABELS: Record<string, string> = {
+  registered: "Qeydə alınıb (konfiqurasiya dondurulub)",
+  rendering: "Render edilir",
+  training: "Təlim edilir",
+  evaluated: "Qiymətləndirilib",
+  accepted_for_shadow: "SHADOW namizədi",
+  rejected: "Rədd edilib",
+  archived: "Arxivləşdirilib",
+  blocked_by_data_quality: "Bloklanıb — məlumat keyfiyyəti",
+  invalid_leakage: "Etibarsız — sızma aşkarlandı",
+  non_reproducible: "Təkrarlana bilmir",
+  out_of_distribution: "Paylanmadan kənar",
+  insufficient_evidence: "Sübut yetərsizdir",
+  failed: "Uğursuz oldu",
+  cancelled: "Ləğv edilib",
+};
+
+const ARCHIVABLE_STATES = new Set(["registered"]);
+
+function formatTime(value: string | null) {
+  return value ? new Intl.DateTimeFormat("az-AZ", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—";
+}
+
+function localInput(date: Date) {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
+  const now = new Date();
+  const [timeframe, setTimeframe] = useState<Timeframe>("M1");
+  const [sourceBarFingerprint, setSourceBarFingerprint] = useState("");
+  const [renderSpecId, setRenderSpecId] = useState("");
+  const [labelSpecId, setLabelSpecId] = useState("");
+  const [observationWindowBars, setObservationWindowBars] = useState(64);
+  const [trainEndAt, setTrainEndAt] = useState(localInput(new Date(now.getTime() + 24 * 60 * 60 * 1000)));
+  const [validationEndAt, setValidationEndAt] = useState(localInput(new Date(now.getTime() + 48 * 60 * 60 * 1000)));
+
+  const [experiments, setExperiments] = useState<VisualExperiment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/visual-experiments?page_size=100`, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) { onUnauthorized(); return; }
+      if (!response.ok) throw new Error(`Eksperimentlər alına bilmədi (HTTP ${response.status}).`);
+      const payload = await response.json() as Page<VisualExperiment>;
+      setExperiments(payload.data);
+      setError(null);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Eksperimentlər alına bilmədi.");
+    } finally { setLoading(false); }
+  }, [onUnauthorized, token]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  const register = useCallback(async () => {
+    setRegistering(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/visual-experiments`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          session_id: sessionId,
+          symbol,
+          timeframe,
+          source_bar_fingerprint: sourceBarFingerprint,
+          render_spec_id: renderSpecId,
+          label_spec_id: labelSpecId,
+          observation_window_bars: observationWindowBars,
+          train_end_at: new Date(trainEndAt).toISOString(),
+          validation_end_at: new Date(validationEndAt).toISOString(),
+        }),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 422) throw new Error("Konfiqurasiya etibarsızdır — sahələri yoxlayın.");
+      if (response.status === 403) throw new Error("Bu replay sessiyası başqa istifadəçiyə məxsusdur.");
+      if (response.status === 404) throw new Error("Replay sessiyası tapılmadı.");
+      if (!response.ok) throw new Error(`Eksperiment qeydə alına bilmədi (HTTP ${response.status}).`);
+      await load();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Eksperiment qeydə alına bilmədi.");
+    } finally { setRegistering(false); }
+  }, [labelSpecId, load, observationWindowBars, onUnauthorized, renderSpecId, sessionId, sourceBarFingerprint, symbol, timeframe, token, trainEndAt, validationEndAt]);
+
+  const archive = useCallback(async (experiment: VisualExperiment) => {
+    setArchivingId(experiment.experiment_id);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/api/v2/visual-experiments/${experiment.experiment_id}/archive`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ expected_state_version: experiment.state_version }),
+      });
+      if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib. Yenidən daxil olun."); }
+      if (response.status === 409) throw new Error("Eksperiment vəziyyəti dəyişib; siyahını yeniləyin.");
+      if (!response.ok) throw new Error(`Eksperiment arxivləşdirilə bilmədi (HTTP ${response.status}).`);
+      await load();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Eksperiment arxivləşdirilə bilmədi.");
+    } finally { setArchivingId(null); }
+  }, [load, onUnauthorized, token]);
+
+  return (
+    <section className="visual-experiments" aria-labelledby="visual-experiments-title">
+      <div className="analysis-heading">
+        <div>
+          <p className="eyebrow">Phase 5 — tədqiqat konfiqurasiyası · ticarət siqnalı deyil</p>
+          <h3 id="visual-experiments-title">{symbol} Visual AI eksperimentləri</h3>
+          <p>
+            Qrafik renderi, dataset lineage və label qaydası artıq backend-də hazırdır, amma bura yalnız
+            eksperimentin DONDURULMUŞ konfiqurasiyasını qeydə alır — heç bir şəkil render etmir, model təlim
+            etmir. `source_bar_fingerprint`/`render_spec_id`/`label_spec_id` hələ ayrıca hesablama
+            endpoint-i yoxdur, ona görə bu dəyərlər əl ilə (backend hesablamasından götürülərək) daxil edilir.
+          </p>
+        </div>
+      </div>
+
+      <form className="analysis-controls" onSubmit={(event) => { event.preventDefault(); void register(); }}>
+        <label>
+          Vaxt çərçivəsi
+          <select value={timeframe} onChange={(event) => setTimeframe(event.target.value as Timeframe)}>
+            <option>S1</option><option>S10</option><option>M1</option><option>M5</option><option>M15</option>
+            <option>M30</option><option>H1</option><option>H4</option><option>D1</option>
+          </select>
+        </label>
+        <label>Pəncərə uzunluğu (bar)<input type="number" min={1} max={5000} value={observationWindowBars} onChange={(event) => setObservationWindowBars(Number(event.target.value))} /></label>
+        <label>Bar fingerprint<input type="text" required placeholder="sha256:…" value={sourceBarFingerprint} onChange={(event) => setSourceBarFingerprint(event.target.value)} /></label>
+        <label>Render spec ID<input type="text" required placeholder="sha256:…" value={renderSpecId} onChange={(event) => setRenderSpecId(event.target.value)} /></label>
+        <label>Label spec ID<input type="text" required placeholder="sha256:…" value={labelSpecId} onChange={(event) => setLabelSpecId(event.target.value)} /></label>
+        <label>Train sərhədi<input type="datetime-local" required value={trainEndAt} onChange={(event) => setTrainEndAt(event.target.value)} /></label>
+        <label>Validation sərhədi<input type="datetime-local" required value={validationEndAt} onChange={(event) => setValidationEndAt(event.target.value)} /></label>
+        <button type="submit" disabled={registering}>{registering ? "Qeydə alınır…" : "Eksperimenti qeydə al"}</button>
+      </form>
+
+      {error && <div className="analysis-error" role="alert"><strong>Xəta</strong><span>{error}</span><button type="button" onClick={() => void load()}>Yenidən yoxla</button></div>}
+
+      <section className="visual-experiments-list" aria-labelledby="visual-experiments-registered-title">
+        <h4 id="visual-experiments-registered-title">Qeydə alınmış eksperimentlər</h4>
+        {loading && experiments.length === 0 ? (
+          <p className="empty-state">Yüklənir…</p>
+        ) : experiments.length === 0 ? (
+          <p className="empty-state">Hələ qeydə alınmış eksperiment yoxdur.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
+              <tbody>
+                {experiments.map((experiment) => (
+                  <tr key={experiment.experiment_id}>
+                    <td>{experiment.timeframe}</td>
+                    <td>{experiment.observation_window_bars} bar</td>
+                    <td>{LIFECYCLE_LABELS[experiment.lifecycle_state] ?? experiment.lifecycle_state}</td>
+                    <td>{formatTime(experiment.created_at)}</td>
+                    <td>
+                      {ARCHIVABLE_STATES.has(experiment.lifecycle_state) && (
+                        <button type="button" className="secondary-button" disabled={archivingId === experiment.experiment_id} onClick={() => void archive(experiment)}>
+                          {archivingId === experiment.experiment_id ? "Arxivləşdirilir…" : "Arxivləşdir"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu bölmə yalnız Phase 5-in eksperiment qeydiyyatı qatını göstərir. Real render→dataset icrası, model təlimi və nəticə qiymətləndirməsi hələ yoxdur. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
+      </section>
+    </section>
+  );
+}

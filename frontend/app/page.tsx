@@ -530,6 +530,12 @@ export default function Home() {
       impact: "Struktur, likvidlik və struktur qırılması/retest detektorlarının eyni anda üst-üstə düşməsi GOLD üçün daha güclü kontekst yarada bilər, amma bu hələ sübut deyil.",
       evidence: "Hər namizəd mövcud causal detektorların nəticəsini müvafiq hipotezə bağlayır; yalnız `draft` vəziyyətdədir, backtest və qəbul qərarı yoxdur.",
     },
+    "visual-experiments": {
+      title: "Visual AI eksperimentləri (Phase 5)",
+      metric: "Dondurulmuş konfiqurasiya",
+      impact: "Qrafik renderi, dataset lineage və label qaydası deterministikdir, amma hələ real şəkil/dataset icrası, model təlimi və nəticə yoxdur — bu bölmə yalnız gələcək eksperimentin qeydiyyat əsasını göstərir.",
+      evidence: "Render spesifikasiyası, label spesifikasiyası, mənbə bar fingerprint-i və train/validation sərhədləri qeydiyyatdan əvvəl dondurulur və dəyişdirilmir.",
+    },
     "shadow-runs": {
       title: "SHADOW run-ları (Phase 9 skelet)",
       metric: "Nəzəri portfolio",
@@ -603,6 +609,11 @@ export default function Home() {
       "Hər namizədin `draft` vəziyyətdə olduğunu, sübut olmadığını xatırlayın.",
       "Şərti təsdiqlənən (candidate_confirmed) namizədlərin sübutunu digər bölmələrdən yoxlayın.",
       "Backtest və qəbul qərarı hələ yoxdur; namizədi əməliyyat üçün istifadə etməyin.",
+    ],
+    "visual-experiments": [
+      "Bu bölmə yalnız eksperimentin konfiqurasiyasını qeydə alır — şəkil, dataset və ya model nəticəsi yoxdur.",
+      "`render_spec_id`/`label_spec_id`/bar fingerprint dəyərlərini backend hesablamasından götürün.",
+      "Qeydə alınmış eksperimenti ticarət qərarı üçün deyil, gələcək tədqiqat izi üçün istifadə edin.",
     ],
     "shadow-runs": [
       "Bu, əl ilə idarə olunan bir skeletdir — avtomatik qərar axını yoxdur.",
@@ -889,7 +900,7 @@ export default function Home() {
           </section>
                 </>
               )}
-              {(["replay", "technical", "statistics", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies", "pattern-candidates"] as DashboardSection[]).includes(activeSection) && (
+              {(["replay", "technical", "statistics", "structure", "liquidity", "bos-choch", "retest", "fvg", "strategies", "pattern-candidates", "visual-experiments"] as DashboardSection[]).includes(activeSection) && (
           <ReplayPanel
             view={activeSection}
             token={token}

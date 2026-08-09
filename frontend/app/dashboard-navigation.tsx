@@ -14,6 +14,7 @@ export type DashboardSection =
   | "strategies"
   | "hypotheses"
   | "pattern-candidates"
+  | "visual-experiments"
   | "shadow-runs";
 
 type MenuItem = {
@@ -37,6 +38,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "strategies", title: "Strategiya müqayisəsi", description: "Ayrı yanaşmaların nəticələri", group: "Qiymətləndirmə" },
   { id: "hypotheses", title: "Hipotezlər", description: "Sınaq üçün qaydalar reyestri", group: "Qiymətləndirmə" },
   { id: "pattern-candidates", title: "Pattern namizədləri", description: "Draft — hipotezlərin birləşmiş nəticəsi", group: "Qiymətləndirmə" },
+  { id: "visual-experiments", title: "Visual AI eksperimentləri", description: "Phase 5 — qrafik/dataset eksperiment qeydiyyatı", group: "Qiymətləndirmə" },
   { id: "shadow-runs", title: "SHADOW run-ları", description: "Phase 9 skeleti — nəzəridir, order yaratmır", group: "Qiymətləndirmə" },
 ];
 

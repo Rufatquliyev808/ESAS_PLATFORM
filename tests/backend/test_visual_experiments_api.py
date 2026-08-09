@@ -175,6 +175,38 @@ def test_archive_transitions_to_archived(isolated_database: Path) -> None:
     assert archived.json()["data"]["lifecycle_state"] == "archived"
 
 
+def test_list_returns_registered_experiments(isolated_database: Path) -> None:
+    session = _prepare(isolated_database)
+    with TestClient(app) as client:
+        headers = _headers(client)
+        client.post(
+            "/api/v2/visual-experiments", json=_registration_payload(session.session_id), headers=headers,
+        )
+        listing = client.get("/api/v2/visual-experiments", headers=headers)
+    assert listing.status_code == 200
+    body = listing.json()
+    assert len(body["data"]) == 1
+    assert body["page"]["has_more"] is False
+
+
+def test_list_excludes_other_users_experiments(isolated_database: Path) -> None:
+    _prepare(isolated_database, owner="TEST-USER")
+    foreign_session = create_replay_session(
+        created_by="OTHER-USER", actor_role="operator", symbol="GOLD",
+        start_at=BASE_TIME, end_at=BASE_TIME + timedelta(minutes=3), mode="max_speed",
+    )
+    register_visual_experiment(
+        created_by="OTHER-USER", actor_role="operator",
+        replay_session_id=foreign_session.session_id,
+        **{k: v for k, v in _registration_payload(foreign_session.session_id).items() if k != "session_id"},
+    )
+    with TestClient(app) as client:
+        headers = _headers(client)
+        listing = client.get("/api/v2/visual-experiments", headers=headers)
+    assert listing.status_code == 200
+    assert listing.json()["data"] == []
+
+
 def test_archive_with_stale_state_version_returns_409(isolated_database: Path) -> None:
     session = _prepare(isolated_database)
     with TestClient(app) as client:

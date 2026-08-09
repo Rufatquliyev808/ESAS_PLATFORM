@@ -200,6 +200,63 @@ def register_visual_experiment(
     return _row_to_experiment(row)
 
 
+@dataclass(frozen=True)
+class VisualExperimentListPosition:
+    created_at: str
+    experiment_id: str
+
+
+@dataclass(frozen=True)
+class VisualExperimentPage:
+    items: tuple[PersistedVisualExperiment, ...]
+    next_position: VisualExperimentListPosition | None
+
+
+def list_visual_experiments(
+    *, owner: str, page_size: int = 50, after: VisualExperimentListPosition | None = None,
+) -> VisualExperimentPage:
+    normalized_owner = _required_text(owner, "owner")
+    if not 1 <= page_size <= 200:
+        raise ValueError("page_size must be between 1 and 200")
+
+    conditions = ["created_by = ?"]
+    parameters: list[object] = [normalized_owner]
+    if after is not None:
+        created_at = _required_text(after.created_at, "after.created_at")
+        experiment_id = _required_text(after.experiment_id, "after.experiment_id")
+        try:
+            datetime.fromisoformat(created_at)
+        except ValueError as error:
+            raise ValueError("after.created_at must be an ISO timestamp") from error
+        conditions.append("(created_at < ? OR (created_at = ? AND experiment_id < ?))")
+        parameters.extend((created_at, created_at, experiment_id))
+
+    where_sql = f"WHERE {' AND '.join(conditions)}"
+    parameters.append(page_size + 1)
+    with get_connection() as connection:
+        rows = connection.execute(
+            f"""
+            SELECT * FROM visual_experiments
+            {where_sql}
+            ORDER BY created_at DESC, experiment_id DESC
+            LIMIT ?;
+            """,
+            parameters,
+        ).fetchall()
+
+    has_more = len(rows) > page_size
+    page_rows = rows[:page_size]
+    next_position = None
+    if has_more and page_rows:
+        last_row = page_rows[-1]
+        next_position = VisualExperimentListPosition(
+            created_at=last_row["created_at"], experiment_id=last_row["experiment_id"],
+        )
+    return VisualExperimentPage(
+        items=tuple(_row_to_experiment(row) for row in page_rows), next_position=next_position,
+    )
+
+
 def get_visual_experiment(experiment_id: str) -> PersistedVisualExperiment:
     normalized = _required_text(experiment_id, "experiment_id")
     with get_connection() as connection:

@@ -8,6 +8,40 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 Visual AI: frontend panel for experiment registration
+
+- User chose the frontend panel over dataset materialization (which
+  would require deciding how to store full RenderSpec/LabelSpec values,
+  not just their ids -- a separate design fork, left as an open item).
+- New `frontend/app/visual-experiments-panel.tsx`: a "Visual AI
+  eksperimentləri" section under "Qiymətləndirmə" -- form (timeframe,
+  observation window bars, source bar fingerprint / render spec id /
+  label spec id as manual text inputs, since there's no endpoint yet to
+  compute them) + a table of the user's registered experiments (cursor
+  list) with an archive action. All 14 lifecycle states get an Azerbaijani
+  label. The panel is explicit that it only freezes configuration --
+  no image, dataset, or model result exists yet.
+- Backend gap found while wiring the list view: `visual_experiment_repository.py`
+  only had register/get/archive, no `list_visual_experiments()` -- added
+  it (cursor-paginated, mirrors `list_pattern_candidates`), plus a new
+  signed cursor pair (`encode_visual_experiment_cursor`/
+  `decode_visual_experiment_cursor` in `cursor.py`) and a `GET
+  /api/v2/visual-experiments` endpoint, matching every other resource's
+  list convention in this codebase. 4 new backend tests (2 repository +
+  2 API). Full backend regression: `609 passed`.
+- `dashboard-navigation.tsx`/`page.tsx`/`replay-panel.tsx` wired the
+  same way as every other session-scoped panel. New
+  `frontend/tests/visual-experiments-ui.test.mjs` (research-only +
+  frozen-configuration-only assertions, all 14 lifecycle states
+  labelled) and an assertion added to `dashboard-navigation.test.mjs`.
+  Frontend: lint clean, build clean, `18/18` tests.
+- **Live-browser verified** (scratch backend port 8004 + scratch SQLite
+  seeded with a completed replay session, scratch frontend port 5173,
+  real 8000/3000 untouched throughout): registered an experiment with
+  hand-entered fingerprint/spec-id values, it appeared in the table as
+  `registered`, archived it, table updated to `archived` and the
+  archive button correctly disappeared. No console errors.
+
 ### Added — Phase 5 Visual AI: experiment registration/persistence
 
 - User approved starting the DB-backed layer (asked explicitly per

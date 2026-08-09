@@ -5,6 +5,7 @@ import { TechnicalAnalysisPanel } from "./technical-analysis-panel";
 import { StatisticalAnalysisPanel } from "./statistical-analysis-panel";
 import { StrategyComparisonPanel } from "./strategy-comparison-panel";
 import { PatternCandidatesPanel } from "./pattern-candidates-panel";
+import { VisualExperimentsPanel } from "./visual-experiments-panel";
 import type { DashboardSection } from "./dashboard-navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
@@ -198,6 +199,8 @@ export function ReplayPanel({ token, onUnauthorized, view, onOpenReplay }: { tok
           <StrategyComparisonPanel key={`strategy-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && view === "pattern-candidates" &&
           <PatternCandidatesPanel key={`pattern-candidates-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
+        {selected?.state === "completed" && view === "visual-experiments" &&
+          <VisualExperimentsPanel key={`visual-experiments-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && view === "statistics" &&
           <StatisticalAnalysisPanel key={`statistics-${selected.session_id}`} sessionId={selected.session_id} symbol={selected.symbol} token={token} onUnauthorized={onUnauthorized} />}
         {selected?.state === "completed" && ["technical", "structure", "liquidity", "bos-choch", "retest", "fvg"].includes(view) &&
