@@ -7,7 +7,9 @@ CREATE TABLE visual_experiments
     timeframe                 TEXT NOT NULL,
     source_bar_fingerprint    TEXT NOT NULL,
     render_spec_id            TEXT NOT NULL,
+    render_spec_json          TEXT NOT NULL,
     label_spec_id             TEXT NOT NULL,
+    label_spec_json           TEXT NOT NULL,
     observation_window_bars   INTEGER NOT NULL
                                CHECK (observation_window_bars > 0),
     train_end_at              TEXT NOT NULL,

@@ -102,6 +102,8 @@ from backend.app.database.analysis_job_repository import (
     queue_metrics,
     request_cancel,
 )
+from backend.app.analysis.visual_render import RenderSpec
+from backend.app.analysis.visual_label import LabelSpec
 from backend.app.database.visual_experiment_repository import (
     VisualExperimentConflictError,
     VisualExperimentListPosition,
@@ -997,8 +999,8 @@ def visual_experiment_register(
             replay_session_id=register_request.session_id, symbol=register_request.symbol,
             timeframe=register_request.timeframe,
             source_bar_fingerprint=register_request.source_bar_fingerprint,
-            render_spec_id=register_request.render_spec_id,
-            label_spec_id=register_request.label_spec_id,
+            render_spec=RenderSpec(**register_request.render_spec.model_dump()),
+            label_spec=LabelSpec(**register_request.label_spec.model_dump()),
             observation_window_bars=register_request.observation_window_bars,
             train_end_at=register_request.train_end_at,
             validation_end_at=register_request.validation_end_at,

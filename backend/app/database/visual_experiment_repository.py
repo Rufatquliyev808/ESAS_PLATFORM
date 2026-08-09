@@ -1,9 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 import json
 
 from backend.app.analysis.bars import TIMEFRAME_SECONDS
+from backend.app.analysis.visual_label import LabelSpec, label_spec_id as compute_label_spec_id
+from backend.app.analysis.visual_render import RenderSpec, render_spec_id as compute_render_spec_id
 from backend.app.database.connection import get_connection
 
 
@@ -31,7 +33,9 @@ class PersistedVisualExperiment:
     timeframe: str
     source_bar_fingerprint: str
     render_spec_id: str
+    render_spec: dict[str, object]
     label_spec_id: str
+    label_spec: dict[str, object]
     observation_window_bars: int
     train_end_at: str
     validation_end_at: str
@@ -89,7 +93,9 @@ def _row_to_experiment(row: object) -> PersistedVisualExperiment:
         timeframe=row["timeframe"],
         source_bar_fingerprint=row["source_bar_fingerprint"],
         render_spec_id=row["render_spec_id"],
+        render_spec=json.loads(row["render_spec_json"]),
         label_spec_id=row["label_spec_id"],
+        label_spec=json.loads(row["label_spec_json"]),
         observation_window_bars=row["observation_window_bars"],
         train_end_at=row["train_end_at"],
         validation_end_at=row["validation_end_at"],
@@ -108,8 +114,8 @@ def register_visual_experiment(
     symbol: str,
     timeframe: str,
     source_bar_fingerprint: str,
-    render_spec_id: str,
-    label_spec_id: str,
+    render_spec: RenderSpec,
+    label_spec: LabelSpec,
     observation_window_bars: int,
     train_end_at: str,
     validation_end_at: str,
@@ -121,6 +127,13 @@ def register_visual_experiment(
     this configuration; it does not itself render images, build the
     dataset, or train anything -- those are separate, later lifecycle
     transitions.
+
+    `render_spec`/`label_spec` are the actual reconstructable spec values
+    (not just an opaque caller-supplied id) -- `render_spec_id`/
+    `label_spec_id` are derived here via the same `visual_render.py`/
+    `visual_label.py` functions the renderer/labeller themselves use, so a
+    later materialization step can recover the exact spec used, not just a
+    hash of it.
 
     `experiment_id` is derived deterministically from the configuration
     (same fields -> same id), matching the hash-based id scheme already
@@ -135,8 +148,6 @@ def register_visual_experiment(
     if timeframe not in TIMEFRAME_SECONDS:
         raise ValueError(f"timeframe must be one of: {', '.join(TIMEFRAME_SECONDS)}")
     normalized_fingerprint = _required_text(source_bar_fingerprint, "source_bar_fingerprint")
-    normalized_render_spec_id = _required_text(render_spec_id, "render_spec_id")
-    normalized_label_spec_id = _required_text(label_spec_id, "label_spec_id")
     if (
         isinstance(observation_window_bars, bool)
         or not isinstance(observation_window_bars, int)
@@ -148,10 +159,15 @@ def register_visual_experiment(
     if normalized_validation_end_at <= normalized_train_end_at:
         raise ValueError("validation_end_at must be after train_end_at")
 
+    render_spec_json = json.dumps(asdict(render_spec), sort_keys=True, separators=(",", ":"))
+    label_spec_json = json.dumps(asdict(label_spec), sort_keys=True, separators=(",", ":"))
+    computed_render_spec_id = compute_render_spec_id(render_spec)
+    computed_label_spec_id = compute_label_spec_id(label_spec)
+
     experiment_id = _experiment_id(
         symbol=normalized_symbol, timeframe=timeframe,
-        source_bar_fingerprint=normalized_fingerprint, render_spec_id=normalized_render_spec_id,
-        label_spec_id=normalized_label_spec_id, observation_window_bars=observation_window_bars,
+        source_bar_fingerprint=normalized_fingerprint, render_spec_id=computed_render_spec_id,
+        label_spec_id=computed_label_spec_id, observation_window_bars=observation_window_bars,
         train_end_at=normalized_train_end_at, validation_end_at=normalized_validation_end_at,
     )
     now = datetime.now(UTC).isoformat(timespec="microseconds")
@@ -173,16 +189,18 @@ def register_visual_experiment(
             INSERT INTO visual_experiments
             (
                 experiment_id, created_by, replay_session_id, symbol, timeframe,
-                source_bar_fingerprint, render_spec_id, label_spec_id,
+                source_bar_fingerprint, render_spec_id, render_spec_json,
+                label_spec_id, label_spec_json,
                 observation_window_bars, train_end_at, validation_end_at,
                 lifecycle_state, state_version, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered', 0, ?, ?);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'registered', 0, ?, ?);
             """,
             (
                 experiment_id, normalized_creator, normalized_session_id, normalized_symbol,
-                timeframe, normalized_fingerprint, normalized_render_spec_id,
-                normalized_label_spec_id, observation_window_bars, normalized_train_end_at,
+                timeframe, normalized_fingerprint, computed_render_spec_id, render_spec_json,
+                computed_label_spec_id, label_spec_json,
+                observation_window_bars, normalized_train_end_at,
                 normalized_validation_end_at, now, now,
             ),
         )

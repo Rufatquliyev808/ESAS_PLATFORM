@@ -1,8 +1,8 @@
 # ESAS Platform — Növbəti tapşırıq
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
-Prioritet: —
-Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API + frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi hələ yoxdur
+Prioritet: istifadəçi 2026-08-09-da Phase 3→4→7→8→9→10 prioritet sırasını verdi (real ticarətə hazır analiz sistemi). Phase 3/4 artıq tamamlanıb (aşağıda təsdiqlənib).
+Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API (indi real spec saxlanması ilə) + frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi hələ yoxdur
 
 ## Tamamlanan (bu sessiya)
 
@@ -397,6 +397,21 @@ endpoint (`POST/GET .../visual-experiments`, `POST .../archive`). Yeni
 `605 passed`. **Miqrasiya YALNIZ test bazasına tətbiq edildi, real
 production bazaya YOX** — bu ayrıca açıq təsdiq tələb edəcək.
 
+**Tam vəziyyət doğrulaması + spec saxlanması düzəlişi** (commit hələ
+edilməyib — bax aşağı) — istifadəçi yeni sessiyada tam yoxlama tapşırığı
+verdi (sənədlər, Git, testlər, real baza read-only). Hər şey təsdiqləndi,
+2 problem tapıldı: canlı tick axını ~41.5 saat köhnəlib (MT5 Bridge
+tərəfi, bu sessiyanın həll etmə səlahiyyətindən kənar),
+`PROJECT_ROADMAP.md` Phase 5-i "PLANNED" göstərirdi (düzəldildi, commit
+`71f67f0`). Sonra əvvəlki addımın açıq qalmış sualı həll edildi:
+`register_visual_experiment()` indi real `RenderSpec`/`LabelSpec`
+qəbul edir (əvvəllər ixtiyari mətn idi), ID-ni server tərəfdə hesablayır,
+migration `0012`-yə `render_spec_json`/`label_spec_json` əlavə edildi
+(hələ production-a tətbiq edilməyib, təhlükəsiz redaktə edildi).
+Frontend forması real `horizon_bars`/threshold sahələrinə keçdi. Tam
+backend regressiyası: `609 passed` (say dəyişmədi). Frontend: lint/build
+təmiz, `18/18` test. Canlı brauzerdə yenidən sınandı.
+
 **Phase 5 — frontend paneli** (hələ commit edilməyib) — istifadəçinin
 "frontend panel (tövsiyə)" seçimi. Yeni `visual-experiments-panel.tsx`
 + naviqasiya bağlantısı. Wiring zamanı tapılan boşluq: siyahı endpoint-i
@@ -455,12 +470,13 @@ real bazaya toxunulmadan. Frontend: lint/build təmiz, `18/18` test.
   `registered ↔ archived` keçidi işlək; `rendering/training/evaluated/...`
   state-ləri CHECK-də var, amma koda hələ bağlanmayıb). Növbəti təbii
   addımlar: (1) real render→dataset→label icrası — qeydiyyatdan keçmiş
-  bir eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq;
-  ƏVVƏLCƏ həll edilməli sual: RenderSpec/LabelSpec-in faktiki
-  dəyərlərini (təkcə hash yox) haradan bərpa etmək (yeni sxem
-  dəyişikliyi ola bilər); (2) `rendering`/`training` state keçidləri;
-  (3) model təlimi (ML asılılığı, GPU qərarı) — daha böyük, ayrıca
-  qərar tələb edən addım.
+  bir eksperiment üçün faktiki şəkilləri/nümunələri qurub saxlamaq
+  (RenderSpec/LabelSpec artıq real dəyərlərlə saxlanılır — bu sual HƏLL
+  OLUNDU); (2) `rendering`/`training` state keçidləri; (3) model təlimi
+  (ML asılılığı, GPU qərarı) — daha böyük, ayrıca qərar tələb edən addım.
+  İstifadəçinin prioritet sırasına görə (Phase 3→4→7→8→9→10) Phase 5
+  "əhəmiyyətli yeni həcm" kimi qeyd edilib, Phase 3/4-dən sonra əlavə
+  addımdır — bu barədə istifadəçi ilə aydınlaşdırma lazım ola bilər.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
   (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
   yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/

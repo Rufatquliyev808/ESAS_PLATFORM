@@ -1,6 +1,13 @@
 # ESAS Platform — Sessiya handoff
 
-Son yenilənmə: 2026-08-09
+Son yenilənmə: 2026-08-09 (tam vəziyyət doğrulaması edilib)
+
+## YENİ QAYDA (bu istifadəçi tapşırığı ilə)
+
+Push YALNIZ istifadəçi açıq şəkildə "push et" dediyi halda edilir —
+əvvəlki AskUserQuestion-la hər commit-dən sonra soruşma vərdişi artıq
+tətbiq edilmir bu sessiyada. Commit-lər normal qaydada (tamamlanmış,
+testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 
 ## Başlanğıc
 
@@ -29,7 +36,9 @@ Son yenilənmə: 2026-08-09
   (Visual AI): DAVAM EDİR** — deterministik kanonik qrafik renderi
   (`visual_render.py`), dataset lineage/manifest qatı
   (`visual_dataset.py`), label hesablanması (`visual_label.py`),
-  eksperiment qeydiyyatı/persistence API-si (migration `0012`,
+  eksperiment qeydiyyatı/persistence API-si — indi real `RenderSpec`/
+  `LabelSpec` saxlayır, əvvəlki ixtiyari hash-string dizaynı düzəldildi
+  (migration `0012`,
   `visual_experiment_repository.py`, 4 endpoint — register/get/list/archive)
   VƏ frontend paneli (`visual-experiments-panel.tsx`) tamamlanıb. Yalnız
   `registered ↔ archived` keçidi işlək — `rendering/training/evaluated`
@@ -315,19 +324,15 @@ Son yenilənmə: 2026-08-09
 
 ## Commit/push vəziyyəti
 
-- **`main` origin ilə tam sinxrondur, HEAD = `532ab23`** (bu sessiyanın
-  bütün işi — Phase 3 SA-001-SA-007 (backend+frontend+async job resursu),
-  job-queue frontend səthi, `PROJECT_ROADMAP.md` yeniləməsi, canlı
-  konsensus panelinin hərəkətli ortalamaları, platform-wide audit (sənəd
-  status düzəlişləri `83c5f91` + npm audit fix `297377e`), Phase 5
-  renderer (`f4c8ce2`) + dataset lineage/manifest qatı (`a736cc1`) +
-  label hesablanması (`1f59d33`) + eksperiment qeydiyyatı/persistence
-  API-si (`532ab23`) — daxil olmaqla). **Push edilməmiş dəyişiklik VAR:
-  Phase 5 frontend paneli** (`visual-experiments-panel.tsx` + siyahı
-  endpoint-i/cursor + naviqasiya bağlantısı, backend `609 passed`,
-  frontend `18/18` test, canlı brauzerdə sınanıb) — hələ commit
-  edilməyib. Ətraflı, kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md`
-  (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan" qeydləri.
+- **`origin/main` = `0c20baa`** (bu HEAD push edilib — Phase 5 frontend
+  paneli daxil olmaqla, bütün əvvəlki sessiya işi). **Push edilməmiş
+  YEREL commit-lər var**: `71f67f0` (`PROJECT_ROADMAP.md` Phase 5
+  düzəlişi) + bu turda əlavə ediləcək spec-saxlanması düzəlişi (render_spec_json/
+  label_spec_json, backend `609 passed`, frontend `18/18`, canlı
+  brauzerdə sınanıb). İstifadəçinin YENİ qaydasına görə (yuxarıda) push
+  yalnız açıq tapşırıqla ediləcək. Ətraflı, kronoloji dəyişiklik siyahısı
+  üçün: `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı
+  "Tamamlanan" qeydləri.
   AGENTS.md qaydasına görə hər yeni dəyişikliyin push-u istifadəçinin
   ayrıca açıq təsdiqini gözləyəcək.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-

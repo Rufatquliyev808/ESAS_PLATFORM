@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from backend.app.analysis.visual_label import LabelSpec
+from backend.app.analysis.visual_render import RenderSpec
 from backend.app.database.connection import get_connection, initialize_database
 from backend.app.database.migration_runner import apply_migrations
 from backend.app.database.visual_experiment_repository import (
@@ -14,6 +16,10 @@ from backend.app.database.visual_experiment_repository import (
     list_visual_experiments,
     register_visual_experiment,
 )
+
+
+DEFAULT_RENDER_SPEC = RenderSpec()
+DEFAULT_LABEL_SPEC = LabelSpec(horizon_bars=10, up_threshold_bps=10.0, down_threshold_bps=-10.0)
 
 
 def _prepare(database_path: Path, session_id: str = "rps_test", created_by: str = "TEST-USER") -> None:
@@ -37,13 +43,14 @@ def _prepare(database_path: Path, session_id: str = "rps_test", created_by: str 
 
 def _register(
     session_id: str = "rps_test", created_by: str = "TEST-USER", *,
-    label_spec_id: str = "sha256:label", train_end_at: str = "2026-08-06T00:00:00+00:00",
+    label_spec: LabelSpec = DEFAULT_LABEL_SPEC,
+    train_end_at: str = "2026-08-06T00:00:00+00:00",
     validation_end_at: str = "2026-08-07T00:00:00+00:00",
 ):
     return register_visual_experiment(
         created_by=created_by, actor_role="operator", replay_session_id=session_id,
         symbol="GOLD", timeframe="M1", source_bar_fingerprint="sha256:bars",
-        render_spec_id="sha256:render", label_spec_id=label_spec_id,
+        render_spec=DEFAULT_RENDER_SPEC, label_spec=label_spec,
         observation_window_bars=64, train_end_at=train_end_at, validation_end_at=validation_end_at,
     )
 
@@ -55,6 +62,8 @@ def test_register_persists_experiment_with_registered_state(isolated_database: P
     assert experiment.state_version == 0
     assert experiment.symbol == "GOLD"
     assert experiment.timeframe == "M1"
+    assert experiment.render_spec["width"] == DEFAULT_RENDER_SPEC.width
+    assert experiment.label_spec["horizon_bars"] == DEFAULT_LABEL_SPEC.horizon_bars
     fetched = get_visual_experiment(experiment.experiment_id)
     assert fetched == experiment
 
@@ -84,9 +93,11 @@ def test_registration_is_idempotent_for_identical_configuration(isolated_databas
 
 def test_different_configuration_yields_different_experiment_id(isolated_database: Path) -> None:
     _prepare(isolated_database)
-    first = _register(label_spec_id="sha256:label_a")
-    second = _register(label_spec_id="sha256:label_b")
+    first = _register(label_spec=LabelSpec(10, 10.0, -10.0))
+    second = _register(label_spec=LabelSpec(20, 10.0, -10.0))
     assert first.experiment_id != second.experiment_id
+    assert first.render_spec_id == second.render_spec_id
+    assert first.label_spec_id != second.label_spec_id
 
 
 def test_registration_by_different_owner_conflicts(isolated_database: Path) -> None:
@@ -103,7 +114,7 @@ def test_rejects_unknown_timeframe(isolated_database: Path) -> None:
         register_visual_experiment(
             created_by="TEST-USER", actor_role="operator", replay_session_id="rps_test",
             symbol="GOLD", timeframe="M3", source_bar_fingerprint="sha256:bars",
-            render_spec_id="sha256:render", label_spec_id="sha256:label",
+            render_spec=DEFAULT_RENDER_SPEC, label_spec=DEFAULT_LABEL_SPEC,
             observation_window_bars=64, train_end_at="2026-08-06T00:00:00+00:00",
             validation_end_at="2026-08-07T00:00:00+00:00",
         )
@@ -115,7 +126,7 @@ def test_rejects_non_positive_observation_window_bars(isolated_database: Path) -
         register_visual_experiment(
             created_by="TEST-USER", actor_role="operator", replay_session_id="rps_test",
             symbol="GOLD", timeframe="M1", source_bar_fingerprint="sha256:bars",
-            render_spec_id="sha256:render", label_spec_id="sha256:label",
+            render_spec=DEFAULT_RENDER_SPEC, label_spec=DEFAULT_LABEL_SPEC,
             observation_window_bars=0, train_end_at="2026-08-06T00:00:00+00:00",
             validation_end_at="2026-08-07T00:00:00+00:00",
         )
@@ -171,9 +182,9 @@ def test_archive_twice_conflicts(isolated_database: Path) -> None:
 def test_list_returns_only_owners_experiments_newest_first(isolated_database: Path) -> None:
     _prepare(isolated_database, session_id="rps_test", created_by="TEST-USER")
     _prepare(isolated_database, session_id="rps_other", created_by="OTHER-USER")
-    first = _register(train_end_at="2026-08-06T00:00:00+00:00", validation_end_at="2026-08-07T00:00:00+00:00")
-    second = _register(label_spec_id="sha256:label_b", train_end_at="2026-08-06T00:00:00+00:00", validation_end_at="2026-08-07T00:00:00+00:00")
-    _register(session_id="rps_other", created_by="OTHER-USER", label_spec_id="sha256:label_c")
+    first = _register(label_spec=LabelSpec(10, 10.0, -10.0))
+    second = _register(label_spec=LabelSpec(20, 10.0, -10.0))
+    _register(session_id="rps_other", created_by="OTHER-USER", label_spec=LabelSpec(30, 10.0, -10.0))
 
     page = list_visual_experiments(owner="TEST-USER")
     ids = {item.experiment_id for item in page.items}
@@ -183,8 +194,8 @@ def test_list_returns_only_owners_experiments_newest_first(isolated_database: Pa
 
 def test_list_paginates_with_cursor(isolated_database: Path) -> None:
     _prepare(isolated_database)
-    _register(label_spec_id="sha256:label_a")
-    _register(label_spec_id="sha256:label_b")
+    _register(label_spec=LabelSpec(10, 10.0, -10.0))
+    _register(label_spec=LabelSpec(20, 10.0, -10.0))
 
     first_page = list_visual_experiments(owner="TEST-USER", page_size=1)
     assert len(first_page.items) == 1

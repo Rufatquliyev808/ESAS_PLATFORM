@@ -13,7 +13,9 @@ type VisualExperiment = {
   timeframe: string;
   source_bar_fingerprint: string;
   render_spec_id: string;
+  render_spec: { width: number; height: number };
   label_spec_id: string;
+  label_spec: { horizon_bars: number; up_threshold_bps: number; down_threshold_bps: number };
   observation_window_bars: number;
   train_end_at: string;
   validation_end_at: string;
@@ -57,8 +59,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
   const now = new Date();
   const [timeframe, setTimeframe] = useState<Timeframe>("M1");
   const [sourceBarFingerprint, setSourceBarFingerprint] = useState("");
-  const [renderSpecId, setRenderSpecId] = useState("");
-  const [labelSpecId, setLabelSpecId] = useState("");
+  const [horizonBars, setHorizonBars] = useState(10);
+  const [upThresholdBps, setUpThresholdBps] = useState(10);
+  const [downThresholdBps, setDownThresholdBps] = useState(-10);
   const [observationWindowBars, setObservationWindowBars] = useState(64);
   const [trainEndAt, setTrainEndAt] = useState(localInput(new Date(now.getTime() + 24 * 60 * 60 * 1000)));
   const [validationEndAt, setValidationEndAt] = useState(localInput(new Date(now.getTime() + 48 * 60 * 60 * 1000)));
@@ -104,8 +107,11 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
           symbol,
           timeframe,
           source_bar_fingerprint: sourceBarFingerprint,
-          render_spec_id: renderSpecId,
-          label_spec_id: labelSpecId,
+          label_spec: {
+            horizon_bars: horizonBars,
+            up_threshold_bps: upThresholdBps,
+            down_threshold_bps: downThresholdBps,
+          },
           observation_window_bars: observationWindowBars,
           train_end_at: new Date(trainEndAt).toISOString(),
           validation_end_at: new Date(validationEndAt).toISOString(),
@@ -120,7 +126,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Eksperiment qeydə alına bilmədi.");
     } finally { setRegistering(false); }
-  }, [labelSpecId, load, observationWindowBars, onUnauthorized, renderSpecId, sessionId, sourceBarFingerprint, symbol, timeframe, token, trainEndAt, validationEndAt]);
+  }, [downThresholdBps, horizonBars, load, observationWindowBars, onUnauthorized, sessionId, sourceBarFingerprint, symbol, timeframe, token, trainEndAt, upThresholdBps, validationEndAt]);
 
   const archive = useCallback(async (experiment: VisualExperiment) => {
     setArchivingId(experiment.experiment_id);
@@ -150,8 +156,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
           <p>
             Qrafik renderi, dataset lineage və label qaydası artıq backend-də hazırdır, amma bura yalnız
             eksperimentin DONDURULMUŞ konfiqurasiyasını qeydə alır — heç bir şəkil render etmir, model təlim
-            etmir. `source_bar_fingerprint`/`render_spec_id`/`label_spec_id` hələ ayrıca hesablama
-            endpoint-i yoxdur, ona görə bu dəyərlər əl ilə (backend hesablamasından götürülərək) daxil edilir.
+            etmir. Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə qeydə alınır; horizon və label
+            hədləri aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca hesablama endpoint-i olmadığı üçün
+            əl ilə (statistik/texniki analiz nəticəsindən götürülərək) daxil edilir.
           </p>
         </div>
       </div>
@@ -166,8 +173,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
         </label>
         <label>Pəncərə uzunluğu (bar)<input type="number" min={1} max={5000} value={observationWindowBars} onChange={(event) => setObservationWindowBars(Number(event.target.value))} /></label>
         <label>Bar fingerprint<input type="text" required placeholder="sha256:…" value={sourceBarFingerprint} onChange={(event) => setSourceBarFingerprint(event.target.value)} /></label>
-        <label>Render spec ID<input type="text" required placeholder="sha256:…" value={renderSpecId} onChange={(event) => setRenderSpecId(event.target.value)} /></label>
-        <label>Label spec ID<input type="text" required placeholder="sha256:…" value={labelSpecId} onChange={(event) => setLabelSpecId(event.target.value)} /></label>
+        <label>Horizon (bar)<input type="number" min={1} max={5000} value={horizonBars} onChange={(event) => setHorizonBars(Number(event.target.value))} /></label>
+        <label>Yuxarı hədd (bps)<input type="number" step="0.1" value={upThresholdBps} onChange={(event) => setUpThresholdBps(Number(event.target.value))} /></label>
+        <label>Aşağı hədd (bps)<input type="number" step="0.1" value={downThresholdBps} onChange={(event) => setDownThresholdBps(Number(event.target.value))} /></label>
         <label>Train sərhədi<input type="datetime-local" required value={trainEndAt} onChange={(event) => setTrainEndAt(event.target.value)} /></label>
         <label>Validation sərhədi<input type="datetime-local" required value={validationEndAt} onChange={(event) => setValidationEndAt(event.target.value)} /></label>
         <button type="submit" disabled={registering}>{registering ? "Qeydə alınır…" : "Eksperimenti qeydə al"}</button>
@@ -184,12 +192,13 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
+              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
               <tbody>
                 {experiments.map((experiment) => (
                   <tr key={experiment.experiment_id}>
                     <td>{experiment.timeframe}</td>
                     <td>{experiment.observation_window_bars} bar</td>
+                    <td>{experiment.label_spec.horizon_bars} bar · {experiment.label_spec.up_threshold_bps >= 0 ? "+" : ""}{experiment.label_spec.up_threshold_bps} / {experiment.label_spec.down_threshold_bps}</td>
                     <td>{LIFECYCLE_LABELS[experiment.lifecycle_state] ?? experiment.lifecycle_state}</td>
                     <td>{formatTime(experiment.created_at)}</td>
                     <td>

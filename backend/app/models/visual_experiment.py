@@ -1,6 +1,39 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class RenderSpecInput(BaseModel):
+    """Mirrors `backend.app.analysis.visual_render.RenderSpec` exactly --
+    defaults match `DEFAULT_RENDER_SPEC` so a caller can register an
+    experiment without touching image geometry/colour at all.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    width: int = Field(default=512, ge=16, le=4_096)
+    height: int = Field(default=256, ge=16, le=4_096)
+    padding_top: int = Field(default=8, ge=0, le=512)
+    padding_bottom: int = Field(default=8, ge=0, le=512)
+    padding_left: int = Field(default=8, ge=0, le=512)
+    padding_right: int = Field(default=8, ge=0, le=512)
+    background_rgb: tuple[int, int, int] = (255, 255, 255)
+    bullish_rgb: tuple[int, int, int] = (0, 128, 0)
+    bearish_rgb: tuple[int, int, int] = (192, 0, 0)
+    wick_rgb: tuple[int, int, int] = (32, 32, 32)
+
+
+class LabelSpecInput(BaseModel):
+    """Mirrors `backend.app.analysis.visual_label.LabelSpec` exactly. No
+    default thresholds -- the caller must consciously choose the horizon
+    and up/down bands rather than inherit an implicit trading assumption.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    horizon_bars: int = Field(ge=1, le=5_000)
+    up_threshold_bps: float = Field(ge=-100_000, le=100_000)
+    down_threshold_bps: float = Field(ge=-100_000, le=100_000)
+
+
 class VisualExperimentRegisterRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
 
@@ -8,8 +41,8 @@ class VisualExperimentRegisterRequest(BaseModel):
     symbol: str = Field(min_length=1)
     timeframe: str = Field(pattern="^(S1|S10|M1|M5|M15|M30|H1|H4|D1)$")
     source_bar_fingerprint: str = Field(min_length=1)
-    render_spec_id: str = Field(min_length=1)
-    label_spec_id: str = Field(min_length=1)
+    render_spec: RenderSpecInput = RenderSpecInput()
+    label_spec: LabelSpecInput
     observation_window_bars: int = Field(ge=1, le=5_000)
     train_end_at: str = Field(min_length=1)
     validation_end_at: str = Field(min_length=1)

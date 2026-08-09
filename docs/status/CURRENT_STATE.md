@@ -1,5 +1,41 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Tam vəziyyət doğrulaması + Phase 5 spec saxlanması düzəlişi
+
+- İstifadəçi yeni sessiyada "əvvəlcə oxu, sonra faktla təsdiqlə, sonra
+  davam et" tapşırığı verdi (AGENTS.md-in öz qaydası). Bütün konstitusiya/
+  arxitektura sənədləri, `PROJECT_ROADMAP.md`, status sənədləri oxundu;
+  Git (təmiz, `origin/main`=`0c20baa` ilə sinxron), testlər (backend
+  `609/609`, frontend `18/18`, müstəqil işlədilib) və real production
+  bazası (read-only, `database/ESAS_PLATFORM.sqlite`) yoxlanıldı.
+- **Baza yoxlaması:** `quick_check: ok`, miqrasiyalar `0001`-`0011`
+  tətbiq olunub (`0012` DOĞRU olaraq tətbiq edilməyib — sənədin dediyi
+  kimi), `tick_events`=2,419,520, `replay_sessions`=7 — sənədlərlə
+  üst-üstə düşür. Phase 3/4/5-in eksperiment cədvəlləri (0 sətir) —
+  gözlənilən, çünki bunlar yalnız scratch bazalarda sınanıb.
+- **Tapılan 2 problem:** (1) canlı tick axını ~41.5 saat köhnəlib (son
+  tick `2026-08-07T20:57:59`) — MT5 Bridge tərəfi, bu sessiyanın
+  həll etmə səlahiyyətindən kənardır, istifadəçiyə bildirildi; (2)
+  `PROJECT_ROADMAP.md` Phase 5-i hələ "PLANNED" göstərirdi — düzəldildi
+  (commit `71f67f0`).
+- **Phase 5-də tapılan real dizayn boşluğu düzəldildi:** qeydiyyat
+  API-si əvvəllər `render_spec_id`/`label_spec_id`-ni çağıranın verdiyi
+  ixtiyari mətn kimi qəbul edirdi — heç nə onların real spec-ə uyğun
+  olduğunu yoxlamırdı, gələcəkdə materiallaşdırma üçün bərpa etmək
+  mümkün deyildi. Migration `0012`-yə (hələ production-a tətbiq
+  edilməyib, təhlükəsiz redaktə edilə bilər) `render_spec_json`/
+  `label_spec_json` sütunları əlavə edildi. `register_visual_experiment()`
+  indi real `RenderSpec`/`LabelSpec` dataclass-larını qəbul edir, ID-ni
+  server tərəfdə `render_spec_id()`/`label_spec_id()` funksiyalarından
+  (renderer/labeller-in özünün istifadə etdiyi eyni funksiyalar) hesablayır.
+- Frontend forması yeniləndi: 3 ixtiyari hash-yapışdırma sahəsi real
+  `horizon_bars`/`up_threshold_bps`/`down_threshold_bps` rəqəm
+  sahələrinə çevrildi; render spec standart dəyərlərdə qalır (UI-də hələ
+  göstərilmir). Tam backend regressiyası: `609 passed`. Frontend:
+  lint/build təmiz, `18/18` test. Canlı brauzerdə yenidən sınandı (yeni
+  sahələrlə qeydiyyat, cavabda real `render_spec`/`label_spec` dəyərləri
+  göründü), real 8000/3000 toxunulmadan.
+
 ## 2026-08-09 — Phase 5 (Visual AI): frontend paneli
 
 - İstifadəçi frontend panelini seçdi (dataset materiallaşdırma əvəzinə

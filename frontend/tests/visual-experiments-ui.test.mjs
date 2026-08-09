@@ -10,8 +10,10 @@ test("visual experiments panel stays research-only and registers only frozen con
   assert.match(source, /heç bir şəkil render etmir, model təlim\s+etmir/);
   assert.match(source, /api\/v2\/visual-experiments/);
   assert.match(source, /source_bar_fingerprint/);
-  assert.match(source, /render_spec_id/);
-  assert.match(source, /label_spec_id/);
+  assert.match(source, /label_spec: \{/);
+  assert.match(source, /horizon_bars: horizonBars/);
+  assert.match(source, /up_threshold_bps: upThresholdBps/);
+  assert.match(source, /down_threshold_bps: downThresholdBps/);
   assert.match(source, /observation_window_bars/);
   assert.match(source, /train_end_at/);
   assert.match(source, /validation_end_at/);

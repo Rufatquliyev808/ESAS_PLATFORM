@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from backend.app.analysis.visual_label import LabelSpec
+from backend.app.analysis.visual_render import RenderSpec
 from backend.app.database.connection import initialize_database
 from backend.app.database.migration_runner import apply_migrations
 from backend.app.database.replay_session_repository import create_replay_session
@@ -11,6 +13,7 @@ from backend.app.main import app
 
 
 BASE_TIME = datetime(2026, 8, 9, 21, 0, tzinfo=UTC)
+DEFAULT_LABEL_SPEC = LabelSpec(horizon_bars=10, up_threshold_bps=10.0, down_threshold_bps=-10.0)
 
 
 def _prepare(database_path: Path, *, owner: str = "TEST-USER"):
@@ -36,14 +39,23 @@ def _registration_payload(session_id: str, **overrides: object) -> dict[str, obj
         "symbol": "GOLD",
         "timeframe": "M1",
         "source_bar_fingerprint": "sha256:bars",
-        "render_spec_id": "sha256:render",
-        "label_spec_id": "sha256:label",
+        "label_spec": {"horizon_bars": 10, "up_threshold_bps": 10.0, "down_threshold_bps": -10.0},
         "observation_window_bars": 64,
         "train_end_at": "2026-08-10T00:00:00+00:00",
         "validation_end_at": "2026-08-11T00:00:00+00:00",
     }
     payload.update(overrides)
     return payload
+
+
+def _register_directly(session_id: str, *, created_by: str):
+    return register_visual_experiment(
+        created_by=created_by, actor_role="operator", replay_session_id=session_id,
+        symbol="GOLD", timeframe="M1", source_bar_fingerprint="sha256:bars",
+        render_spec=RenderSpec(), label_spec=DEFAULT_LABEL_SPEC,
+        observation_window_bars=64, train_end_at="2026-08-10T00:00:00+00:00",
+        validation_end_at="2026-08-11T00:00:00+00:00",
+    )
 
 
 def test_register_and_fetch_visual_experiment(isolated_database: Path) -> None:
@@ -59,6 +71,8 @@ def test_register_and_fetch_visual_experiment(isolated_database: Path) -> None:
         data = created.json()["data"]
         assert data["lifecycle_state"] == "registered"
         assert data["state_version"] == 0
+        assert data["label_spec"]["horizon_bars"] == 10
+        assert data["render_spec"]["width"] == 512
 
         detail = client.get(f"/api/v2/visual-experiments/{data['experiment_id']}", headers=headers)
         assert detail.status_code == 200
@@ -144,11 +158,7 @@ def test_detail_for_another_users_experiment_returns_403(isolated_database: Path
         created_by="OTHER-USER", actor_role="operator", symbol="GOLD",
         start_at=BASE_TIME, end_at=BASE_TIME + timedelta(minutes=3), mode="max_speed",
     )
-    foreign = register_visual_experiment(
-        created_by="OTHER-USER", actor_role="operator",
-        replay_session_id=foreign_session.session_id,
-        **{k: v for k, v in _registration_payload(foreign_session.session_id).items() if k != "session_id"},
-    )
+    foreign = _register_directly(foreign_session.session_id, created_by="OTHER-USER")
     with TestClient(app) as client:
         headers = _headers(client)
         response = client.get(f"/api/v2/visual-experiments/{foreign.experiment_id}", headers=headers)
@@ -195,11 +205,7 @@ def test_list_excludes_other_users_experiments(isolated_database: Path) -> None:
         created_by="OTHER-USER", actor_role="operator", symbol="GOLD",
         start_at=BASE_TIME, end_at=BASE_TIME + timedelta(minutes=3), mode="max_speed",
     )
-    register_visual_experiment(
-        created_by="OTHER-USER", actor_role="operator",
-        replay_session_id=foreign_session.session_id,
-        **{k: v for k, v in _registration_payload(foreign_session.session_id).items() if k != "session_id"},
-    )
+    _register_directly(foreign_session.session_id, created_by="OTHER-USER")
     with TestClient(app) as client:
         headers = _headers(client)
         listing = client.get("/api/v2/visual-experiments", headers=headers)

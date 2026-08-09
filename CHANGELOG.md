@@ -8,6 +8,41 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Phase 5 experiment registration now stores reconstructable specs, not opaque ids
+
+- Full state-verification pass first (user asked to re-confirm git/tests/
+  DB against docs before continuing, per AGENTS.md): git clean and
+  synced at `0c20baa`, backend `609/609` and frontend `18/18`
+  independently re-run and matched, production DB read-only inspected
+  (`quick_check: ok`, migrations `0001`-`0011` applied, `0012` correctly
+  NOT applied, `tick_events`/`replay_sessions` counts matched docs).
+  Found the live tick feed is ~41.5h stale (last tick `2026-08-07
+  20:57:59`) -- flagged to the user, not something this session can fix.
+  Found `PROJECT_ROADMAP.md` still showed Phase 5 as PLANNED with all
+  boxes unchecked despite this session's actual progress -- fixed.
+- The registration API previously accepted `render_spec_id`/
+  `label_spec_id` as arbitrary caller-supplied strings -- nothing
+  verified they corresponded to a real spec, and there was no way to
+  recover the actual render/label configuration later for materialization.
+  Migration `0012` (still unapplied to production, safe to edit in
+  place) gained `render_spec_json`/`label_spec_json` columns.
+  `register_visual_experiment()` now takes real `RenderSpec`/`LabelSpec`
+  dataclasses and derives the ids server-side via the same
+  `render_spec_id()`/`label_spec_id()` functions the renderer/labeller
+  themselves use.
+- `VisualExperimentRegisterRequest` gained nested `render_spec`
+  (defaults match `DEFAULT_RENDER_SPEC`) and `label_spec` (required,
+  no default threshold -- forces a conscious choice) Pydantic models.
+  Updated 3 tests' fixtures and the frontend form: the three opaque
+  hash-paste fields became real `horizon_bars`/`up_threshold_bps`/
+  `down_threshold_bps` number inputs; render spec stays at defaults
+  (not yet exposed in the UI).
+- Full backend regression: `609 passed` (unchanged count). Frontend:
+  lint/build clean, `18/18` tests. Live-browser verified again on a
+  scratch backend/frontend (register with the new fields, response
+  showed real `render_spec`/`label_spec` values), real 8000/3000
+  untouched.
+
 ### Added — Phase 5 Visual AI: frontend panel for experiment registration
 
 - User chose the frontend panel over dataset materialization (which
