@@ -8,6 +8,47 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 Visual AI: dataset lineage/manifest layer
+
+- Direct continuation of the canonical renderer (user said "davam et").
+  New `backend/app/analysis/visual_dataset.py` implements the contract's
+  "Dataset vahidi və lineage" chain: `sample_id ->
+  source_bar_fingerprint -> render_spec_id -> image_checksum ->
+  observation_end_at -> label_spec_id -> label_available_at ->
+  split_id`.
+- `build_visual_sample(image, *, label_spec_id, label_available_at=None,
+  label_value=None)` wraps a `CanonicalImage` into a `VisualSample`.
+  Label VALUE computation is deliberately out of scope (the contract
+  requires it be computed "ayrıca" -- separately -- per Phase 4 rules,
+  never influencing rendering); this layer only records whatever label a
+  caller supplies and enforces `label_available_at` can't be dated
+  before the observation window it describes actually closes. No
+  `label_available_at` -> `label_status=PENDING_HORIZON` (horizon not
+  complete yet, matches "horizon tamamlanmayan nümunə təlimə daxil
+  edilmir").
+- `assign_time_based_splits(samples, *, train_end_at, validation_end_at)`
+  -- purged walk-forward split. Never random (contract: "Random image
+  split qadağandır; zaman əsaslı bölgü məcburidir"): a labeled sample is
+  assigned by where its `[observation_window_start_at,
+  label_available_at)` interval falls relative to the two time
+  boundaries; a sample whose interval CROSSES a boundary is purged
+  (`PURGED_BOUNDARY_OVERLAP`, kept in the output, never silently
+  dropped) rather than assigned to either side -- otherwise the same
+  historical event could leak across two splits. Unlabeled samples are
+  never split.
+- `build_dataset_manifest(samples)` counts every sample by
+  symbol/timeframe/split/label-status/quality-flags -- nothing is ever
+  dropped from the manifest (contract: "Uğursuz, neutral və
+  insufficient_data nümunələri səssiz silinmir"). Session/regime
+  breakdowns from Phase 3's SA-006/SA-007 are deliberately not joined in
+  yet (documented as a separate future increment).
+- New `tests/backend/test_visual_dataset.py` (18 tests): label-status
+  transitions, sample-id determinism, causality validation, all three
+  split outcomes (train/validation/holdout) plus both boundary-crossing
+  purge cases, pending-horizon samples never being split, and manifest
+  completeness/determinism. Full backend regression: `571 passed`.
+  Frontend/API untouched -- still backend-only foundation work.
+
 ### Added — Phase 5 Visual AI started: deterministic canonical chart renderer
 
 - User chose to start Phase 5 (Visual AI) after the platform-wide audit

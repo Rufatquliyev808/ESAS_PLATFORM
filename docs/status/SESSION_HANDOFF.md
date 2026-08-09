@@ -26,9 +26,10 @@ Son yenilənmə: 2026-08-09
   "DESIGN READY — NOT IMPLEMENTED"** — yalnız persistence skeleti + admin
   API/frontend tikilib (manifest + event reyestri + nəzəri
   portfolio/risk ledger), canlı qərar generatoru yoxdur. **Phase 5
-  (Visual AI): BAŞLADI** — yalnız deterministik kanonik qrafik renderi
-  (`visual_render.py`) tamamlanıb, dataset lineage, API, model təlimi və
-  frontend hələ yoxdur (bax `docs/status/NEXT_TASK.md`).
+  (Visual AI): DAVAM EDİR** — deterministik kanonik qrafik renderi
+  (`visual_render.py`) VƏ dataset lineage/manifest qatı
+  (`visual_dataset.py`) tamamlanıb, API, label dəyəri hesablanması, model
+  təlimi və frontend hələ yoxdur (bax `docs/status/NEXT_TASK.md`).
 - Pattern namizədi işi bu qatlardan ibarətdir:
   1. **Draft generator** — hesablama-zamanı 6 hipotez slotu.
   2. **Persistence/`registered`** — migration `0005`.
@@ -306,16 +307,18 @@ Son yenilənmə: 2026-08-09
 
 ## Commit/push vəziyyəti
 
-- **`main` origin ilə tam sinxrondur, HEAD = `297377e`** (bu sessiyanın
+- **`main` origin ilə tam sinxrondur, HEAD = `f4c8ce2`** (bu sessiyanın
   bütün işi — Phase 3 SA-001-SA-007 (backend+frontend+async job resursu),
   job-queue frontend səthi, `PROJECT_ROADMAP.md` yeniləməsi, canlı
   konsensus panelinin hərəkətli ortalamaları, platform-wide audit (sənəd
-  status düzəlişləri `83c5f91` + npm audit fix `297377e`) — daxil
-  olmaqla). Hazırda commit edilməmiş kod dəyişikliyi YOXDUR. Ətraflı,
-  kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md` (`## Unreleased`
-  bölməsi) və yuxarıdakı "Tamamlanan" qeydləri. AGENTS.md qaydasına görə
-  hər yeni dəyişikliyin push-u istifadəçinin ayrıca açıq təsdiqini
-  gözləyəcək.
+  status düzəlişləri `83c5f91` + npm audit fix `297377e`), Phase 5
+  renderer (`f4c8ce2`) — daxil olmaqla). **Push edilməmiş dəyişiklik VAR:
+  Phase 5 dataset lineage/manifest qatı** (`visual_dataset.py` +
+  `test_visual_dataset.py`, `571 passed`) — hələ commit edilməyib.
+  Ətraflı, kronoloji dəyişiklik siyahısı üçün: `CHANGELOG.md`
+  (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan" qeydləri. AGENTS.md
+  qaydasına görə hər yeni dəyişikliyin push-u istifadəçinin ayrıca açıq
+  təsdiqini gözləyəcək.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni

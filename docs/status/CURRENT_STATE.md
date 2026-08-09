@@ -1,5 +1,38 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5 (Visual AI): dataset lineage/manifest qatı
+
+- İstifadəçi "davam et" dedi — renderin təbii davamı.
+- Yeni `backend/app/analysis/visual_dataset.py`: müqavilənin lineage
+  zəncirini (`sample_id → source_bar_fingerprint → render_spec_id →
+  image_checksum → observation_end_at → label_spec_id →
+  label_available_at → split_id`) tətbiq edir.
+- `build_visual_sample()` bir `CanonicalImage`-i `VisualSample`-ə
+  çevirir. **Label DƏYƏRİNİN hesablanması qəsdən kənarda saxlanıldı**
+  (müqavilə tələb edir ki, label "ayrıca" — Phase 4 qaydasına görə —
+  hesablansın, render-ə təsir etməsin); bu qat yalnız çağıranın verdiyi
+  label-i qeyd edir və `label_available_at`-in müşahidə pəncərəsi
+  bağlanmazdan ƏVVƏL ola bilməyəcəyini yoxlayır. `label_available_at`
+  verilməyibsə → `label_status=PENDING_HORIZON` ("horizon tamamlanmayan
+  nümunə təlimə daxil edilmir" qaydasına uyğun).
+- `assign_time_based_splits()` — purged walk-forward bölgü. HEÇ VAXT
+  təsadüfi deyil (müqavilə: "Random image split qadağandır; zaman
+  əsaslı bölgü məcburidir"): label-lənmiş nümunə öz
+  `[observation_window_start_at, label_available_at)` intervalının 2
+  zaman sərhədinə görə haraya düşdüyünə əsasən təyin olunur; sərhədi
+  KƏSƏN nümunə heç bir tərəfə verilmir, `PURGED_BOUNDARY_OVERLAP` kimi
+  saxlanılır (səssiz silinmir) — əks halda eyni tarixi hadisə iki
+  bölgüyə sıza bilərdi. Label-siz nümunələr heç vaxt bölünmür.
+- `build_dataset_manifest()` hər nümunəni symbol/timeframe/split/label-
+  status/quality-flags üzrə sayır — heç nə manifestdən silinmir. Phase
+  3-ün SA-006/SA-007 sessiya/rejim məlumatı hələ birləşdirilməyib
+  (ayrıca gələcək addım kimi qeyd edildi).
+- Yeni `test_visual_dataset.py` (18 test): label-status keçidləri,
+  sample-id determinizmi, səbəbiyyət validasiyası, bütün 3 split nəticəsi
+  + hər iki sərhəd-keçmə purge halı, pending-horizon nümunələrin heç vaxt
+  bölünməməsi, manifest tamlığı/determinizmi. Tam backend regressiyası:
+  `571 passed`. Frontend/API toxunulmayıb.
+
 ## 2026-08-09 — Phase 5 (Visual AI) başladı: deterministik kanonik qrafik renderi
 
 - İstifadəçi platform-wide audit-dən sonra "phase 5" dedi. Müqavilə

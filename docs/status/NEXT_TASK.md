@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: —
-Mərhələ: Phase 5 (Visual AI) başladı — yalnız deterministik renderer (ilk addım) tamamlanıb, dataset lineage/API/model/frontend hələ yoxdur
+Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest qatı tamamlanıb, API/model/frontend hələ yoxdur
 
 ## Tamamlanan (bu sessiya)
 
@@ -348,16 +348,27 @@ frontend (3000) yenidən başladıldı, login səhifəsi düzgün render olundu,
 konsol xətası yox.
 
 **Phase 5 (Visual AI) başladı — deterministik kanonik qrafik renderi**
-(hələ commit edilməyib) — istifadəçinin "phase 5" seçimi, ilk addım kimi
-render (heç bir ML asılılığı yoxdur, tam testlənə bilər). Yeni
-`backend/app/analysis/visual_render.py`: yalnız Phase 4-ün bağlanmış
-barlarından PNG şam qrafiki, heç bir yeni asılılıq (stdlib
-`zlib`/`struct`), `image_checksum` xam piksel bufer üzərində (müqavilənin
-"eyni piksel checksum-u" tələbinə dəqiq uyğun). `CanonicalImage`
-lineage/known_at/missing-data maskasını daşıyır. Yeni
+(commit `f4c8ce2`, push edilib, CI yaşıl) — istifadəçinin "phase 5"
+seçimi, ilk addım kimi render (heç bir ML asılılığı yoxdur, tam
+testlənə bilər). Yeni `backend/app/analysis/visual_render.py`: yalnız
+Phase 4-ün bağlanmış barlarından PNG şam qrafiki, heç bir yeni asılılıq
+(stdlib `zlib`/`struct`), `image_checksum` xam piksel bufer üzərində
+(müqavilənin "eyni piksel checksum-u" tələbinə dəqiq uyğun).
+`CanonicalImage` lineage/known_at/missing-data maskasını daşıyır. Yeni
 `test_visual_render.py` (16 test). Tam backend regressiyası:
-`553 passed`. Frontend/API/dataset-lineage qatı hələ YOXDUR — qəsdən
-kiçik saxlanıldı.
+`553 passed`.
+
+**Phase 5 — dataset lineage/manifest qatı** (hələ commit edilməyib) —
+istifadəçinin "davam et" tapşırığı, renderin təbii davamı. Yeni
+`backend/app/analysis/visual_dataset.py`: müqavilənin lineage zəncirini
+(`sample_id → ... → split_id`) tətbiq edir; `build_visual_sample()`
+(label DƏYƏRİ hesablanmır, qəsdən kənarda — yalnız çağıranın verdiyini
+qeyd edir və səbəbiyyəti yoxlayır); `assign_time_based_splits()`
+(zaman-əsaslı, TƏSADÜFİ DEYİL, sərhəd-kəsən nümunələr purge edilir,
+səssiz silinmir); `build_dataset_manifest()` (heç nə silinmir). Yeni
+`test_visual_dataset.py` (18 test). Tam backend regressiyası:
+`571 passed`. Frontend/API/model təlimi hələ YOXDUR — qəsdən kiçik
+saxlanıldı.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
@@ -403,12 +414,16 @@ kiçik saxlanıldı.
   tarixi məlumat olduğunu yoxlamaq (D1/H4 üçün kifayət qədər gün tarixçəsi
   olmaya bilər — sintetik yoxlamada gördüyümüz kimi bu qrasefully
   `insufficient_data` kimi göstərilir, xəta vermir).
-- **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer tamamlandı,
-  növbəti təbii addım dataset lineage/manifest qatıdır (`sample_id →
-  bar_fingerprint → render_spec_id → image_checksum → observation_end_at
-  → label_spec_id → label_available_at → split_id`, purge/embargo Phase
-  3-dəki kimi). Model təlimi (ML asılılığı, GPU qərarı) daha sonrakı,
-  daha böyük addımdır.
+- **Phase 5 (Visual AI) — növbəti namizəd addım**: renderer VƏ dataset
+  lineage/manifest qatı tamamlandı. Növbəti təbii addımlar: (1)
+  eksperiment qeydiyyatı/lifecycle API-si (`draft → registered →
+  rendering → training → evaluated → accepted_for_shadow | rejected →
+  archived`, Pattern namizədi lifecycle-ı ilə eyni nümunə) və `POST
+  /api/v2/visual-datasets`/`visual-experiments` endpoint-ləri; (2) label
+  DƏYƏRİ hesablanması (bu ana qədər qəsdən kənarda saxlanılıb — Phase
+  4-ün hipotez/nəticə qaydasına uyğun ayrıca modul tələb edir); (3) model
+  təlimi (ML asılılığı, GPU qərarı) — daha sonrakı, daha böyük addımdır,
+  ayrıca istifadəçi qərarı tələb edir.
 - **Platform-wide audit-dən qalan, hələ həll edilməmiş tapıntılar**
   (yalnız istifadəçi ayrıca istəsə): `npm audit`-də qalan 11 tapıntı hamısı
   yalnız dev-tooling-dədir (`vite`/`wrangler`/`@cloudflare/vite-plugin`/
