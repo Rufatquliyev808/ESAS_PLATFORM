@@ -174,20 +174,22 @@ class PersistedVisualDatasetSample:
     artifact_checksum: str
     split_id: str
     label_status: str
+    label_value: str | None
 
 
 def list_dataset_samples(experiment_id: str) -> tuple[PersistedVisualDatasetSample, ...]:
-    """The minimal per-sample facts the training-readiness gate needs
-    (`strategies/visual_experiment_training.py`) -- identity/checksum/split/
-    label-status only, not the full lineage row -- so the gate can recompute
-    the dataset fingerprint and verify every artifact without pulling in
-    fields it has no use for.
+    """The minimal per-sample facts the training-readiness gate
+    (`strategies/visual_experiment_training.py`) and the training-input
+    pipeline (`strategies/visual_training_input_pipeline.py`) need --
+    identity/checksum/split/label, not the full lineage row -- so callers
+    can recompute the dataset fingerprint, verify every artifact, and build
+    (image, label) pairs without pulling in fields they have no use for.
     """
     normalized = _required_text(experiment_id, "experiment_id")
     with get_connection() as connection:
         rows = connection.execute(
             """
-            SELECT sample_id, image_checksum, artifact_checksum, split_id, label_status
+            SELECT sample_id, image_checksum, artifact_checksum, split_id, label_status, label_value
             FROM visual_dataset_samples WHERE experiment_id = ?;
             """,
             (normalized,),
@@ -196,7 +198,7 @@ def list_dataset_samples(experiment_id: str) -> tuple[PersistedVisualDatasetSamp
         PersistedVisualDatasetSample(
             sample_id=row["sample_id"], image_checksum=row["image_checksum"],
             artifact_checksum=row["artifact_checksum"], split_id=row["split_id"],
-            label_status=row["label_status"],
+            label_status=row["label_status"], label_value=row["label_value"],
         )
         for row in rows
     )

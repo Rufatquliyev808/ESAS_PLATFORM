@@ -87,7 +87,22 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   crash-injection testi (lifecycle UPDATE/audit INSERT/config INSERT
   nöqtələrində) real SQLite rollback-in heç bir aralıq vəziyyət
   qoymadığını təsdiqlədi. Eyni checksum üçün idempotent, fərqli checksum
-  üçün konflikt. Migration `0012`-`0015` YALNIZ test bazasındadır.
+  üçün konflikt. **Deterministik training-input pipeline v1** də
+  tamamlandı: `visual_render.py`-də `decode_canonical_png()` (mövcud PNG
+  encoder-in dəqiq tərsi), yeni `analysis/visual_training_input.py`
+  (saf, heç bir I/O) — `fit_preprocessing_state()` YALNIZ train
+  şəkillərindən (funksiya imzasında validation/holdout üçün parametr
+  yoxdur — konstruksiya ilə ayrılma), `apply_preprocessing()` heç vaxt
+  fit etmir, `build_deterministic_batches()` seed-li seçilmiş sıra ilə.
+  Yeni `strategies/visual_training_input_pipeline.py` — persisted
+  nümunələri split üzrə oxuyur (`pending_horizon`/`purged` heç vaxt
+  oxunmur, manifestdə qalır), PNG-ni checksum yoxlaması ilə yükləyir,
+  dekodlayıb yenidən yoxlayır, preprocessing state-i content-addressed
+  artefakt kimi saxlayır. 24 yeni test (17 saf + 7 inteqrasiya) qəbul
+  meyarını birbaşa yoxladı: eyni dataset/spec/seed → byte-for-byte eyni
+  batch-lər+checksum; validation dəyişməsi train checksum-una təsir
+  etmir. Scratch-də iki ardıcıl işə salma tam eyni nəticə verdi.
+  Migration `0012`-`0015` YALNIZ test bazasındadır.
   Növbəti addım: training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`

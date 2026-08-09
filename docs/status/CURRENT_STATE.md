@@ -1,5 +1,47 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Deterministik training-input pipeline v1
+
+- Tapşırıq: PNG artefaktlarını checksum yoxlaması ilə oxuyan, sabit ölçülü
+  model inputuna çevirən, preprocessing-i YALNIZ `train`-də fit edən, eyni
+  parametrləri validation/holdout-a dəyişmədən tətbiq edən, sabit seed ilə
+  deterministik batch sırası yaradan, pure-Python (yeni ML/numeric
+  asılılığı yoxdur) pipeline. Faktiki təlim, job/worker, frontend,
+  production miqrasiyası yoxdur.
+- `visual_render.py`-ə yeni `decode_canonical_png()` — mövcud `_encode_png`-in
+  dəqiq tərsi (PNG chunk parsing, IDAT decompress, filter-byte silinməsi,
+  ONLY canonical 8-bit RGB formatını qəbul edir). `test_visual_render.py`-ın
+  öz köhnə dublikat PNG parser-i indi bu public funksiyanın nazik wrapper-i.
+- Yeni `visual_training_input.py` (saf, heç bir I/O): `fit_preprocessing_state()`
+  — hər kanal üzrə min/max normalization + `ModelSpec.class_weight_policy`-ə
+  görə class-weight, YALNIZ train şəkillərindən (funksiyanın imzasında
+  validation/holdout üçün heç bir parametr yoxdur — konstruksiya ilə
+  ayrılma, runtime yoxlama deyil). Min/max assosiativdir — nəticə giriş
+  sırasından asılı deyil. `apply_preprocessing()` — dondurulmuş state-i
+  tətbiq edir, heç vaxt fit etmir. `build_deterministic_batches()` —
+  `sample_id`-ə görə sort, sonra seed-li `random.Random` ilə shuffle.
+- `visual_dataset_repository.py`: `PersistedVisualDatasetSample`-ə
+  `label_value` sahəsi əlavə edildi (geriyə uyğun).
+- Yeni `strategies/visual_training_input_pipeline.py`:
+  `build_visual_training_input()` — persisted nümunələri split üzrə oxuyur
+  (YALNIZ `train`/`validation`/`holdout` sorğulanır — `pending_horizon`/
+  `purged_boundary_overlap` heç vaxt oxunmur, manifestdə olduğu kimi qalır),
+  hər PNG-ni checksum yoxlaması ilə yükləyir, dekodlayır, dekodlanmış
+  piksellərin `image_checksum`-a uyğunluğunu YENİDƏN yoxlayır (fail-closed).
+  Preprocessing state content-addressed artefakt kimi (`storage/artifact_store.py`,
+  `.json` uzantısı) saxlanılır.
+- 24 yeni test: 17 saf unit test (determinizm, düzgün bounds/weight
+  formulaları, rədd ssenariləri) + 7 pipeline inteqrasiya testi (real
+  seed edilmiş/render edilmiş data ilə) — o cümlədən qəbul meyarının
+  birbaşa testləri: `test_build_visual_training_input_is_byte_for_byte_deterministic`
+  və `test_validation_mutation_does_not_change_train_preprocessing_checksum`.
+  Tam backend regressiyası: `757 passed`.
+- **Scratch uçdan-uca doğrulama**: real 40-dəqiqəlik replay sessiyası ilə
+  pipeline İKİ DƏFƏ ardıcıl işə salındı — preprocessing state, checksum
+  və train batch-ləri tam eyni çıxdı (pytest-in artıq təsdiqlədiyi
+  determinizmin test mühitindən kənarda təkrarı). Real production baza
+  (`0011`-də qalır) toxunulmadı.
+
 ## 2026-08-10 — Phase 5: training başlanğıcının atomikləşdirilməsi
 
 - İstifadəçinin tapdığı risk: əvvəlki addımda `start_training()` və

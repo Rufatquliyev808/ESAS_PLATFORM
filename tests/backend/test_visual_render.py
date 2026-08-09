@@ -1,6 +1,4 @@
 from datetime import UTC, datetime, timedelta
-import struct
-import zlib
 
 import pytest
 
@@ -12,6 +10,7 @@ from backend.app.analysis.visual_render import (
     RENDERER_NAME,
     RENDERER_VERSION,
     RenderSpec,
+    decode_canonical_png,
     render_canonical_chart,
     render_spec_id,
 )
@@ -35,26 +34,13 @@ def bar(index: int, *, open_: float, high: float, low: float, close: float, gap:
 
 
 def decode_png(png_bytes: bytes) -> tuple[int, int, bytes]:
-    assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n"
-    offset = 8
-    width = height = 0
-    idat = b""
-    while offset < len(png_bytes):
-        (length,) = struct.unpack(">I", png_bytes[offset : offset + 4])
-        tag = png_bytes[offset + 4 : offset + 8]
-        data = png_bytes[offset + 8 : offset + 8 + length]
-        if tag == b"IHDR":
-            width, height = struct.unpack(">II", data[:8])
-        elif tag == b"IDAT":
-            idat += data
-        offset += 12 + length
-    raw = zlib.decompress(idat)
-    stride = width * 3
-    pixels = bytearray()
-    for y in range(height):
-        row_start = y * (stride + 1)
-        pixels.extend(raw[row_start + 1 : row_start + 1 + stride])
-    return width, height, bytes(pixels)
+    """Thin (width, height, pixels)-ordered wrapper around the production
+    `decode_canonical_png` -- this file used to carry its own duplicate PNG
+    parser; now it reuses the real one instead of maintaining a second copy
+    of the same chunk-parsing logic.
+    """
+    pixels, width, height = decode_canonical_png(png_bytes)
+    return width, height, pixels
 
 
 def pixel_at(pixels: bytes, width: int, x: int, y: int) -> tuple[int, int, int]:

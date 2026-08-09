@@ -8,6 +8,74 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: deterministic training-input pipeline v1
+
+- New task: a pure-Python (no new ML/numeric dependency), fully
+  deterministic pipeline that turns persisted, split-assigned dataset
+  samples into fixed-size model input -- still no actual training, worker,
+  frontend, or production migration.
+- `visual_render.py`: new `decode_canonical_png()`, the exact inverse of
+  the existing `_encode_png()` -- parses PNG chunks, validates the
+  canonical 8-bit RGB/no-interlace/filter-0 format the renderer itself
+  always produces, decompresses IDAT, strips the per-scanline filter byte,
+  and returns the raw pixel buffer `image_checksum` was originally hashed
+  over. `test_visual_render.py`'s own long-standing local PNG parser
+  (duplicate logic, test-only) was replaced with a thin wrapper around this
+  new public function.
+- New `backend/app/analysis/visual_training_input.py` (pure, no I/O):
+  `fit_preprocessing_state()` computes per-channel min/max normalization
+  bounds and, via `ModelSpec.class_weight_policy`, per-class weights --
+  from TRAIN images ONLY (the function's signature has no parameter
+  through which validation/holdout data could enter: separation by
+  construction, not a runtime guard). Min/max are associative, so the
+  result is identical regardless of input order. `apply_preprocessing()`
+  applies an already-fit state to one image and never mutates or refits
+  it. `build_deterministic_batches()` sorts samples by `sample_id` (removes
+  DB-fetch-order nondeterminism) then shuffles with a seeded
+  `random.Random` -- same seed, same samples, same batch order every time.
+  Both the preprocessing state and each batch carry a
+  canonical-JSON-over-sha256 checksum, the same pattern used throughout
+  Phase 5 for `render_spec_id`/`label_spec_id`/`dataset_fingerprint`.
+- `visual_dataset_repository.py`: `PersistedVisualDatasetSample` gained a
+  `label_value` field (backward compatible) so the pipeline can build
+  (image, label) pairs and compute class counts from persisted rows.
+- New `backend/app/strategies/visual_training_input_pipeline.py`:
+  `build_visual_training_input()` reads persisted samples split-by-split
+  (only ever queries `train`/`validation`/`holdout` -- `pending_horizon`
+  and `purged_boundary_overlap` samples are never read here at all, so
+  they stay exactly as persisted and still counted in the dataset
+  manifest), loads each PNG artifact with checksum verification, decodes
+  it, and re-verifies the decoded pixels against the persisted
+  `image_checksum` (fail-closed on any mismatch, missing artifact, or
+  decode error -- defense-in-depth, not trusting an earlier gate already
+  checked this). Fits preprocessing from train, applies it unchanged to
+  validation/holdout, builds deterministic train batches from
+  `training_spec.seed`, and persists the preprocessing state as a
+  content-addressed artifact (extension `.json`) via the existing
+  `storage/artifact_store.py`.
+- 24 new tests: 17 pure unit tests for the preprocessing/batching module
+  (determinism regardless of input order, correct bounds/class-weight
+  formulas, rejection of unseen labels/wrong dimensions/unknown policy,
+  batch-order reproducibility and coverage) and 7 pipeline integration
+  tests against real seeded/rendered data covering the explicit acceptance
+  criteria: `test_build_visual_training_input_is_byte_for_byte_deterministic`
+  (two full runs produce identical preprocessing state, checksum, and
+  batches) and `test_validation_mutation_does_not_change_train_preprocessing_checksum`
+  (mutating a validation sample's label leaves the train-fitted checksum
+  and batches completely unchanged), plus split-size correctness,
+  pending/purged exclusion-but-manifest-retention, ownership, and
+  fail-closed missing/corrupted-artifact tests. Full backend regression:
+  `757 passed`.
+- **Scratch end-to-end verification**: registered and rendered a real
+  40-minute replay session (isolated DB/artifact root), ran the pipeline
+  twice back-to-back, and confirmed the two runs' preprocessing state,
+  checksum, and train batches were exactly equal (not just similar) --
+  the same determinism proof pytest already gives, reproduced outside the
+  test harness. Real production database (still at migration `0011`) and
+  its artifact tree untouched.
+- No actual model training, no new ML dependency, no frontend change, no
+  production migration in this increment -- input pipeline v1 only.
+
 ### Fixed — Phase 5: atomic `rendering -> training` transition
 
 - The previous increment's orchestrator called `start_training()` then

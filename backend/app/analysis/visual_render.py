@@ -175,6 +175,61 @@ def _encode_png(pixels: bytes, *, width: int, height: int) -> bytes:
     )
 
 
+class PngDecodeError(ValueError):
+    pass
+
+
+def decode_canonical_png(png_bytes: bytes) -> tuple[bytes, int, int]:
+    """Inverse of `_encode_png`: recovers the exact raw RGB8 pixel buffer a
+    canonical PNG artifact was built from (the same buffer `image_checksum`
+    was computed over). Only understands the fixed encoding this renderer
+    itself produces -- 8-bit depth, color type 2 (RGB, no alpha), no
+    interlace, filter type 0 ("None") on every scanline -- and refuses
+    anything else rather than guessing at a general-purpose PNG decode. This
+    is meant to read back OUR OWN artifacts, not arbitrary PNG files.
+    """
+    signature = b"\x89PNG\r\n\x1a\n"
+    if not png_bytes.startswith(signature):
+        raise PngDecodeError("not a PNG file (bad signature)")
+
+    offset = len(signature)
+    width: int | None = None
+    height: int | None = None
+    idat = bytearray()
+    while offset < len(png_bytes):
+        if offset + 8 > len(png_bytes):
+            raise PngDecodeError("truncated PNG (incomplete chunk header)")
+        (length,) = struct.unpack(">I", png_bytes[offset : offset + 4])
+        tag = png_bytes[offset + 4 : offset + 8]
+        data = png_bytes[offset + 8 : offset + 8 + length]
+        offset += 12 + length
+        if tag == b"IHDR":
+            ihdr_width, ihdr_height, bit_depth, color_type, compression, filter_method, interlace = (
+                struct.unpack(">IIBBBBB", data)
+            )
+            if (bit_depth, color_type, compression, filter_method, interlace) != (8, 2, 0, 0, 0):
+                raise PngDecodeError("unsupported PNG encoding -- expected canonical 8-bit RGB, no interlace")
+            width, height = ihdr_width, ihdr_height
+        elif tag == b"IDAT":
+            idat.extend(data)
+        elif tag == b"IEND":
+            break
+
+    if width is None or height is None:
+        raise PngDecodeError("PNG is missing an IHDR chunk")
+
+    raw = zlib.decompress(bytes(idat))
+    stride = width * 3
+    pixels = bytearray()
+    for y in range(height):
+        row_start = y * (stride + 1)
+        filter_type = raw[row_start]
+        if filter_type != 0:
+            raise PngDecodeError("unsupported PNG scanline filter -- expected filter type 0 (None)")
+        pixels.extend(raw[row_start + 1 : row_start + 1 + stride])
+    return bytes(pixels), width, height
+
+
 def _fingerprint(payload: dict) -> str:
     return f"sha256:{sha256(_canonical_json(payload)).hexdigest()}"
 
