@@ -58,7 +58,15 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   düzəldildi). **Async job/API resursu** da tamamlandı (migration
   `0014`, `POST/GET .../visual-experiments/{id}/rendering-jobs`,
   `vrj_` prefiksi, mövcud job-queue nümunəsinin 3-cü tətbiqi).
-  Migration `0012`/`0013`/`0014` YALNIZ test bazasındadır.
+  **Rendering job-un frontend workflow-a bağlanması** da tamamlandı:
+  "Dataset yarat" düyməsi (`RenderingJobCell`, mövcud `useAsyncJob()`
+  hook-una yalnız bir əlavə — `restore: pollDetail`), localStorage-əsaslı
+  reload-safe bərpa, terminal nəticə (nümunə sayı, dataset fingerprint)
+  göstərilməsi, aydın xəta göstərimi. Scratch brauzerdə uçdan-uca
+  doğrulandı (job tamamlandı, PNG artefaktları diskdə, reload-dan sonra
+  bərpa işlədi, mismatch-fingerprint eksperimenti aydın `Uğursuz oldu`
+  göstərdi). Migration `0012`/`0013`/`0014` YALNIZ test bazasındadır.
+  Növbəti addım: `rendering → training` müqaviləsi.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin

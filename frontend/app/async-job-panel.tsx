@@ -161,7 +161,14 @@ export function useAsyncJob<TResult = unknown>({
     setError(null);
   }, [stopPolling]);
 
-  return { job, error, busy, create, cancel, reset };
+  return {
+    job, error, busy, create, cancel, reset,
+    /** Re-attach to an already-known job_id (e.g. remembered from a previous
+     * page load) without creating a new job -- fetches its current state
+     * once and, if not yet terminal, continues polling exactly like a
+     * freshly-created job would. */
+    restore: pollDetail,
+  };
 }
 
 export function isJobCancellable(job: AsyncJob): boolean {

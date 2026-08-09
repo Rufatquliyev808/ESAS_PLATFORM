@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { JobStatusBadge, isJobCancellable, useAsyncJob } from "./async-job-panel";
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
+const RENDERING_JOB_STORAGE_PREFIX = "esas.visual-experiment-rendering-job.";
 
 type Timeframe = "S1" | "S10" | "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1";
 type VisualExperiment = {
@@ -53,6 +55,78 @@ function formatTime(value: string | null) {
 function localInput(date: Date) {
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+type RenderingJobResult = {
+  experiment: { lifecycle_state: string };
+  manifest: { dataset_fingerprint: string; manifest_fingerprint: string; total_samples: number };
+  sample_count: number;
+};
+
+function RenderingJobCell({ experiment, token, onUnauthorized, onCompleted }: {
+  experiment: VisualExperiment;
+  token: string;
+  onUnauthorized: () => void;
+  onCompleted: () => void;
+}) {
+  const storageKey = `${RENDERING_JOB_STORAGE_PREFIX}${experiment.experiment_id}`;
+  const restoreAttempted = useRef(false);
+
+  const asyncJob = useAsyncJob<RenderingJobResult>({
+    createUrl: `/api/v2/visual-experiments/${experiment.experiment_id}/rendering-jobs`,
+    detailUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/rendering-jobs/${jobId}`,
+    cancelUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/rendering-jobs/${jobId}/cancel`,
+    token, onUnauthorized, onCompleted,
+  });
+
+  useEffect(() => {
+    if (restoreAttempted.current) return;
+    restoreAttempted.current = true;
+    const rememberedJobId = window.localStorage.getItem(storageKey);
+    if (rememberedJobId) asyncJob.restore(rememberedJobId);
+    // Runs once per mounted row (one row per experiment_id); asyncJob.restore
+    // is stable across renders (useCallback), storageKey is derived from a
+    // prop that does not change for a given row.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (asyncJob.job?.state === "cancelled") {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+    if (asyncJob.job?.job_id) window.localStorage.setItem(storageKey, asyncJob.job.job_id);
+  }, [asyncJob.job?.job_id, asyncJob.job?.state, storageKey]);
+
+  if (experiment.lifecycle_state !== "registered" && !asyncJob.job) {
+    return <span className="pattern-candidate-time">—</span>;
+  }
+
+  return (
+    <div className="pattern-candidate-backtest-cell">
+      {!asyncJob.job && (
+        <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.create({})}>
+          {asyncJob.busy ? "Növbəyə əlavə olunur…" : "Dataset yarat"}
+        </button>
+      )}
+      {asyncJob.job && (
+        <div className="async-job-meta">
+          <JobStatusBadge state={asyncJob.job.state} />
+          {isJobCancellable(asyncJob.job) && (
+            <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.cancel()}>Ləğv et</button>
+          )}
+          {asyncJob.job.error_code && <span className="card-detail danger-text">{asyncJob.job.error_code}</span>}
+          {asyncJob.job.state === "completed" && asyncJob.job.result && (
+            <dl className="pattern-candidate-evidence">
+              <div><dt>Nümunə sayı</dt><dd>{asyncJob.job.result.sample_count}</dd></div>
+              <div><dt>Dataset fingerprint</dt><dd title={asyncJob.job.result.manifest.dataset_fingerprint}>{asyncJob.job.result.manifest.dataset_fingerprint.slice(0, 20)}…</dd></div>
+            </dl>
+          )}
+        </div>
+      )}
+      {asyncJob.error && <span className="card-detail danger-text">{asyncJob.error}</span>}
+    </div>
+  );
 }
 
 export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
@@ -154,11 +228,12 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
           <p className="eyebrow">Phase 5 — tədqiqat konfiqurasiyası · ticarət siqnalı deyil</p>
           <h3 id="visual-experiments-title">{symbol} Visual AI eksperimentləri</h3>
           <p>
-            Qrafik renderi, dataset lineage və label qaydası artıq backend-də hazırdır, amma bura yalnız
-            eksperimentin DONDURULMUŞ konfiqurasiyasını qeydə alır — heç bir şəkil render etmir, model təlim
-            etmir. Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə qeydə alınır; horizon və label
-            hədləri aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca hesablama endpoint-i olmadığı üçün
-            əl ilə (statistik/texniki analiz nəticəsindən götürülərək) daxil edilir.
+            Əvvəlcə eksperimentin DONDURULMUŞ konfiqurasiyasını qeydə alın. Sonra &ldquo;Dataset yarat&rdquo;
+            düyməsi real render→dataset→label icrasını job kimi başladır (şəkillər PNG kimi, checksum və tam
+            lineage ilə saxlanılır) — model təlim etmir. Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə
+            qeydə alınır; horizon və label hədləri aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca
+            hesablama endpoint-i olmadığı üçün əl ilə (statistik/texniki analiz nəticəsindən götürülərək)
+            daxil edilir.
           </p>
         </div>
       </div>
@@ -192,7 +267,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th /></tr></thead>
+              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Dataset</th><th /></tr></thead>
               <tbody>
                 {experiments.map((experiment) => (
                   <tr key={experiment.experiment_id}>
@@ -201,6 +276,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
                     <td>{experiment.label_spec.horizon_bars} bar · {experiment.label_spec.up_threshold_bps >= 0 ? "+" : ""}{experiment.label_spec.up_threshold_bps} / {experiment.label_spec.down_threshold_bps}</td>
                     <td>{LIFECYCLE_LABELS[experiment.lifecycle_state] ?? experiment.lifecycle_state}</td>
                     <td>{formatTime(experiment.created_at)}</td>
+                    <td>
+                      <RenderingJobCell experiment={experiment} token={token} onUnauthorized={onUnauthorized} onCompleted={() => void load()} />
+                    </td>
                     <td>
                       {ARCHIVABLE_STATES.has(experiment.lifecycle_state) && (
                         <button type="button" className="secondary-button" disabled={archivingId === experiment.experiment_id} onClick={() => void archive(experiment)}>
@@ -214,7 +292,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="analysis-disclaimer"><strong>Qeyd:</strong> Bu bölmə yalnız Phase 5-in eksperiment qeydiyyatı qatını göstərir. Real render→dataset icrası, model təlimi və nəticə qiymətləndirməsi hələ yoxdur. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
+        <p className="analysis-disclaimer"><strong>Qeyd:</strong> &ldquo;Dataset yarat&rdquo; real render→dataset→label icrasını işə salır (PNG artefaktları + manifest saxlanılır). Model təlimi, qiymətləndirmə və qəbul/rədd qərarı hələ yoxdur. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
       </section>
     </section>
   );

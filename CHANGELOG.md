@@ -8,6 +8,43 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: rendering job frontend workflow
+
+- Wired the `registered -> rendering` async job (previous increment) into
+  the "Visual AI eksperimentləri" panel: a "Dataset yarat" button (shown
+  only for `registered` experiments) creates the job with an idempotency
+  key, polls it to a terminal state, shows the completed result (sample
+  count, dataset fingerprint), and surfaces `failed`/`cancelled`/`409`/
+  ownership/network errors via the shared `JobStatusBadge` + error text.
+- Reused the existing `useAsyncJob()` hook (already built for the
+  pattern-candidate-backtest and statistical-analysis jobs) instead of
+  duplicating polling/cancel logic a third time. The only hook change:
+  a new `restore: pollDetail` export, letting a caller re-attach to an
+  already-known `job_id` without creating a duplicate job.
+- New `RenderingJobCell` component (`frontend/app/visual-experiments-panel.tsx`)
+  persists the job id to `localStorage`
+  (`esas.visual-experiment-rendering-job.<experiment_id>`) on creation,
+  restores it on mount, and clears it if the job reaches `cancelled` --
+  no new backend endpoint was needed for reload-safe restore.
+- No training, ML dependency, or production migration added -- frontend-
+  only change, as scoped.
+- Frontend `lint`/`build`/`test` clean (19/19). Backend regression
+  unaffected (696 passed -- no backend files changed).
+- **Scratch end-to-end browser verification** (separate backend on
+  port 8005, frontend on 5173, isolated DB/artifact root): registered
+  an experiment with a real `bar_fingerprint` computed from seeded
+  replay data, clicked "Dataset yarat", watched the job reach
+  `completed` (6 samples, PNG artifacts written to disk, dataset
+  fingerprint displayed), reloaded the page (including re-login) and
+  confirmed the job state was correctly restored from `localStorage`
+  without re-creating a job, then registered a second experiment with a
+  deliberately wrong `source_bar_fingerprint` and confirmed a clear
+  `Uğursuz oldu` / `BarFingerprintMismatchError` display. No console
+  errors. Scratch processes/files cleaned up afterward; confirmed the
+  real production database (still at migration `0011`) and the real
+  8000/3000 services were untouched throughout.
+- Next phase: the `rendering -> training` contract.
+
 ### Added — Phase 5: async job/API resource for `registered -> rendering`
 
 - Continuing the remaining-order plan: job queue/API integration was

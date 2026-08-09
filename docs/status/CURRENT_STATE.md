@@ -1,5 +1,35 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5: Rendering job-un frontend workflow-a bağlanması
+
+- Tapşırıq: "Visual AI eksperimentləri" panelində `registered`
+  eksperiment üçün "Dataset yarat" düyməsi ilə real rendering job-u
+  yaratmaq, izləmək, ləğv etmək, terminal nəticəni (nümunə sayı,
+  dataset fingerprint) göstərmək, xətaları aydın göstərmək və
+  səhifə yenilənəndən sonra job vəziyyətini bərpa etmək. Training,
+  yeni ML asılılığı və production miqrasiyası əlavə edilmədi.
+- Mövcud `useAsyncJob()` hook-u (pattern-candidate-backtest və
+  statistical-analysis job-ları üçün əvvəlcə qurulmuş) tam təkrar
+  istifadə edildi — yalnız BİR əlavə: `restore: pollDetail` (artıq
+  bilinən `job_id`-ə yenidən qoşulmaq üçün, yeni job yaratmadan).
+- Yeni `RenderingJobCell` komponenti (`frontend/app/visual-experiments-panel.tsx`):
+  localStorage-da (`esas.visual-experiment-rendering-job.<experiment_id>`)
+  job_id saxlayır/bərpa edir/silir (ləğv olunduqda). Heç bir yeni
+  backend endpoint tələb olunmadı.
+- `npm run lint`/`build`/`test` təmiz (19/19). Backend regressiyası
+  bu addımdan təsirlənmədi (696 passed, dəyişməz).
+- **Scratch uçdan-uca brauzer doğrulaması** (port 8005 backend, 5173
+  frontend, ayrıca DB/artifact kökü): giriş → eksperiment qeydiyyatı
+  (real `bar_fingerprint` ilə) → "Dataset yarat" → job `Tamamlandı`
+  (6 nümunə, PNG artefaktları diskdə, dataset fingerprint göstərildi)
+  → səhifə tam yenilənəndən (yenidən giriş daxil) sonra job vəziyyəti
+  localStorage-dan düzgün bərpa olundu → yanlış `source_bar_fingerprint`
+  ilə ikinci eksperiment `BarFingerprintMismatchError` mesajı ilə
+  aydın `Uğursuz oldu` göstərdi. Konsol xətası yox idi. Scratch
+  proseslər/fayllar təmizləndi; real production baza (`0011`-də qalır)
+  və xidmətlər (8000/3000) toxunulmadan təsdiqləndi.
+- Növbəti mərhələ: `rendering → training` müqaviləsi.
+
 ## 2026-08-09 — Phase 5: `registered → rendering` üçün asinxron job/API resursu
 
 - "Qalan sıra ilə davam et" tapşırığı — artifact store-dan sonra
