@@ -1,5 +1,55 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 5: `rendering → training` müqaviləsi və təhlükəsizlik qapıları
+
+- Tapşırıq: dəyişməz `ModelSpec`/`TrainingSpec` yaratmaq, training
+  başlamazdan əvvəl dataset-in hazırlığını yoxlayan qapılar qurmaq, yalnız
+  bütün qapılar keçəndə `rendering → training` keçidinə icazə vermək.
+  Natamam/korlanmış dataset heç vaxt `training`-ə çatmamalıdır. Bu addımda
+  faktiki ML təlimi, yeni ML asılılığı, frontend və production miqrasiyası
+  YOXDUR.
+- Yeni `visual_model_spec.py`: dəyişməz `ModelSpec`
+  (architecture_id/preprocessing_policy/class_weight_policy) və
+  `TrainingSpec` (seed/optimizer/loss/batch_size/max_epochs/
+  compute_requirement) — hər ikisi `RenderSpec`/`LabelSpec` ilə eyni
+  sha256-canonical-JSON id sxemi ilə. `training_configuration_checksum()`
+  eyni dataset+spec üçün həmişə eyni nəticə verir (qəbul meyarı birbaşa
+  test edildi).
+- `visual_materializer.py`-dan mövcud fingerprint formulu public
+  `dataset_fingerprint_for_identities()` kimi çıxarıldı ki, qapı persisted
+  nümunə sətirlərindən (tam `VisualSample` bərpa etmədən) eyni fingerprint-i
+  yenidən hesablaya bilsin.
+- Yeni migration `0015_visual_training_configs.sql` (yalnız test bazada,
+  `0012`-`0014` kimi): hər eksperiment üçün dondurulmuş spec + checksum,
+  eyni checksum üçün idempotent, fərqli checksum üçün konflikt.
+- `visual_experiment_repository.py`-ə `start_training()`
+  (`rendering → training`) və `block_experiment_for_data_quality()`
+  (`rendering → blocked_by_data_quality` — Phase 4-də artıq mövcud olan
+  fail-closed status, Phase 5-də "training üçün yararsız dataset"
+  mənasında təkrar istifadə edildi) əlavə edildi — ownership/optimistic
+  concurrency/audit mövcud `_transition()` vasitəsilə pulsuz gəlir.
+- Yeni `strategies/visual_experiment_training.py`:
+  `start_visual_experiment_training()` HƏR keçiddən ƏVVƏL bütün qapıları
+  yoxlayır (manifest mövcudluğu, fingerprint dəyişməyib, hər PNG mövcud və
+  checksum düzgündür, train/validation/holdout hamısı mövcuddur, train-də
+  etiketlənməmiş nümunə yoxdur, minimum train nümunə həddi). İstənilən qapı
+  uğursuz olarsa — `blocked_by_data_quality` + bütün səbəblərlə
+  `TrainingReadinessError`; yalnız hamısı keçəndə `training` + spec
+  persistensiyası.
+- 31 yeni test (spec checksum-ları, yeni keçidlər, tam happy-path +
+  hər rədd ssenarisi üçün ayrı test). Tam backend regressiyası:
+  `727 passed`.
+- **Scratch uçdan-uca doğrulama**: real render→training happy-path
+  `training` vəziyyətinə çatdı (deterministik checksum). Ayrıca bir
+  eksperimentin PNG artefaktı diskdə qəsdən korlandı (content-addressed
+  dedup səbəbindən bu, həmin eksperimentin bütün 20 nümunəsinə təsir
+  etdi) — `start_visual_experiment_training()` bunu düzgün blokladı
+  (`blocked_by_data_quality`, səbəb `artifacts_checksum_invalid:20`),
+  `training`-ə HEÇ VAXT çatmadı. Real production baza (`0011`-də qalır)
+  toxunulmadı.
+- Növbəti mərhələ: training job/API/worker (faktiki təlim icrası — ayrıca,
+  daha böyük qərar, ML asılılığı hələ seçilməyib).
+
 ## 2026-08-09 — Phase 5: Rendering job-un frontend workflow-a bağlanması
 
 - Tapşırıq: "Visual AI eksperimentləri" panelində `registered`

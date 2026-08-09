@@ -24,6 +24,7 @@ class VisualExperimentConflictError(RuntimeError):
 ARCHIVABLE_STATES = frozenset({"registered"})
 RENDERABLE_FROM_STATES = frozenset({"registered"})
 FAILABLE_FROM_STATES = frozenset({"rendering"})
+TRAINABLE_FROM_STATES = frozenset({"rendering"})
 
 
 @dataclass(frozen=True)
@@ -428,4 +429,40 @@ def mark_rendering_failed(
         experiment_id=experiment_id, actor=actor, actor_role=actor_role,
         expected_state_version=expected_state_version,
         allowed_from_states=FAILABLE_FROM_STATES, next_state="failed", action="mark_rendering_failed",
+    )
+
+
+def start_training(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """rendering -> training. Callers (`strategies/visual_experiment_training.py`)
+    must have already verified every training-readiness gate passes BEFORE
+    calling this -- this function itself does not re-check dataset
+    completeness, it only performs the lifecycle transition + audit once the
+    caller has decided it is safe.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=TRAINABLE_FROM_STATES, next_state="training", action="start_training",
+    )
+
+
+def block_experiment_for_data_quality(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """rendering -> blocked_by_data_quality. The fail-closed outcome when a
+    training-readiness gate check fails -- an incomplete or corrupted
+    dataset (missing manifest, drifted fingerprint, missing/invalid
+    artifact, missing split, or too few train samples) must never reach
+    `training`. The specific reason(s) are the caller's raised
+    `TrainingReadinessError`, not re-stored here -- the audit action name
+    itself is the persisted signal, matching `mark_rendering_failed`'s "the
+    transition itself is the record" convention.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=TRAINABLE_FROM_STATES, next_state="blocked_by_data_quality",
+        action="block_for_data_quality",
     )

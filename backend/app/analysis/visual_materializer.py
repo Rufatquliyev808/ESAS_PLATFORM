@@ -79,6 +79,38 @@ def _canonical_json(payload: dict) -> bytes:
     ).encode("utf-8")
 
 
+def dataset_fingerprint_for_identities(
+    *,
+    bar_fingerprint: str,
+    render_spec_id: str,
+    label_spec_id: str,
+    observation_window_bars: int,
+    train_end_at: str,
+    validation_end_at: str,
+    sample_identities: tuple[str, ...],
+) -> str:
+    """Public form of the dataset fingerprint formula, taking pre-formatted
+    `"sample_id:image_checksum:split_id"` identity strings directly rather
+    than full `VisualSample` objects. Lets a caller that only has
+    *persisted* sample rows (e.g. the Phase 5 training-readiness gate, which
+    reads `visual_dataset_samples` rows back out of the database) recompute
+    the exact same fingerprint `materialize_visual_dataset` produced,
+    without reconstructing throwaway `VisualSample` instances just to get at
+    three of their fields.
+    """
+    payload = {
+        "bar_fingerprint": bar_fingerprint,
+        "label_spec_id": label_spec_id,
+        "observation_window_bars": observation_window_bars,
+        "render_spec_id": render_spec_id,
+        "sample_identities": sorted(sample_identities),
+        "train_end_at": train_end_at,
+        "validation_end_at": validation_end_at,
+        "version": MATERIALIZER_VERSION,
+    }
+    return f"sha256:{sha256(_canonical_json(payload)).hexdigest()}"
+
+
 def _dataset_fingerprint(
     *,
     bar_fingerprint: str,
@@ -89,20 +121,18 @@ def _dataset_fingerprint(
     validation_end_at: str,
     samples: tuple[VisualSample, ...],
 ) -> str:
-    payload = {
-        "bar_fingerprint": bar_fingerprint,
-        "label_spec_id": label_spec_id,
-        "observation_window_bars": observation_window_bars,
-        "render_spec_id": render_spec_id,
-        "sample_identities": sorted(
+    return dataset_fingerprint_for_identities(
+        bar_fingerprint=bar_fingerprint,
+        render_spec_id=render_spec_id,
+        label_spec_id=label_spec_id,
+        observation_window_bars=observation_window_bars,
+        train_end_at=train_end_at,
+        validation_end_at=validation_end_at,
+        sample_identities=tuple(
             f"{sample.sample_id}:{sample.image_checksum}:{sample.split_id}"
             for sample in samples
         ),
-        "train_end_at": train_end_at,
-        "validation_end_at": validation_end_at,
-        "version": MATERIALIZER_VERSION,
-    }
-    return f"sha256:{sha256(_canonical_json(payload)).hexdigest()}"
+    )
 
 
 def materialize_visual_dataset(

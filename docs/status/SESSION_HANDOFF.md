@@ -65,8 +65,21 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   göstərilməsi, aydın xəta göstərimi. Scratch brauzerdə uçdan-uca
   doğrulandı (job tamamlandı, PNG artefaktları diskdə, reload-dan sonra
   bərpa işlədi, mismatch-fingerprint eksperimenti aydın `Uğursuz oldu`
-  göstərdi). Migration `0012`/`0013`/`0014` YALNIZ test bazasındadır.
-  Növbəti addım: `rendering → training` müqaviləsi.
+  göstərdi). **`rendering → training` müqaviləsi və təhlükəsizlik
+  qapıları** da tamamlandı: dəyişməz `ModelSpec`/`TrainingSpec`
+  (`visual_model_spec.py`, deterministik `training_configuration_checksum`
+  — eyni dataset+spec həmişə eyni checksum), 6 hazırlıq qapısı
+  (`strategies/visual_experiment_training.py`-da
+  `start_visual_experiment_training()`: manifest mövcudluğu, dataset
+  fingerprint dəyişməzliyi, hər PNG-nin mövcudluğu/checksum düzgünlüyü,
+  train/validation/holdout tamlığı, train-də etiketsiz nümunə yoxluğu,
+  minimum nümunə həddi). İstənilən qapı uğursuz olarsa
+  `blocked_by_data_quality` (Phase 4-də artıq mövcud fail-closed status,
+  burada təkrar istifadə edildi) + `TrainingReadinessError`; yalnız
+  hamısı keçəndə `training`. Scratch doğrulamada korlanmış PNG artefaktı
+  olan eksperiment `training`-ə HEÇ VAXT çatmadı — düzgün bloklandı.
+  Migration `0012`-`0015` YALNIZ test bazasındadır.
+  Növbəti addım: training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin

@@ -165,3 +165,38 @@ def count_dataset_samples(experiment_id: str) -> int:
             (normalized,),
         ).fetchone()
     return row["n"]
+
+
+@dataclass(frozen=True)
+class PersistedVisualDatasetSample:
+    sample_id: str
+    image_checksum: str
+    artifact_checksum: str
+    split_id: str
+    label_status: str
+
+
+def list_dataset_samples(experiment_id: str) -> tuple[PersistedVisualDatasetSample, ...]:
+    """The minimal per-sample facts the training-readiness gate needs
+    (`strategies/visual_experiment_training.py`) -- identity/checksum/split/
+    label-status only, not the full lineage row -- so the gate can recompute
+    the dataset fingerprint and verify every artifact without pulling in
+    fields it has no use for.
+    """
+    normalized = _required_text(experiment_id, "experiment_id")
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT sample_id, image_checksum, artifact_checksum, split_id, label_status
+            FROM visual_dataset_samples WHERE experiment_id = ?;
+            """,
+            (normalized,),
+        ).fetchall()
+    return tuple(
+        PersistedVisualDatasetSample(
+            sample_id=row["sample_id"], image_checksum=row["image_checksum"],
+            artifact_checksum=row["artifact_checksum"], split_id=row["split_id"],
+            label_status=row["label_status"],
+        )
+        for row in rows
+    )

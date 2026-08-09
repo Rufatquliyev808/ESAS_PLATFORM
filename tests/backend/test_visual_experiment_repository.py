@@ -12,11 +12,13 @@ from backend.app.database.visual_experiment_repository import (
     VisualExperimentNotFoundError,
     VisualExperimentOwnershipError,
     archive_visual_experiment,
+    block_experiment_for_data_quality,
     get_visual_experiment,
     list_visual_experiments,
     mark_rendering_failed,
     register_visual_experiment,
     start_rendering,
+    start_training,
 )
 
 
@@ -285,6 +287,90 @@ def test_mark_rendering_failed_rejects_from_registered(isolated_database: Path) 
     experiment = _register()
     with pytest.raises(VisualExperimentConflictError):
         mark_rendering_failed(
+            experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=experiment.state_version,
+        )
+
+
+def test_start_training_transitions_from_rendering(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    training = start_training(
+        experiment_id=rendering.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=rendering.state_version,
+    )
+    assert training.lifecycle_state == "training"
+    assert training.state_version == rendering.state_version + 1
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM visual_experiment_audit "
+            "WHERE experiment_id = ? ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()
+    assert audit["action"] == "start_training"
+    assert audit["previous_state"] == "rendering"
+    assert audit["next_state"] == "training"
+
+
+def test_start_training_rejects_from_registered(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    with pytest.raises(VisualExperimentConflictError):
+        start_training(
+            experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=experiment.state_version,
+        )
+
+
+def test_start_training_by_another_user_is_rejected(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    with pytest.raises(VisualExperimentOwnershipError):
+        start_training(
+            experiment_id=rendering.experiment_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=rendering.state_version,
+        )
+
+
+def test_block_experiment_for_data_quality_transitions_from_rendering(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    blocked = block_experiment_for_data_quality(
+        experiment_id=rendering.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=rendering.state_version,
+    )
+    assert blocked.lifecycle_state == "blocked_by_data_quality"
+    assert blocked.state_version == rendering.state_version + 1
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM visual_experiment_audit "
+            "WHERE experiment_id = ? ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()
+    assert audit["action"] == "block_for_data_quality"
+    assert audit["previous_state"] == "rendering"
+    assert audit["next_state"] == "blocked_by_data_quality"
+
+
+def test_block_experiment_for_data_quality_rejects_from_registered(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    with pytest.raises(VisualExperimentConflictError):
+        block_experiment_for_data_quality(
             experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
             expected_state_version=experiment.state_version,
         )

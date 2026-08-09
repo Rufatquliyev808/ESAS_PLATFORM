@@ -8,6 +8,74 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: `rendering -> training` contract and safety gates
+
+- New task: freeze a `ModelSpec`/`TrainingSpec` contract and gate the
+  `rendering -> training` lifecycle transition on dataset readiness, so an
+  incomplete or corrupted dataset can never reach `training`. No actual
+  model training, ML dependency, frontend change, or production migration
+  in this increment -- lifecycle contract and safety gates only.
+- `backend/app/analysis/visual_model_spec.py` (new): frozen `ModelSpec`
+  (architecture_id, preprocessing_policy, class_weight_policy) and
+  `TrainingSpec` (seed, optimizer, loss, batch_size, max_epochs,
+  compute_requirement), each with a deterministic `*_spec_id()` (same
+  sha256-over-canonical-JSON pattern as `RenderSpec`/`LabelSpec`), plus
+  `training_configuration_checksum(dataset_fingerprint, model_spec_id,
+  training_spec_id)` -- the same dataset and spec always produce the same
+  checksum.
+- `visual_materializer.py`: extracted the existing `_dataset_fingerprint`
+  formula into a public `dataset_fingerprint_for_identities()` so the
+  readiness gate can recompute a dataset's fingerprint from *persisted*
+  sample rows (sample_id/image_checksum/split_id) without reconstructing
+  full `VisualSample` objects just to get at three fields. Output is
+  byte-identical to before; existing materializer tests are unaffected.
+- New migration `0015_visual_training_configs.sql` (test/scratch DB only,
+  same as `0012`-`0014` -- not applied to production): one row per
+  experiment, idempotent for an identical `training_configuration_checksum`,
+  refused as a conflict for a different one (mirrors
+  `visual_dataset_manifests`' idempotent-with-conflict rule).
+- `visual_experiment_repository.py`: `TRAINABLE_FROM_STATES = {"rendering"}`,
+  `start_training()` (`rendering -> training`) and
+  `block_experiment_for_data_quality()` (`rendering ->
+  blocked_by_data_quality` -- the Phase 5 contract's existing dedicated
+  fail-closed state, reused here for "dataset not fit for training" the
+  same way it already means "dataset not fit for backtest" in Phase 4).
+  Both go through the existing `_transition()` helper, so ownership +
+  optimistic-concurrency + append-only audit come for free, unchanged.
+- New `backend/app/strategies/visual_experiment_training.py`:
+  `start_visual_experiment_training()` evaluates every readiness gate
+  BEFORE attempting any lifecycle transition -- dataset manifest exists,
+  recomputed dataset fingerprint matches the persisted manifest (catches
+  tampering/drift after materialization), every sample's PNG artifact
+  exists on disk and its checksum re-verifies, train/validation/holdout
+  splits are all present, no unlabeled sample has leaked into train, and
+  the train split meets a minimum size (`MINIMUM_TRAIN_SAMPLES = 10`,
+  documented as a sanity floor, not a real ML minimum). Any gate failure
+  blocks the experiment for data quality and raises
+  `TrainingReadinessError` with every failing reason (not just the
+  first); only when all gates pass does the experiment move to `training`
+  and the frozen spec get persisted.
+- 31 new tests (`test_visual_model_spec.py`: spec validation + checksum
+  determinism; `test_visual_experiment_repository.py`: the two new
+  transitions; `test_visual_experiment_training.py`: the full happy path
+  plus one test per rejection scenario -- missing manifest, missing
+  splits + insufficient samples, dataset fingerprint drift, missing
+  artifact, corrupted artifact checksum, ownership, re-attempt conflict,
+  invalid spec). Full backend regression: `727 passed`.
+- **Scratch end-to-end verification** (isolated DB/artifact root):
+  registered and rendered a real 40-minute replay session tuned so every
+  split is populated, ran `start_visual_experiment_training()` -- reached
+  `training` with a deterministic checksum. Separately corrupted one
+  artifact's PNG bytes on disk for a second experiment (content-addressed
+  dedup meant the corruption affected every one of that experiment's 20
+  samples, since they all rendered to the same image) and confirmed
+  `start_visual_experiment_training()` blocked it (`blocked_by_data_quality`,
+  reason `artifacts_checksum_invalid:20`) rather than letting it reach
+  `training`. Real production database (still at migration `0011`) and
+  services untouched.
+- Next phase: training job/API/worker (the actual training execution --
+  still no ML dependency chosen yet, a separate, larger decision).
+
 ### Added — Phase 5: rendering job frontend workflow
 
 - Wired the `registered -> rendering` async job (previous increment) into
