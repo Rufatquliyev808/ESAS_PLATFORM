@@ -1,5 +1,36 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Phase 7 (Knowledge Base) başladı: knowledge claim data modeli
+
+- İstifadəçi "phase 7" dedi — prioritet siyahısı (Phase 3→4→7→8→9→10,
+  real ticarətə hazır analiz sistemi üçün) Phase 5/6-nı ötürür, ona görə
+  bu sessiya Phase 5-dən Phase 7-yə açıq tapşırıqla keçdi.
+- Yeni `backend/app/knowledge/` paketi. `knowledge_claim.py`:
+  `build_knowledge_claim()` müqavilənin dəyişməz "bilik vahidi"ni qurur
+  (`knowledge_id`, `knowledge_version`, `claim_type`, `statement`,
+  `scope`, `evidence_bundle_ids`, `dataset_fingerprints`,
+  `method_versions`, effect/uncertainty, `limitations`,
+  `valid_from`/`review_due_at`, `supersedes`/`conflicts_with`,
+  `checksum`), həmişə `candidate` statusunda — diaqramın yeganə giriş
+  vəziyyəti. Saf, DB-siz — Phase 5-in `visual_render.py` ilə
+  başladığı eyni prinsip (persistence qatından əvvəl).
+- `KnowledgeScope` müqavilənin 9 tələb etdiyi scope ölçüsünü modelləşdirir
+  (symbol/asset class, data source, timeframe/horizon, UTC interval +
+  session, rejim + detector versiyası, minimum data quality, cost
+  ssenarisi, contract versiyaları, istisna istifadə sahəsi).
+- `ALLOWED_TRANSITIONS` müqavilənin "Vəziyyətlər" diaqramında ÇƏKİLMİŞ
+  kənarları DƏQİQ təkrarlayır — diaqramın terminal saxladığı vəziyyətlər
+  üçün əlavə keçid UYDURULMAYIB. `is_valid_transition()` saf axtarışdır,
+  saxlanmış claim-i yerində dəyişmir — bu, gələcək repository qatının
+  işidir (Phase 5-in saf render modulu vs. `visual_experiment_repository.py`
+  bölgüsü ilə eyni).
+- Yeni `test_knowledge_claim.py` (30 test): validasiya, checksum
+  determinizmi (wall-clock `created_at` bilərəkdən checksum-a daxil
+  edilmir), bütün 9 claim növü, diaqramın hər sənədləşdirilmiş kənarı
+  (həm etibarlı, həm bir neçə sənədləşdirilməmiş keçidin etibarsız
+  olduğu sınanıb). Tam backend regressiyası: `639 passed`.
+  Frontend/API/persistence hələ başlamayıb — qəsdən kiçik ilk addım.
+
 ## 2026-08-09 — Tam vəziyyət doğrulaması + Phase 5 spec saxlanması düzəlişi
 
 - İstifadəçi yeni sessiyada "əvvəlcə oxu, sonra faktla təsdiqlə, sonra

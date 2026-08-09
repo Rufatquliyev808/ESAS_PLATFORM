@@ -1,8 +1,8 @@
 # ESAS Platform — Növbəti tapşırıq
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
-Prioritet: istifadəçi 2026-08-09-da Phase 3→4→7→8→9→10 prioritet sırasını verdi (real ticarətə hazır analiz sistemi). Phase 3/4 artıq tamamlanıb (aşağıda təsdiqlənib).
-Mərhələ: Phase 5 (Visual AI) davam edir — renderer + dataset lineage/manifest + label hesablanması + eksperiment qeydiyyatı/API (indi real spec saxlanması ilə) + frontend paneli tamamlanıb, dataset materiallaşdırma/model təlimi hələ yoxdur
+Prioritet: istifadəçi 2026-08-09-da Phase 3→4→7→8→9→10 prioritet sırasını verdi (real ticarətə hazır analiz sistemi, Phase 5/6 siyahıda yoxdur). Phase 3/4 artıq tamamlanıb.
+Mərhələ: Phase 7 (Knowledge Base) başladı — knowledge claim data modeli (`knowledge_claim.py`) tamamlanıb, persistence/API/frontend hələ yoxdur. Phase 5 (Visual AI) əvvəlki sessiyada qismən irəlilədilmişdi (renderer+dataset+label+qeydiyyat API-si), hazırda dayandırılıb.
 
 ## Tamamlanan (bu sessiya)
 
@@ -419,6 +419,16 @@ yox idi — `list_visual_experiments()` + `GET /api/v2/visual-experiments`
 + imzalı cursor əlavə edildi (4 yeni backend test, `609 passed`).
 Canlı brauzerdə tam dövr (qeydiyyat → siyahı → arxivləşdirmə) sınandı,
 real bazaya toxunulmadan. Frontend: lint/build təmiz, `18/18` test.
+
+**Phase 7 (Knowledge Base) başladı — knowledge claim data modeli** (hələ
+commit edilməyib) — istifadəçinin "phase 7" seçimi (prioritet siyahısı
+Phase 5/6-nı ötürür). Yeni `backend/app/knowledge/knowledge_claim.py`:
+`build_knowledge_claim()` (həmişə `candidate` statusunda, saf/DB-siz),
+`KnowledgeScope` (9 scope ölçüsü), `ALLOWED_TRANSITIONS` (müqavilənin
+diaqramındakı kənarları dəqiq təkrarlayır, əlavə keçid uydurulmayıb).
+Yeni `test_knowledge_claim.py` (30 test). Tam backend regressiyası:
+`639 passed`. Persistence/API/frontend hələ YOXDUR — qəsdən kiçik ilk
+addım.
 
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 

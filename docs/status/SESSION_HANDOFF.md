@@ -41,12 +41,12 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   (migration `0012`,
   `visual_experiment_repository.py`, 4 endpoint — register/get/list/archive)
   VƏ frontend paneli (`visual-experiments-panel.tsx`) tamamlanıb. Yalnız
-  `registered ↔ archived` keçidi işlək — `rendering/training/evaluated`
-  kimi qalan lifecycle state-lər CHECK-də sadalanıb, amma hələ koda
-  bağlanmayıb. Real render→dataset→label icrası (faktiki şəkil/nümunə
-  saxlanması — əvvəlcə RenderSpec/LabelSpec-in faktiki dəyərlərinin
-  haradan bərpa ediləcəyi həll edilməlidir) və model təlimi hələ yoxdur
-  (bax `docs/status/NEXT_TASK.md`).
+  `registered ↔ archived` keçidi işlək. **HAZIRDA DAYANDIRILIB** —
+  istifadəçinin prioritet siyahısı (Phase 3→4→7→8→9→10) Phase 5/6-nı
+  ötürür, sessiya Phase 7-yə keçdi. **Phase 7 (Knowledge Base): BAŞLADI**
+  — yalnız `knowledge_claim.py` (saf data modeli, `build_knowledge_claim()`
+  + `KnowledgeScope` + `ALLOWED_TRANSITIONS`) tamamlanıb, persistence/
+  API/frontend hələ yoxdur (bax `docs/status/NEXT_TASK.md`).
 - Pattern namizədi işi bu qatlardan ibarətdir:
   1. **Draft generator** — hesablama-zamanı 6 hipotez slotu.
   2. **Persistence/`registered`** — migration `0005`.
@@ -327,14 +327,13 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
 - **`origin/main` = `0c20baa`** (bu HEAD push edilib — Phase 5 frontend
   paneli daxil olmaqla, bütün əvvəlki sessiya işi). **Push edilməmiş
   YEREL commit-lər var**: `71f67f0` (`PROJECT_ROADMAP.md` Phase 5
-  düzəlişi) + bu turda əlavə ediləcək spec-saxlanması düzəlişi (render_spec_json/
-  label_spec_json, backend `609 passed`, frontend `18/18`, canlı
-  brauzerdə sınanıb). İstifadəçinin YENİ qaydasına görə (yuxarıda) push
-  yalnız açıq tapşırıqla ediləcək. Ətraflı, kronoloji dəyişiklik siyahısı
-  üçün: `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı
-  "Tamamlanan" qeydləri.
-  AGENTS.md qaydasına görə hər yeni dəyişikliyin push-u istifadəçinin
-  ayrıca açıq təsdiqini gözləyəcək.
+  düzəlişi), `6b6fb3d` (Phase 5 real spec saxlanması, backend `609
+  passed`, canlı brauzerdə sınanıb) + Phase 7 knowledge claim modeli
+  (bu turda commit ediləcək, `639 passed`). İstifadəçinin YENİ qaydasına
+  görə push yalnız açıq tapşırıqla ediləcək — hər commit-dən sonra
+  ayrıca soruşulmur. Ətraflı, kronoloji dəyişiklik siyahısı üçün:
+  `CHANGELOG.md` (`## Unreleased` bölməsi) və yuxarıdakı "Tamamlanan"
+  qeydləri.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
   `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
   (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni

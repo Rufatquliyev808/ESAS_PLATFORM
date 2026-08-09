@@ -8,6 +8,41 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 7 Knowledge Base started: knowledge claim data model
+
+- User's priority order (Phase 3 → 4 → 7 → 8 → 9 → 10, given to reach a
+  trading-ready analysis system) skips Phase 5/6 entirely, so this
+  session pivoted from Phase 5 to Phase 7 on explicit instruction.
+- New `backend/app/knowledge/` package. `knowledge_claim.py`:
+  `build_knowledge_claim()` constructs the contract's immutable
+  "bilik vahidi" (`knowledge_id`, `knowledge_version`, `claim_type`,
+  `statement`, `scope`, `evidence_bundle_ids`, `dataset_fingerprints`,
+  `method_versions`, effect/uncertainty, `limitations`,
+  `valid_from`/`review_due_at`, `supersedes`/`conflicts_with`,
+  `checksum`) always in `candidate` status -- the diagram's only entry
+  state. Pure and DB-free, matching how Phase 5 started with
+  `visual_render.py` before any persistence layer existed.
+- `KnowledgeScope` models the contract's 9 required scope dimensions
+  (symbol/asset class, data source, timeframe/horizon, UTC interval +
+  session, regime + detector version, minimum data quality, cost
+  scenario, contract versions, excluded use).
+- `ALLOWED_TRANSITIONS` encodes *exactly* the edges drawn in the
+  contract's "Vəziyyətlər" diagram (`candidate -> under_review`,
+  `under_review -> accepted | rejected`, `accepted -> review_due |
+  restricted | superseded | quarantined | archived`, `review_due ->
+  under_review`) -- no additional transitions were invented for states
+  the diagram leaves terminal. `is_valid_transition()` is a pure lookup,
+  not an in-place status mutator; applying a transition to a persisted
+  claim is future repository-layer work, same split as Phase 5's
+  pure-render-module vs. `visual_experiment_repository.py`.
+- New `tests/backend/test_knowledge_claim.py` (30 tests): validation,
+  checksum determinism (wall-clock `created_at` excluded from the
+  checksum payload on purpose), all 9 claim types, and every documented
+  diagram edge exercised (both valid and a few explicitly-undocumented
+  ones proven invalid). Full backend regression: `639 passed`.
+  Frontend/API/persistence not started yet -- deliberately small first
+  slice.
+
 ### Fixed — Phase 5 experiment registration now stores reconstructable specs, not opaque ids
 
 - Full state-verification pass first (user asked to re-confirm git/tests/
