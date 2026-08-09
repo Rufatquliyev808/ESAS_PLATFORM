@@ -1,5 +1,32 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Migration `0010` və `0011` real bazaya tətbiq edildi
+
+- İstifadəçi "platformanı yenidən işə sal" dedi, sonra migration
+  `0011`-i real bazaya tətbiq etməyi açıq təsdiqlədi ("davam et").
+  `tools/phase2-migrate-production.py --allow-production` istifadə
+  edildi — bu, ehtiyat nüsxə götürür, BÜTÜN gözləyən migrasiyaları
+  tətbiq edir (yalnız istənilən biri deyil), `quick_check` doğrulayır.
+  Nəticədə **həm `0010` (Phase 9-un `shadow_theoretical_positions`
+  cədvəli, əvvəllər tətbiq edilməmiş qalmışdı) HƏM `0011`
+  (`statistical_analysis_jobs`/`statistical_analysis_job_audit`)** eyni
+  icrada tətbiq olundu.
+- Doğrulama: tətbiqdən əvvəl/sonra `tick_events` sayı dəyişməz
+  (2,419,520), `replay_sessions` sayı dəyişməz (7), `PRAGMA quick_check`
+  həm ehtiyat nüsxədə həm tətbiq edilmiş bazada `ok`. Hər iki migrasiya
+  yalnız əlavəedici (`CREATE TABLE`/`CREATE INDEX`/`CREATE TRIGGER`,
+  heç bir `DROP`/`DELETE`/`UPDATE` yoxdur).
+- Real backend/frontend `tools/stop-local-platform.ps1` →
+  `start-local-platform.ps1` ilə yenidən başladıldı (MT5 Bridge FIFO
+  buferini qorumaq üçün). Doğrulama: `/health` `200`, yeni `POST .../
+  statistical-analysis-jobs` endpoint-i etibarsız sessiya ilə `401`
+  qaytardı (`no such table` YOX) — yeni cədvəllərin canlı və əlçatan
+  olduğunu təsdiqlədi.
+- Ehtiyat nüsxə: `.runtime/phase2-migration/ESAS_PLATFORM-before-phase2-<timestamp>.sqlite`
+  (`.gitignore`-da, commit edilmir).
+- Bu, kod dəyişikliyi deyil — commit/push tələb olunmur, yalnız real baza
+  vəziyyəti dəyişdi.
+
 ## 2026-08-09 — Phase 3 statistik analiz üçün async job/persistence resursu
 
 - İstifadəçi seçdi: "Async job resursu (tövsiyə)" — SA-001-SA-007 VƏ
@@ -62,15 +89,11 @@
   (7 test, mövcud pattern-candidate-backtest job API test faylının eyni
   nümunəsi ilə). Tam backend regressiyası: `528 passed`. **Real işləyən
   production backend-də restart-dan sonra yoxlanıldı**: yeni route `401`
-  qaytarır (`404` yox) — kodun düzgün yükləndiyini təsdiqləyir. **VACİB:**
-  migration `0011` (`statistical_analysis_jobs` cədvəli) real bazaya HƏLƏ
-  TƏTBİQ EDİLMƏYİB (`start-local-platform.ps1` migrasiyaları avtomatik
-  tətbiq etmir) — real istifadəçi hazırda yeni job endpoint-lərini real
-  sessiyada çağırsa `no such table` xətası alacaq. `0011` tətbiq
-  ediləndə əvvəlki `0005`-`0009` kimi ehtiyat nüsxə + ayrıca icazə tələb
-  olunacaq. Sinxron `GET .../statistical-analysis` (əvvəllər mövcud) bu
-  problemdən təsirlənmir. Frontend toxunulmayıb (backend-only,
-  API-səviyyəli artım, UI dəyişikliyi yoxdur).
+  qaytarır (`404` yox) — kodun düzgün yükləndiyini təsdiqləyir. (Yazıldığı
+  zaman migration `0011` real bazaya hələ tətbiq edilməmişdi; eyni gün,
+  aşağıdakı qeyddə göründüyü kimi, istifadəçinin təsdiqi ilə tətbiq
+  edildi.) Frontend toxunulmayıb (backend-only, API-səviyyəli artım, UI
+  dəyişikliyi yoxdur).
 
 ## 2026-08-07 — Phase 3 SA-001-SA-007 üçün frontend panel
 

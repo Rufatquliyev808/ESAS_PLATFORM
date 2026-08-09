@@ -8,6 +8,29 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Applied migrations 0010 and 0011 to the real production database
+
+- User asked to restart the real platform and continue, then explicitly
+  approved applying migration `0011` when asked. `tools/phase2-migrate-
+  production.py --allow-production` backed up the real database, applied
+  migrations, and verified `quick_check`. It applies *all* pending
+  migrations, not just the requested one, so migration `0010` (Phase 9's
+  `shadow_theoretical_positions` table, pending since it shipped) was
+  applied in the same run as `0011`.
+- Verified before and after: `tick_events` row count unchanged
+  (2,419,520), `replay_sessions` row count unchanged (7),
+  `PRAGMA quick_check` returns `ok` on both the backup and the migrated
+  database. Both migrations are purely additive (`CREATE TABLE`/`CREATE
+  INDEX`/`CREATE TRIGGER` only).
+- Real backend/frontend restarted afterward (`tools/stop-local-
+  platform.ps1` then `start-local-platform.ps1`, protecting the MT5
+  Bridge FIFO buffer from tick loss during the stop). Verified: `/health`
+  `200`, and the new `POST .../statistical-analysis-jobs` endpoint
+  returns `401` for an invalid session (not a `no such table` error) --
+  confirms the new tables are live and reachable.
+- Backup: `.runtime/phase2-migration/ESAS_PLATFORM-before-phase2-<timestamp>.sqlite`
+  (gitignored, not committed).
+
 ### Added — Async job/persistence resource for Phase 3 statistical analysis
 
 - The contract's `POST /api/v2/statistical-analyses` conceptual resource

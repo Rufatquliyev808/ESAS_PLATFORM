@@ -106,7 +106,8 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   təsnifləndirir (purge/embargo ilə), `buy_side`/`sell_side` üçün ayrı
   95% etibar intervallı reversed-faiz statistikası. Backend `462 passed`.
 - **Likvidlik sisteminin qalan 3 addımı (çox-taymfreym, özü-öyrənən
-  seqmentasiya, jurnal)** (hələ commit edilməyib) — istifadəçinin "1-dən
+  seqmentasiya, jurnal)** (commit `11f47ee`, push edilib, CI yaşıl) —
+  istifadəçinin "1-dən
   başlayaq, soruşma, hamısını edək" tapşırığına cavab, ardıcıl təsdiqsiz
   tamamlandı. Yeni `liquidity_reaction_segments.py` (RSI/Stochastic/ADX
   şərtləri üzrə Bonferroni-düzəlişli seqment statistikası), yeni
@@ -119,7 +120,8 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   tam sınandı (15 günlük ossilasiya edən sintetik data, real bazaya
   toxunmadan). Backend `472 passed`, frontend lint/build/`13/13` test
   təmiz.
-- **Tarixi hərəkət diapazonu (excursion range)** (hələ commit edilməyib) —
+- **Tarixi hərəkət diapazonu (excursion range)** (commit `e30f22a`, push
+  edilib, CI yaşıl) —
   istifadəçi "gələcəyi proqnoz etmək" istəyini bildirdi ("filan nöqtədən
   filan nöqtəyə qədər gözlənilir"); eyni sərhəd izahı təkrarlandı, tarixi
   (backward-looking) aralıq seçildi. Yeni `ExcursionDistribution` — hər
@@ -207,7 +209,7 @@ Mərhələ: Phase 3 (statistik analiz) — Phase 4-ün namizəd lifecycle-ı əs
   fixture, median split, leksikoqrafik regime təyini). Tam backend
   regressiyası: `507 passed`. Frontend toxunulmayıb.
 - **Phase 3 SA-006 — sessiya müqayisəsi (təqvim-yoxdur deqradasiya
-  rejimi)** (hələ commit edilməyib) — Phase 3-ün SA-001-SA-007
+  rejimi)** (commit `78ad3ab`, push edilib, CI yaşıl) — Phase 3-ün SA-001-SA-007
   müqaviləsini tamamlayır. Müqavilə versiyalanmış simvol/broker təqvimi
   (timezone, DST, həftəsonu/bayram, üst-üstə düşən sessiya prioriteti)
   tələb edir, AMMA təqvim olmadıqda açıq deqradasiya rejimi TƏYİN EDİR:
@@ -241,7 +243,7 @@ flag/UTC-saat cədvəlləri). Konsol xətası yox, sorğu storm-u yox. Yeni
 build uğurlu.
 
 **Async job/persistence resursu** (`POST /api/v2/statistical-analyses`)
-(hələ commit edilməyib) — istifadəçinin seçimi (SA-001-SA-007
+(commit `af8eb7c`, push edilib, CI yaşıl) — istifadəçinin seçimi (SA-001-SA-007
 tamamlandıqdan sonra). İcrası zamanı real maneə aşkarlandı: `analysis_jobs`
 (migration `0007`) real bazaya artıq tətbiq edilib, `job_type` CHECK-i
 yalnız `pattern_candidate_backtest`-i qəbul edir, migration sistemi
@@ -270,6 +272,14 @@ Real işləyən production backend-də restart-dan sonra yoxlanıldı: yeni
 route `401` qaytarır (`404` yox) — kodun düzgün yükləndiyini təsdiqləyir.
 Frontend toxunulmayıb (backend-only, API-səviyyəli artım).
 
+**2026-08-09: migration `0010` VƏ `0011` real bazaya tətbiq edildi**
+(istifadəçinin açıq təsdiqi ilə, `tools/phase2-migrate-production.py
+--allow-production`) — ehtiyat nüsxə + doğrulama (`tick_events`/
+`replay_sessions` sayları dəyişməz, `quick_check=ok`), real
+backend/frontend yenidən başladıldı, yeni job endpoint-i `401` (`no such
+table` YOX) qaytardı. Ətraflı: `docs/status/CURRENT_STATE.md`. Kod
+dəyişikliyi deyil, commit tələb olunmadı.
+
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 3/4, `PROJECT_ROADMAP.md`-dən)
@@ -281,8 +291,8 @@ Frontend toxunulmayıb (backend-only, API-səviyyəli artım).
   evaluated → accepted_for_shadow | rejected | insufficient_evidence |
   invalid_leakage | blocked_by_data_quality → archived`.
 - Phase 9: manifest + event + portfolio skeleti VƏ admin API/frontend
-  tamamlandı. Real bazaya migration `0010` hələ tətbiq edilməyib (ayrıca
-  icazə tələb olunacaq, real istifadəyə başlanmaq istənsə). Qalan
+  tamamlandı. Migration `0010` real bazaya 2026-08-09-da tətbiq edildi
+  (əvvəllər kod/test bazalarında sınanmışdı). Qalan
   bölmələr (champion/challenger müqayisə mühərriki section 7,
   kəsinti/restart section 8) — yalnız istifadəçi ayrıca istəsə, çünki hələ
   real qərar generatoru (Phase 5-8) yoxdur.

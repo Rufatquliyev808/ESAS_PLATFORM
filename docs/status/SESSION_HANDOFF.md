@@ -13,21 +13,19 @@ Son yenilənmə: 2026-08-07
 
 ## Cari vəziyyət (ətraflı: `docs/status/CURRENT_STATE.md`)
 
-- **Real production baza (`database/ESAS_PLATFORM.sqlite`) hazırda `0009`
-  migrasiyasındadır** (əvvəllər `0004`-də donub qalmışdı — istifadəçi
-  brauzerdə `HTTP 500` gördü, kök səbəb tapılıb düzəldildi, istifadəçinin
-  açıq təsdiqi ilə). Ehtiyat nüsxə `database/backups/`-dadır
-  (`.gitignore`-a əlavə edilib). Xam `tick_events`/sessiya sətirlərinə
-  toxunulmayıb. **`0010` (bu sessiyanın Phase 9 portfolio ledger artımı)
-  yalnız test bazalarında sınanıb — real bazaya HƏLƏ TƏTBİQ EDİLMƏYİB**,
-  çünki heç bir real çağıran yoxdur (bu, canlı SHADOW sisteminin bir
-  hissəsi deyil, yalnız gələcək üçün skelet). Real bazaya tətbiq lazım
-  olduqda ayrıca icazə tələb olunacaq.
+- **[KÖHNƏLMİŞ QEYD — YENİSİ AŞAĞIDA]** Real production baza indi (2026-08-09)
+  `0011` migrasiyasındadır (`0001`-`0011` hamısı tətbiq edilib, `0010`
+  Phase 9 portfolio ledger + `0011` statistical-analysis-jobs daxil — bax
+  aşağıdakı "Commit/push vəziyyəti" bölməsi ətraflı üçün). Ehtiyat
+  nüsxələr `.runtime/phase2-migration/` və `database/backups/`-dadır
+  (hər ikisi `.gitignore`-da). Xam `tick_events`/sessiya sətirlərinə heç
+  vaxt toxunulmayıb.
 - **Phase 1: STABLE. Phase 2: STABLE. Phase 4: namizəd lifecycle-ı əsasən
-  tamamlanıb. Phase 3: İN PROGRESS** (cari aktiv mərhələ — indicə
-  başlanıb). **Phase 9: hələ "DESIGN READY — NOT IMPLEMENTED"** — yalnız
-  persistence skeleti + admin API/frontend tikilib (manifest + event
-  reyestri + nəzəri portfolio/risk ledger), canlı qərar generatoru yoxdur.
+  tamamlanıb. Phase 3: SA-001-SA-007 müqaviləsi TAM ƏHATƏ OLUNUB**
+  (backend + frontend + async job resursu, bax aşağı). **Phase 9: hələ
+  "DESIGN READY — NOT IMPLEMENTED"** — yalnız persistence skeleti + admin
+  API/frontend tikilib (manifest + event reyestri + nəzəri
+  portfolio/risk ledger), canlı qərar generatoru yoxdur.
 - Pattern namizədi işi bu qatlardan ibarətdir:
   1. **Draft generator** — hesablama-zamanı 6 hipotez slotu.
   2. **Persistence/`registered`** — migration `0005`.
@@ -316,27 +314,24 @@ Son yenilənmə: 2026-08-07
   spread davranışı, Phase 3 SA-004 tick sürəti, Phase 3 SA-005
   tick-volume/flags, Phase 3 SA-002 tamamlanması (tick-to-tick return
   std), Phase 3 SA-007 bazar rejimi namizədləri, Phase 3 SA-006 sessiya
-  müqayisəsi, Phase 3 SA-001-SA-007 üçün frontend panel — hamısı push
-  edilib, CI-də yaşıl).
-- **Yeni, hələ commit edilməyib:** Phase 3 statistik analiz üçün async
-  job/persistence resursu (kod + migration `0011` + testlər + sənədlər),
-  yuxarıda təsvir edilib. AGENTS.md qaydasına görə commit/push
-  istifadəçinin ayrıca açıq təsdiqini gözləyir. İşçi qovluqda `.tmp/`
-  (əvvəlki sessiyanın pytest qalıqları, untracked, əhəmiyyətsiz) də qalıb.
+  müqayisəsi, Phase 3 SA-001-SA-007 üçün frontend panel, Phase 3 async
+  job/persistence resursu (migration `0011`) — hamısı push edilib, CI-də
+  yaşıl). Hazırda commit edilməmiş kod dəyişikliyi yoxdur.
 - `0005` migrasiyası əvvəlki sessiyada bir dəfə **amend edildi**. `0006`-
-  `0009` real bazaya tətbiq edilib. `0010` (Phase 9 portfolio ledger
-  cədvəli) yalnız kodda/test bazalarında mövcuddur, real bazaya tətbiq
-  edilməyib (real çağıran yoxdur, ehtiyac yarandıqda ayrıca icazə tələb
-  olunur). **Yeni: `0011`** (`statistical_analysis_jobs`) də hələ yalnız
-  kodda/test bazalarında mövcuddur — `start-local-platform.ps1` migrasiyaları
-  AVTOMATIK tətbiq ETMİR (yoxlanıldı — script-də `apply_migrations`
-  çağırışı yoxdur), ona görə `0011` real bazaya tətbiq ediləndə (0005-0009
-  kimi) əvvəlcə ehtiyat nüsxə + ayrıca icazə tələb olunacaq. Kod bu gün
-  restart edilmiş real backend-də sınandı, amma bu, YALNIZ endpoint-lərin
-  yükləndiyini göstərir (`401`/`404`) — real bazada `statistical_
-  analysis_jobs` cədvəli hələ YOXDUR, ona görə real istifadəçi hazırda bu
-  yeni job endpoint-lərini real sessiyada çağırsa `sqlite3.OperationalError:
-  no such table` alacaq, `0011` tətbiq ediləndən sonra işə düşəcək.
+  `0009` real bazaya əvvəllər tətbiq edilmişdi. **2026-08-09: `0010`
+  (Phase 9 portfolio ledger) VƏ `0011` (`statistical_analysis_jobs`) eyni
+  icrada real bazaya tətbiq edildi** — istifadəçinin "platformanı
+  yenidən işə sal, sonra davam et" tələbindən sonra, migration `0011`-i
+  tətbiq etmək açıq təsdiqləndi. `tools/phase2-migrate-production.py
+  --allow-production` istifadə edildi (ehtiyat nüsxə + BÜTÜN gözləyən
+  migrasiyaları tətbiq edir, təkcə istənilən deyil — ona görə `0010` da
+  bu icrada "pulsuz" tətbiq oldu). Doğrulama: `tick_events` (2,419,520)
+  və `replay_sessions` (7) sayları dəyişməz, `quick_check=ok` (ehtiyat
+  nüsxə + tətbiq edilmiş baza hər ikisində). Real backend/frontend
+  stop→start ilə yenidən başladıldı, `/health` `200`, yeni job
+  endpoint-i `401` qaytardı (`no such table` YOX) — cədvəllər canlı və
+  əlçatandır. Ehtiyat nüsxə: `.runtime/phase2-migration/`
+  (gitignored). Bu, kod dəyişikliyi deyil, commit/push tələb olunmadı.
 
 ## Yoxlama vəziyyəti
 
@@ -347,12 +342,13 @@ Son yenilənmə: 2026-08-07
 - Frontend bu artımda (async job resursu, yalnız backend) toxunulmayıb,
   əvvəlki artımda (statistical-analysis-panel.tsx) lint təmiz, `14/14`
   test, production build uğurlu idi.
-- Real production backend/frontend bu sessiyada istifadəçinin sərəncamı
-  ilə (`platformanin backend ve frontedini yeniden ise sal`)
-  `tools/start-local-platform.ps1` ilə yenidən başladıldı; `/health`
-  `200`, yeni `POST .../statistical-analysis-jobs` route-u `401` (`404`
-  yox) qaytardı — kod düzgün yükləndi. Real DB-yə migration `0011` hələ
-  tətbiq edilməyib (yuxarıda qeyd olunub).
+- Real production backend/frontend bu sessiyada iki dəfə yenidən
+  başladıldı: (1) istifadəçinin sərəncamı ilə (`platformanin backend ve
+  frontedini yeniden ise sal`) — kod dəyişikliyini yükləmək üçün; (2)
+  migration `0010`/`0011` real bazaya tətbiq edildikdən sonra. Hər iki
+  dəfə `/health` `200`, yeni `POST .../statistical-analysis-jobs`
+  route-u sağlam cavab verdi. Real DB indi `0011`-ə qədər tam
+  yenilənmişdir.
 - Canlı brauzerdə vizual yoxlama (2026-08-05, əvvəlki sessiya): Pattern
   namizədi bölməsinin tam dövrü sınandı. 2026-08-06-da real bazanın
   `HTTP 500` problemi istifadəçi ilə birlikdə canlı brauzerdə aşkarlanıb
@@ -427,18 +423,17 @@ müqayisəsi, təqvim-yoxdur deqradasiya rejimində — yalnız UTC saat
 dilimləri, adlandırılmış sessiya yox) və SA-007 (bazar rejimi
 namizədləri) — bütün 7 bölmə üçün `statistical-analysis-panel.tsx`
 ("Statistik analiz" bölməsi, canlı brauzerdə tam sınanıb) VƏ `POST/GET
-.../statistical-analysis-jobs` (real DB-yə migration `0011` hələ tətbiq
-edilməyib — ayrıca icazə tələb olunacaq); əsas ekrana canlı indikator
-konsensusu paneli əlavə edildi və 5 yeni osilatorla (Stochastic, CCI,
-Williams %R, MACD, ADX) genişləndirildi; likvidlik-səviyyəsi reaksiya
-statistikasının istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym,
-seqmentasiya, canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət
-diapazonu (excursion range) əlavə edildi. Namizədlər
-(`docs/status/NEXT_TASK.md`, hamısı yalnız istifadəçi ayrıca istəsə):
-real versiyalanmış broker təqvimi qurulsa SA-006-nı "rəsmi" rejimə
-keçirmək, migration `0011`-i real bazaya tətbiq etmək, hərəkətli
-ortalamaların genişləndirilməsi (SMA, əlavə dövrlər), likvidlik
-seqmentasiyasına əlavə şərtlər, Phase 9-un qalan bölmələri, job-queue-nun
+.../statistical-analysis-jobs` (migration `0011` real bazaya tətbiq
+edildi, 2026-08-09); əsas ekrana canlı indikator konsensusu paneli əlavə
+edildi və 5 yeni osilatorla (Stochastic, CCI, Williams %R, MACD, ADX)
+genişləndirildi; likvidlik-səviyyəsi reaksiya statistikasının
+istifadəçinin təsvir etdiyi 4 addımı da (çox-taymfreym, seqmentasiya,
+canlı UI, jurnal) tamamlandı, üzərinə tarixi hərəkət diapazonu (excursion
+range) əlavə edildi. Namizədlər (`docs/status/NEXT_TASK.md`, hamısı
+yalnız istifadəçi ayrıca istəsə): real versiyalanmış broker təqvimi
+qurulsa SA-006-nı "rəsmi" rejimə keçirmək, hərəkətli ortalamaların
+genişləndirilməsi (SMA, əlavə dövrlər), likvidlik seqmentasiyasına əlavə
+şərtlər, Phase 9-un qalan bölmələri, job-queue-nun
 frontend səthi. İstifadəçinin ayrıca təsdiqi tələb olunur.
 
 ## Təhlükəsizlik
