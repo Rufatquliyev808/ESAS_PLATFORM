@@ -4,11 +4,12 @@ from datetime import UTC, datetime, timedelta
 from backend.app.analysis.bars import TIMEFRAME_SECONDS, build_closed_mid_bars
 from backend.app.analysis.indicator_consensus import compute_indicator_consensus
 from backend.app.analysis.indicators import build_indicator_set
+from backend.app.analysis.moving_averages import build_moving_average_set
 from backend.app.analysis.oscillators import build_oscillator_set
 from backend.app.database.tick_replay_repository import iter_tick_batches
 
 
-LIVE_ANALYSIS_API_VERSION = "1.1.0"
+LIVE_ANALYSIS_API_VERSION = "1.2.0"
 MAX_LIVE_ANALYSIS_BARS = 1_000
 
 
@@ -23,6 +24,7 @@ class LiveTechnicalSummary:
     lineage: dict[str, object]
     indicators: dict[str, object]
     oscillators: dict[str, object]
+    moving_averages: dict[str, object]
     consensus: dict[str, object]
     interpretation: str = "research_observation_not_trading_signal"
     api_version: str = LIVE_ANALYSIS_API_VERSION
@@ -61,9 +63,11 @@ def create_live_technical_summary(
         ema_period=ema_period, rsi_period=rsi_period, atr_period=atr_period,
     )
     oscillator_result = build_oscillator_set(bar_result.bars, bar_fingerprint=bar_result.fingerprint)
+    moving_average_result = build_moving_average_set(bar_result.bars, bar_fingerprint=bar_result.fingerprint)
     if bar_result.bars:
         consensus = compute_indicator_consensus(
             bars=bar_result.bars, indicators=indicator_result, oscillators=oscillator_result,
+            moving_averages=moving_average_result,
         )
         consensus_payload = asdict(consensus)
     else:
@@ -87,6 +91,8 @@ def create_live_technical_summary(
             "indicator_fingerprint": indicator_result.fingerprint,
             "oscillator_package_version": oscillator_result.package_version,
             "oscillator_fingerprint": oscillator_result.fingerprint,
+            "moving_average_package_version": moving_average_result.package_version,
+            "moving_average_fingerprint": moving_average_result.fingerprint,
             "reproducible": False,
             "reproducibility_note": (
                 "rolling live window, not a fixed snapshot -- repeated calls "
@@ -107,6 +113,9 @@ def create_live_technical_summary(
             "macd_line": asdict(oscillator_result.macd_line),
             "macd_signal": asdict(oscillator_result.macd_signal),
             "williams_r": asdict(oscillator_result.williams_r),
+        },
+        moving_averages={
+            "series": [asdict(item) for item in moving_average_result.series],
         },
         consensus=consensus_payload,
     )

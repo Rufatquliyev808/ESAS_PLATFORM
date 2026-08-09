@@ -55,6 +55,7 @@ const INDICATOR_LABELS: Record<string, string> = {
 
 function indicatorLabel(id: string): string {
   if (id.startsWith("ema.close.")) return `EMA (${id.split(".").pop()})`;
+  if (id.startsWith("sma.close.")) return `SMA (${id.split(".").pop()})`;
   return INDICATOR_LABELS[id] ?? id;
 }
 

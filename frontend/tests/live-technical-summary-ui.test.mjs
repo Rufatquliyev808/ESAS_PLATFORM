@@ -9,4 +9,8 @@ test("live technical summary panel stays a research-only indicator consensus, no
   assert.match(source, /api\/v2\/live-technical-summary/);
   assert.match(source, /TƏDQİQAT MÜŞAHİDƏSİDİR — TİCARƏT TÖVSİYƏSİ DEYİL/);
   assert.doesNotMatch(source.toLowerCase(), /\bbuy\b|\bsell\b|placeorder|sendorder|positionsize/);
+  // Moving-average table now covers both SMA and EMA feature ids (8 series:
+  // 4 periods x 2 types), not just the old single EMA reading.
+  assert.match(source, /sma\.close\./);
+  assert.match(source, /ema\.close\./);
 });

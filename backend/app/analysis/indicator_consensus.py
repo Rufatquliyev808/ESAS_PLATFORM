@@ -4,10 +4,11 @@ import json
 
 from backend.app.analysis.bars import MarketBar
 from backend.app.analysis.indicators import IndicatorSetResult
+from backend.app.analysis.moving_averages import MovingAverageSetResult
 from backend.app.analysis.oscillators import OscillatorSetResult
 
 
-CONSENSUS_VERSION = "2.0.0"
+CONSENSUS_VERSION = "3.0.0"
 BULLISH_LEANING = "bullish_leaning"
 BEARISH_LEANING = "bearish_leaning"
 NEUTRAL = "neutral"
@@ -122,10 +123,11 @@ def _summarize(leans: tuple[IndicatorLean, ...]) -> ConsensusSummary:
     return ConsensusSummary(bullish, bearish, neutral, insufficient, overall)
 
 
-def _fingerprint(*, bar_fingerprint: str, indicator_fingerprint: str, oscillator_fingerprint: str, oscillator_leans: tuple[IndicatorLean, ...], moving_averages: tuple[IndicatorLean, ...]) -> str:
+def _fingerprint(*, bar_fingerprint: str, indicator_fingerprint: str, oscillator_fingerprint: str, moving_average_fingerprint: str, oscillator_leans: tuple[IndicatorLean, ...], moving_averages: tuple[IndicatorLean, ...]) -> str:
     payload = {
         "bar_fingerprint": bar_fingerprint,
         "indicator_fingerprint": indicator_fingerprint,
+        "moving_average_fingerprint": moving_average_fingerprint,
         "moving_averages": [asdict(item) for item in moving_averages],
         "oscillator_fingerprint": oscillator_fingerprint,
         "oscillators": [asdict(item) for item in oscillator_leans],
@@ -137,13 +139,15 @@ def _fingerprint(*, bar_fingerprint: str, indicator_fingerprint: str, oscillator
 
 def compute_indicator_consensus(
     *, bars: tuple[MarketBar, ...], indicators: IndicatorSetResult, oscillators: OscillatorSetResult,
+    moving_averages: MovingAverageSetResult,
 ) -> IndicatorConsensusResult:
     """Classify each already-computed indicator's latest reading as bullish/bearish
     -leaning or neutral, then count how many lean each way (oversold/overbought
     thresholds for RSI/Stochastic/CCI/Williams %R, MACD-vs-signal crossover,
-    ADX-gated +DI/-DI direction, close-vs-EMA position). Mirrors the structure of
-    common indicator-consensus panels, with research-safe labels (no buy/sell
-    language) -- this is a count of indicator readings, not a trade recommendation.
+    ADX-gated +DI/-DI direction, close-vs-average position for each of the 8
+    SMA/EMA series). Mirrors the structure of common indicator-consensus panels,
+    with research-safe labels (no buy/sell language) -- this is a count of
+    indicator readings, not a trade recommendation.
     """
     if not bars:
         raise ValueError("bars must not be empty")
@@ -153,7 +157,6 @@ def compute_indicator_consensus(
         return series_points[-1].value if series_points else None
 
     last_rsi = latest(indicators.rsi.points)
-    last_ema = latest(indicators.ema.points)
     last_stochastic_k = latest(oscillators.stochastic_k.points)
     last_cci = latest(oscillators.cci.points)
     last_williams_r = latest(oscillators.williams_r.points)
@@ -179,24 +182,26 @@ def compute_indicator_consensus(
         _classify_macd(last_macd_line, last_macd_signal),
         _classify_adx(last_adx, last_plus_di, last_minus_di),
     )
-    moving_averages = (
-        _classify_price_vs_average(f"ema.close.{indicators.ema.period}", last_ema, last_close),
+    moving_average_leans = tuple(
+        _classify_price_vs_average(series.feature_id, latest(series.points), last_close)
+        for series in moving_averages.series
     )
 
     oscillator_summary = _summarize(oscillator_leans)
-    moving_average_summary = _summarize(moving_averages)
-    overall_summary = _summarize(oscillator_leans + moving_averages)
+    moving_average_summary = _summarize(moving_average_leans)
+    overall_summary = _summarize(oscillator_leans + moving_average_leans)
 
     fingerprint = _fingerprint(
         bar_fingerprint=indicators.bar_fingerprint,
         indicator_fingerprint=indicators.fingerprint,
         oscillator_fingerprint=oscillators.fingerprint,
+        moving_average_fingerprint=moving_averages.fingerprint,
         oscillator_leans=oscillator_leans,
-        moving_averages=moving_averages,
+        moving_averages=moving_average_leans,
     )
 
     return IndicatorConsensusResult(
-        CONSENSUS_VERSION, oscillator_leans, moving_averages,
+        CONSENSUS_VERSION, oscillator_leans, moving_average_leans,
         oscillator_summary, moving_average_summary, overall_summary,
         fingerprint,
     )

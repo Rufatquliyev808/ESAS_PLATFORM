@@ -300,6 +300,33 @@ konsol xətası yox. Yeni `async-job-panel-ui.test.mjs` (3 test).
 Frontend: lint təmiz, `17/17` test, build uğurlu. Backend
 toxunulmayıb.
 
+**PROJECT_ROADMAP.md faktiki vəziyyətə uyğunlaşdırıldı** (commit
+`348717e`, push edilib, CI yaşıl) — Phase 3 və Phase 4-ün checklist-ləri
+COMPLETED işarələndi (əvvəllər hamısı `[ ]` idi, faktiki iş çoxdan
+bitmişdi). Növbəti böyük mərhələ (Phase 5, Visual AI) qeyd edildi,
+istifadəçinin ayrıca təsdiqini gözləyir.
+
+**Canlı konsensus panelinin hərəkətli ortalamaları genişləndirildi**
+(hələ commit edilməyib) — istifadəçinin seçimi (Phase 5-dən əvvəl kiçik
+namizəd). Yeni `backend/app/analysis/moving_averages.py`:
+`calculate_sma()` (yeni) + `build_moving_average_set()` (4 dövr ×
+SMA/EMA = 8 seriya; `indicators.py`-a TOXUNMUR, `calculate_ema()`-nı
+birbaşa çağırır, təkrar EMA implementasiyası yoxdur).
+`indicator_consensus.py` indi 8 seriyanı təsnifləndirir (əvvəllər 1),
+`CONSENSUS_VERSION 2.0.0 → 3.0.0`. `live_analysis.py`-a yeni
+`moving_averages` sahəsi, `LIVE_ANALYSIS_API_VERSION 1.1.0 → 1.2.0`.
+Frontend-də `live-technical-summary-panel.tsx` artıq generic idi (siyahı
+üzrə render edir), yalnız `indicatorLabel()`-ə `sma.close.N` üçün format
+əlavə edildi. **Canlı brauzerdə tam sınandı** (scratch backend port 8003
++ 1,200 sintetik tick 60 dəqiqəlik, scratch frontend port 5173, real
+8000/3000 toxunulmadan): bütün 8 sətir real dəyərlərlə göründü, 8/8
+yuxarı meyl (sintetik uptrend-ə uyğun), konsol xətası yox, polling 5s
+tempində qaldı (storm yox). Yeni `test_moving_averages.py` (8 test),
+`test_indicator_consensus.py` yenidən yazıldı (8-seriyalı fixture).
+`test_live_technical_summary_api.py` yeniləndi. Tam backend
+regressiyası: `537 passed`. Frontend: lint təmiz, `17/17` test, build
+uğurlu.
+
 Ətraflı: `docs/status/CURRENT_STATE.md`.
 
 ## Namizəd növbəti addımlar (Phase 3/4, `PROJECT_ROADMAP.md`-dən)
@@ -328,11 +355,10 @@ toxunulmayıb.
   + `POST/GET .../statistical-analysis-jobs`, təfərrüat yuxarıda).
   Namizəd (yalnız istifadəçi ayrıca istəsə): real versiyalanmış
   simvol/broker təqvimi qurulsa SA-006 "rəsmi" rejimə keçirilə bilər.
-- **Əsas ekranın canlı indikator konsensusu paneli** — indi 6 osilator
-  (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 1 hərəkətli ortalama
-  (EMA) əhatə edir (təfərrüat yuxarıda). Namizədlər: hərəkətli ortalamaları
-  genişləndirmək (SMA, əlavə EMA/SMA dövrləri — TradingView-da 8 MA var,
-  bizdə 1) — yalnız istifadəçi ayrıca istəsə.
+- **Əsas ekranın canlı indikator konsensusu paneli tamamlandı** — indi 6
+  osilator (RSI, Stochastic, CCI, Williams %R, MACD, ADX) + 8 hərəkətli
+  ortalama (SMA/EMA × 10/20/30/50 dövr, TradingView-un 8 MA-sına uyğun)
+  əhatə edir (təfərrüat yuxarıda).
 - **Likvidlik-səviyyəsi reaksiya statistikası — istifadəçinin təsvir
   etdiyi 4 addımın hamısı tamamlandı**: 1) çox-taymfreym orkestrasiyası
   (M30/H1/H4/D1), 2) canlı meyl göstəricisi (tədqiqat dili ilə, əsas

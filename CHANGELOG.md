@@ -8,6 +8,59 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Moving-average expansion for the live indicator consensus panel
+
+- The live consensus panel had one moving average (EMA) against
+  TradingView's eight (a mix of SMA/EMA across several periods); the user
+  picked this as the next small candidate after Phase 3/job-queue work
+  wrapped up.
+- New `backend/app/analysis/moving_averages.py`: adds `calculate_sma()`
+  (a new causal simple moving average, no forward-fill) and
+  `build_moving_average_set()`, which produces one SMA and one EMA per
+  period across four standard periods (10/20/30/50 -- 8 series total,
+  matching TradingView's row count). Deliberately does NOT touch
+  `indicators.py` (the stable, widely-reused package every other analysis
+  module depends on) -- same reason `oscillators.py` was kept separate
+  earlier. EMA itself is not reimplemented: `build_moving_average_set()`
+  calls `indicators.py`'s existing `calculate_ema()` directly at each of
+  the four periods, so there's exactly one EMA implementation in the
+  codebase.
+- `indicator_consensus.py`: `compute_indicator_consensus()` now takes a
+  `moving_averages: MovingAverageSetResult` parameter and classifies all 8
+  series (close vs. average, reusing the existing generic
+  `_classify_price_vs_average()` helper) instead of just the one EMA.
+  `CONSENSUS_VERSION` `2.0.0 -> 3.0.0`.
+- `live_analysis.py`: builds the moving-average set alongside the existing
+  indicator/oscillator sets, exposes it as a new `moving_averages` field
+  in the live summary response. `LIVE_ANALYSIS_API_VERSION`
+  `1.1.0 -> 1.2.0`.
+- Frontend: `live-technical-summary-panel.tsx` already rendered
+  `consensus.moving_averages` generically (table + gauge both iterate the
+  array, no hardcoded single-entry assumption) -- the only change needed
+  was teaching `indicatorLabel()` to format `sma.close.N` as `SMA (N)`
+  (it already handled `ema.close.N`).
+- **Verified live in browser** (disposable scratch backend on port 8003 +
+  scratch SQLite DB with 1,200 synthetic recent GOLD ticks spanning 60
+  minutes -- long enough for the 50-period SMA/EMA to clear warm-up;
+  disposable frontend on port 5173, real production 8000/3000 untouched):
+  the "Hərəkətli ortalamalar" table rendered all 8 rows (SMA/EMA x
+  10/20/30/50) with real computed values and correct bullish-leaning
+  classification matching the synthetic uptrend, the gauge card summed to
+  8/8 bullish, "bütün indikatorlar hazırdır" (no warm-up gaps). No console
+  errors; polling stayed at the intended 5s cadence (3 requests observed
+  over the check window, no storm).
+- Verification: new `test_moving_averages.py` (8 tests -- hand-verified
+  SMA values, below-period insufficient_data, period/type ordering across
+  the full set, custom periods, confirms EMA reuses `indicators.py`'s
+  `calculate_ema()` exactly, empty-input validity, unsafe-parameter
+  rejection, fingerprint determinism). `test_indicator_consensus.py`
+  rewritten for the 8-series moving-average fixture (was single-EMA).
+  `test_live_technical_summary_api.py` updated for the new API/consensus
+  versions and the `moving_averages` field. `tests/live-technical-summary-ui.test.mjs`
+  gained an assertion that both `sma.close.` and `ema.close.` labels are
+  handled. Full backend regression: `537 passed`. Frontend: lint clean,
+  `17/17` test, production build successful.
+
 ### Added — Frontend surface for the job-queue (pattern-candidate-backtest and statistical-analysis jobs)
 
 - Both job-queue-backed endpoint pairs (pattern-candidate backtests,

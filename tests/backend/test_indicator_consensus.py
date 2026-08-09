@@ -8,6 +8,14 @@ from backend.app.analysis.indicator_consensus import (
     compute_indicator_consensus,
 )
 from backend.app.analysis.indicators import IndicatorPoint, IndicatorSeries, IndicatorSetResult
+from backend.app.analysis.moving_averages import (
+    EMA,
+    MOVING_AVERAGE_PERIODS,
+    SMA,
+    MovingAveragePoint,
+    MovingAverageSeries,
+    MovingAverageSetResult,
+)
 from backend.app.analysis.oscillators import OscillatorPoint, OscillatorSeries, OscillatorSetResult
 
 
@@ -20,9 +28,9 @@ def bar(close: float) -> MarketBar:
     )
 
 
-def indicator_set(*, rsi_value: float | None, ema_value: float | None) -> IndicatorSetResult:
+def indicator_set(*, rsi_value: float | None) -> IndicatorSetResult:
     rsi_point = IndicatorPoint(bar_end_at="2026-08-06T10:01:00.000000", status="ready" if rsi_value is not None else "insufficient_data", value=rsi_value)
-    ema_point = IndicatorPoint(bar_end_at="2026-08-06T10:01:00.000000", status="ready" if ema_value is not None else "insufficient_data", value=ema_value)
+    ema_point = IndicatorPoint(bar_end_at="2026-08-06T10:01:00.000000", status="insufficient_data", value=None)
     rsi = IndicatorSeries(feature_id="rsi.wilder.close", version="1.0.0", period=14, unit="index_0_100", points=(rsi_point,))
     ema = IndicatorSeries(feature_id="ema.close", version="1.0.0", period=20, unit="price", points=(ema_point,))
     atr = IndicatorSeries(feature_id="atr.wilder", version="1.0.0", period=14, unit="price", points=(IndicatorPoint("2026-08-06T10:01:00.000000", "insufficient_data", None),))
@@ -56,70 +64,102 @@ def oscillator_set(
     )
 
 
-def test_oversold_rsi_and_price_above_ema_are_bullish_leaning() -> None:
+def moving_average_set(value: float | None) -> MovingAverageSetResult:
+    """All 8 series (4 periods x SMA/EMA) report the same single value, so
+    tests can drive every moving-average lean with one number, matching the
+    old single-EMA fixture's simplicity."""
+    series: list[MovingAverageSeries] = []
+    for period in MOVING_AVERAGE_PERIODS:
+        for ma_type in (SMA, EMA):
+            point = MovingAveragePoint(
+                bar_end_at="2026-08-06T10:01:00.000000",
+                status="ready" if value is not None else "insufficient_data",
+                value=value,
+            )
+            series.append(MovingAverageSeries(
+                feature_id=f"{ma_type}.close.{period}", ma_type=ma_type, version="1.0.0",
+                period=period, unit="price", points=(point,),
+            ))
+    return MovingAverageSetResult(series=tuple(series), bar_fingerprint="sha256:bars", fingerprint="sha256:ma")
+
+
+def test_oversold_rsi_and_price_above_moving_averages_are_bullish_leaning() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert result.version == CONSENSUS_VERSION
     assert result.oscillators[0].indicator_id == "rsi"
     assert result.oscillators[0].status == BULLISH_LEANING
-    assert result.moving_averages[0].status == BULLISH_LEANING
+    assert len(result.moving_averages) == 8
+    assert all(item.status == BULLISH_LEANING for item in result.moving_averages)
     assert result.overall_summary.overall_lean == BULLISH_LEANING
-    assert result.overall_summary.bullish_leaning_count == 2
+    assert result.overall_summary.bullish_leaning_count == 9
     assert result.interpretation == "research_observation_not_trading_signal"
 
 
-def test_overbought_rsi_and_price_below_ema_are_bearish_leaning() -> None:
+def test_overbought_rsi_and_price_below_moving_averages_are_bearish_leaning() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(95.0),), indicators=indicator_set(rsi_value=80.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(95.0),), indicators=indicator_set(rsi_value=80.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert result.oscillators[0].status == BEARISH_LEANING
-    assert result.moving_averages[0].status == BEARISH_LEANING
+    assert all(item.status == BEARISH_LEANING for item in result.moving_averages)
     assert result.overall_summary.overall_lean == BEARISH_LEANING
-    assert result.overall_summary.bearish_leaning_count == 2
+    assert result.overall_summary.bearish_leaning_count == 9
 
 
-def test_mid_range_rsi_and_price_at_ema_are_neutral() -> None:
+def test_mid_range_rsi_and_price_at_moving_averages_are_neutral() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert result.oscillators[0].status == NEUTRAL
-    assert result.moving_averages[0].status == NEUTRAL
+    assert all(item.status == NEUTRAL for item in result.moving_averages)
     assert result.overall_summary.overall_lean == NEUTRAL
 
 
 def test_missing_indicator_values_are_insufficient_data() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(100.0),), indicators=indicator_set(rsi_value=None, ema_value=None),
-        oscillators=oscillator_set(),
+        bars=(bar(100.0),), indicators=indicator_set(rsi_value=None),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(None),
     )
     assert result.oscillators[0].status == INSUFFICIENT_DATA
-    assert result.moving_averages[0].status == INSUFFICIENT_DATA
+    assert all(item.status == INSUFFICIENT_DATA for item in result.moving_averages)
     assert result.overall_summary.overall_lean == INSUFFICIENT_DATA
-    assert result.overall_summary.insufficient_data_count == 7
+    assert result.overall_summary.insufficient_data_count == 14  # 6 oscillators + 8 moving averages
     assert len(result.oscillators) == 6
 
 
 def test_mixed_signals_are_neutral_overall() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(105.0),), indicators=indicator_set(rsi_value=80.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(105.0),), indicators=indicator_set(rsi_value=80.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert result.oscillators[0].status == BEARISH_LEANING
-    assert result.moving_averages[0].status == BULLISH_LEANING
-    assert result.overall_summary.overall_lean == NEUTRAL
+    assert all(item.status == BULLISH_LEANING for item in result.moving_averages)
+    assert result.overall_summary.overall_lean == BULLISH_LEANING
+
+
+def test_moving_average_set_covers_all_eight_series_with_period_and_type() -> None:
+    result = compute_indicator_consensus(
+        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
+    )
+    assert [item.indicator_id for item in result.moving_averages] == [
+        "sma.close.10", "ema.close.10", "sma.close.20", "ema.close.20",
+        "sma.close.30", "ema.close.30", "sma.close.50", "ema.close.50",
+    ]
 
 
 def test_oscillator_set_covers_all_six_oscillators_in_order() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0, ema_value=100.0),
+        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0),
         oscillators=oscillator_set(
             stochastic_k=10.0, cci=-150.0, williams_r=-90.0,
             macd_line=1.0, macd_signal=0.5, adx=30.0, plus_di=25.0, minus_di=10.0,
         ),
+        moving_averages=moving_average_set(100.0),
     )
     assert [item.indicator_id for item in result.oscillators] == [
         "rsi", "stochastic_k", "cci", "williams_r", "macd", "adx",
@@ -133,10 +173,11 @@ def test_oscillator_set_covers_all_six_oscillators_in_order() -> None:
 
 def test_macd_bearish_crossover_and_weak_adx_trend_is_neutral() -> None:
     result = compute_indicator_consensus(
-        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0, ema_value=100.0),
+        bars=(bar(100.0),), indicators=indicator_set(rsi_value=50.0),
         oscillators=oscillator_set(
             macd_line=0.2, macd_signal=0.8, adx=10.0, plus_di=25.0, minus_di=10.0,
         ),
+        moving_averages=moving_average_set(100.0),
     )
     assert result.oscillators[4].status == BEARISH_LEANING  # macd(0.2) < signal(0.8)
     assert result.oscillators[5].status == NEUTRAL  # adx=10 below trending threshold
@@ -145,8 +186,8 @@ def test_macd_bearish_crossover_and_weak_adx_trend_is_neutral() -> None:
 def test_rejects_empty_bars() -> None:
     try:
         compute_indicator_consensus(
-            bars=(), indicators=indicator_set(rsi_value=50.0, ema_value=100.0),
-            oscillators=oscillator_set(),
+            bars=(), indicators=indicator_set(rsi_value=50.0),
+            oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
         )
     except ValueError as error:
         assert "bars" in str(error)
@@ -156,16 +197,16 @@ def test_rejects_empty_bars() -> None:
 
 def test_deterministic_fingerprint_for_same_input() -> None:
     first = compute_indicator_consensus(
-        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     second = compute_indicator_consensus(
-        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(105.0),), indicators=indicator_set(rsi_value=25.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert first.fingerprint == second.fingerprint
     third = compute_indicator_consensus(
-        bars=(bar(95.0),), indicators=indicator_set(rsi_value=25.0, ema_value=100.0),
-        oscillators=oscillator_set(),
+        bars=(bar(95.0),), indicators=indicator_set(rsi_value=25.0),
+        oscillators=oscillator_set(), moving_averages=moving_average_set(100.0),
     )
     assert third.fingerprint != first.fingerprint

@@ -1,5 +1,57 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-09 — Canlı konsensus panelinin hərəkətli ortalamaları genişləndirildi (1 EMA → 8 SMA/EMA)
+
+- İstifadəçi "davam et, plan üzrə" dedi. Bu münasibətlə əvvəlcə
+  `PROJECT_ROADMAP.md` faktiki vəziyyətə uyğunlaşdırıldı (Phase 3/Phase 4
+  checklist-ləri COMPLETED işarələndi — əvvəllər bütün SA-00x sətirləri
+  `[ ]` göstərirdi, halbuki iş çoxdan bitmişdi). Sonra istifadəçiyə "növbəti
+  böyük mərhələ Phase 5 (Visual AI)-yə başlayaqmı, yoxsa kiçik namizədlərdən
+  birini seçəkmi" sualı verildi — "kiçik namizədlərdən biri" seçildi, sonra
+  "canlı konsensus panelinin hərəkətli ortalamaları" seçildi.
+- Yeni `backend/app/analysis/moving_averages.py`: `calculate_sma()` (yeni,
+  causal, forward-fill yoxdur) + `build_moving_average_set()` — 4 sabit
+  dövr (10/20/30/50) × SMA/EMA = 8 seriya (TradingView-un widget-indəki 8
+  MA sətrinə uyğun). **`indicators.py`-a TOXUNMUR** (`oscillators.py`-ın
+  əvvəlki artımda saxladığı eyni prinsip — bu, paylaşılan/stabil paket,
+  digər bütün analiz modulları ona etibar edir). EMA-nın özü TƏKRAR
+  yazılmayıb: `build_moving_average_set()` hər dövr üçün `indicators.py`-ın
+  artıq mövcud `calculate_ema()`-sını birbaşa çağırır — kod bazasında
+  yalnız BİR EMA implementasiyası qalır.
+- `indicator_consensus.py`: `compute_indicator_consensus()` indi
+  `moving_averages: MovingAverageSetResult` parametri qəbul edir və bütün
+  8 seriyanı təsnifləndirir (əvvəlki tək EMA əvəzinə), mövcud generic
+  `_classify_price_vs_average()` helper-indən istifadə edərək.
+  `CONSENSUS_VERSION 2.0.0 → 3.0.0`.
+- `live_analysis.py`: hərəkətli ortalama dəstini digər dəstlərin (indikator/
+  osilator) yanında qurur, canlı xülasə cavabına yeni `moving_averages`
+  sahəsi əlavə edir. `LIVE_ANALYSIS_API_VERSION 1.1.0 → 1.2.0`.
+- Frontend: `live-technical-summary-panel.tsx` artıq `consensus.
+  moving_averages`-i GENERIC şəkildə render edirdi (cədvəl və gauge hər
+  ikisi array üzərində iterasiya edir, tək-elementli fərziyyə yox idi) —
+  yalnız `indicatorLabel()` funksiyasına `sma.close.N` üçün `SMA (N)`
+  formatı əlavə etmək kifayət etdi (`ema.close.N` artıq mövcud idi).
+- **Canlı brauzerdə tam sınandı** (birdəfəlik scratch backend port 8003 +
+  scratch SQLite (1,200 sintetik GOLD tick, son 60 dəqiqə — 50-dövrlük
+  SMA/EMA-nın warm-up-dan çıxması üçün kifayət), birdəfəlik frontend port
+  5173, real production 8000/3000 toxunulmadan): "Hərəkətli ortalamalar"
+  cədvəli bütün 8 sətri real hesablanmış dəyərlərlə göstərdi (SMA/EMA ×
+  10/20/30/50), sintetik yuxarı trendə uyğun 8/8 "yuxarı meyl"
+  təsnifatı, gauge kartı düzgün cəmləndi, "bütün indikatorlar hazırdır"
+  mətni göründü. Konsol xətası yox, polling 5 saniyəlik templə qaldı
+  (yoxlama pəncərəsində 3 sorğu, storm yox).
+- Yoxlama: yeni `test_moving_averages.py` (`8` test — əl ilə yoxlanmış
+  SMA dəyərləri, dövr-altı `insufficient_data`, tam dəstdə dövr/tip
+  sırası, xüsusi dövrlər, EMA-nın `indicators.py`-ın `calculate_ema()`-si
+  ilə DƏQİQ eyni nəticəni verdiyinin təsdiqi, boş giriş, təhlükəsiz
+  parametr rəddi, fingerprint determinizmi). `test_indicator_consensus.py`
+  8-seriyalı fixture üçün yenidən yazıldı. `test_live_technical_summary_api.py`
+  yeni API/consensus versiyalarına və `moving_averages` sahəsinə
+  uyğunlaşdırıldı. `tests/live-technical-summary-ui.test.mjs`-ə
+  `sma.close.`/`ema.close.` etiket dəstəyinin yoxlanması əlavə edildi.
+  Tam backend regressiyası: `537 passed`. Frontend: lint təmiz, `17/17`
+  test, production build uğurlu.
+
 ## 2026-08-09 — Job-queue-nun frontend səthi (pattern-candidate-backtest VƏ statistical-analysis job-ları)
 
 - İstifadəçi seçdi: "Job-queue-nun frontend səthi (tövsiyə)" — hər iki
