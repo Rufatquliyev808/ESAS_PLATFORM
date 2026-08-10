@@ -30,6 +30,7 @@ ARCHIVABLE_STATES = frozenset({"registered"})
 RENDERABLE_FROM_STATES = frozenset({"registered"})
 FAILABLE_FROM_STATES = frozenset({"rendering"})
 TRAINABLE_FROM_STATES = frozenset({"rendering"})
+EVALUABLE_FROM_STATES = frozenset({"training"})
 
 
 @dataclass(frozen=True)
@@ -603,4 +604,49 @@ def _row_to_training_config(row: object) -> PersistedVisualTrainingConfig:
         training_spec_id=row["training_spec_id"],
         training_configuration_checksum=row["training_configuration_checksum"],
         dataset_fingerprint=row["dataset_fingerprint"], created_at=row["created_at"],
+    )
+
+
+def mark_evaluated(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """training -> evaluated. Means only "the holdout evaluation completed
+    validly" -- not an accept/reject verdict on model quality, which is a
+    separate, later step.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=EVALUABLE_FROM_STATES, next_state="evaluated", action="mark_evaluated",
+    )
+
+
+def mark_out_of_distribution(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """training -> out_of_distribution. Holdout sat far enough outside the
+    distribution validation showed that the evaluation itself cannot be
+    trusted -- the specific distance measurements are the caller's
+    `EvaluationArtifact`, not re-stored here, matching `mark_rendering_failed`'s
+    "the transition itself is the record" convention.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=EVALUABLE_FROM_STATES, next_state="out_of_distribution",
+        action="mark_out_of_distribution",
+    )
+
+
+def mark_insufficient_evidence(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """training -> insufficient_evidence. Too few holdout samples to trust
+    any evaluation conclusion -- an abstain outcome, not a failure.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=EVALUABLE_FROM_STATES, next_state="insufficient_evidence",
+        action="mark_insufficient_evidence",
     )

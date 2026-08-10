@@ -8,6 +8,61 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: evaluation, OOD/abstain, and `training -> evaluated`
+
+- User-picked continuation of the same lifecycle contract work: the
+  baseline model now exists, so evaluate it -- against HOLDOUT, the first
+  and only place holdout data is used, deliberately deferred from the
+  trainer step -- and build the `training -> evaluated` transition, with
+  fail-closed OOD/abstain outcomes using two lifecycle states the Phase 5
+  contract already reserved for exactly this (`out_of_distribution`,
+  `insufficient_evidence`). This step only judges whether the evaluation
+  itself completed validly, not whether the model is good enough to use --
+  that accept/reject verdict is a separate, later step.
+- New `backend/app/analysis/visual_evaluation.py` (pure, no I/O):
+  `compute_majority_baseline_accuracy()` -- a naive "always predict the
+  most common TRAIN class" comparator the model should beat, the sanity
+  floor for `improvement_over_baseline`. `detect_out_of_distribution()` --
+  flags holdout as OOD when its mean nearest-centroid distance sits far
+  enough (a floor-guarded multiplier) above validation's, reusing
+  `predict_validation()`'s already-computed per-class distances.
+  `build_evaluation_artifact()` always computes every metric, then picks
+  an outcome: too few holdout samples -> `insufficient_evidence` (checked
+  first, even over a simultaneous OOD signal -- can't trust an OOD reading
+  from too little evidence either); OOD -> `out_of_distribution`;
+  otherwise -> `evaluated`.
+- New migration `0017_visual_evaluations.sql` (test/scratch DB only, not
+  applied to production) + `visual_evaluation_repository.py`: one row per
+  experiment, idempotent per `evaluation_checksum`, conflict on a
+  different one.
+- `visual_experiment_repository.py`: `EVALUABLE_FROM_STATES = {"training"}`,
+  three new transitions (`mark_evaluated`, `mark_out_of_distribution`,
+  `mark_insufficient_evidence`) via the existing `_transition()` helper.
+- New `backend/app/strategies/visual_experiment_evaluation.py`:
+  `evaluate_visual_experiment()` calls the existing (idempotent)
+  `train_visual_baseline_model()` to get the model, then
+  `build_visual_training_input()` again to finally read `holdout_samples`,
+  scores both validation and holdout against the model, builds the
+  evaluation artifact, persists it to the content-addressed artifact
+  store, and transitions the experiment to whichever of the three states
+  the outcome calls for.
+- 23 new tests: 12 pure unit tests (majority-baseline tie-breaking, OOD
+  threshold/floor behavior, outcome priority, determinism, checksum
+  matches bytes), 5 new lifecycle-transition tests, and 6 integration
+  tests against real seeded/rendered data -- the happy path reaching
+  `evaluated`, an engineered `insufficient_evidence` case (deleting one
+  holdout row below the minimum), an engineered `out_of_distribution` case
+  (swapping a holdout sample's artifact for a wildly different-colored
+  image via the public renderer, so its pixel content sits far from every
+  train centroid), ownership, and re-run-after-success conflict. Full
+  backend regression: `800 passed`.
+- **Scratch end-to-end verification**: registered, rendered, and gated a
+  real 40-minute replay session into `training`, then evaluated it --
+  reached `evaluated` with holdout accuracy/majority-baseline/OOD fields
+  all populated and the evaluation artifact persisted. Real production
+  database (still at migration `0011`) untouched.
+- No frontend or production migration in this increment.
+
 ### Added — Phase 5: deterministic CPU visual baseline trainer v1
 
 - The first actual model: `pixel_centroid_baseline_v1`, a simple,

@@ -15,6 +15,9 @@ from backend.app.database.visual_experiment_repository import (
     block_experiment_for_data_quality,
     get_visual_experiment,
     list_visual_experiments,
+    mark_evaluated,
+    mark_insufficient_evidence,
+    mark_out_of_distribution,
     mark_rendering_failed,
     register_visual_experiment,
     start_rendering,
@@ -373,4 +376,84 @@ def test_block_experiment_for_data_quality_rejects_from_registered(isolated_data
         block_experiment_for_data_quality(
             experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
             expected_state_version=experiment.state_version,
+        )
+
+
+def _rendering_then_training(experiment):
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    return start_training(
+        experiment_id=rendering.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=rendering.state_version,
+    )
+
+
+def test_mark_evaluated_transitions_from_training(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    evaluated = mark_evaluated(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    assert evaluated.lifecycle_state == "evaluated"
+    assert evaluated.state_version == training.state_version + 1
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM visual_experiment_audit "
+            "WHERE experiment_id = ? ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()
+    assert audit["action"] == "mark_evaluated"
+    assert audit["previous_state"] == "training"
+    assert audit["next_state"] == "evaluated"
+
+
+def test_mark_evaluated_rejects_from_rendering(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    rendering = start_rendering(
+        experiment_id=experiment.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=experiment.state_version,
+    )
+    with pytest.raises(VisualExperimentConflictError):
+        mark_evaluated(
+            experiment_id=rendering.experiment_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=rendering.state_version,
+        )
+
+
+def test_mark_out_of_distribution_transitions_from_training(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    result = mark_out_of_distribution(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    assert result.lifecycle_state == "out_of_distribution"
+
+
+def test_mark_insufficient_evidence_transitions_from_training(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    result = mark_insufficient_evidence(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    assert result.lifecycle_state == "insufficient_evidence"
+
+
+def test_mark_insufficient_evidence_by_another_user_is_rejected(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    with pytest.raises(VisualExperimentOwnershipError):
+        mark_insufficient_evidence(
+            experiment_id=training.experiment_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=training.state_version,
         )

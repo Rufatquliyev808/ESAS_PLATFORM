@@ -118,10 +118,27 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   qəbul meyarını birbaşa yoxladı: eyni dataset/spec/seed → tam eyni
   model+checksum+validation prediction/metriklər; validation VƏ holdout
   dəyişiklikləri model çəkilərinə təsir etmir (hər ikisi ayrıca test
-  edildi). Scratch-də təsdiqləndi. Migration `0012`-`0016` YALNIZ test
-  bazasındadır.
-  Növbəti addım: training job/API/worker (faktiki icra), sonra
-  evaluation/baseline-müqayisə/OOD-abstain + `training → evaluated`.
+  edildi). Scratch-də təsdiqləndi. **Evaluation/OOD-abstain +
+  `training → evaluated`** da tamamlandı (istifadəçinin özü seçdiyi davam
+  — "davam et" sualına cavab olaraq): yeni `analysis/visual_evaluation.py`
+  (saf) — `compute_majority_baseline_accuracy()` (sadə "ən çox rast
+  gəlinən train class" müqayisəçisi), `detect_out_of_distribution()`
+  (holdout-un orta ən-yaxın-centroid məsafəsi validation-unkindən
+  floor-qorunmuş çoxaldıcı ilə böyükdürsə OOD), `build_evaluation_artifact()`
+  — outcome prioriteti: `insufficient_evidence` (holdout azdırsa, OOD
+  siqnalı olsa belə ƏVVƏLCƏ) → `out_of_distribution` → `evaluated`. Yeni
+  `strategies/visual_experiment_evaluation.py`: mövcud
+  `train_visual_baseline_model()`-i çağırır, sonra HOLDOUT-u NƏHAYƏT
+  oxuyur (bütün pipeline-da holdout-un istifadə edildiyi ilk və yeganə
+  yer), nəticəyə görə `evaluated`/`out_of_distribution`/
+  `insufficient_evidence`-ə keçirir. Bu addım YALNIZ evaluation-un özünün
+  düzgün tamamlanmasını qiymətləndirir — accept/reject (modelin yararlı
+  olub-olmaması) ayrı, sonrakı addımdır. 23 yeni test (real seed edilmiş
+  data ilə qəsdən yaradılmış insufficient_evidence VƏ out_of_distribution
+  ssenariləri daxil). Scratch-də təsdiqləndi. Migration `0012`-`0017`
+  YALNIZ test bazasındadır.
+  Növbəti addım: accept/reject qərarı (`evaluated → accepted_for_shadow |
+  rejected`), sonra training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin

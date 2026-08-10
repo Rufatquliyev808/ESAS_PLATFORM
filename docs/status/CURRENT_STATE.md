@@ -1,5 +1,44 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Evaluation, OOD/abstain və `training → evaluated`
+
+- İstifadəçinin seçdiyi davam: baseline model artıq var — indi onu
+  HOLDOUT üzərində qiymətləndirmək (holdout-un istifadə edildiyi ilk və
+  yeganə yer — trainer addımından qəsdən təxirə salınmışdı) və
+  `training → evaluated` keçidini qurmaq, Phase 5 müqaviləsinin artıq
+  ehtiva etdiyi `out_of_distribution`/`insufficient_evidence`
+  vəziyyətləri ilə fail-closed OOD/abstain. Bu addım YALNIZ evaluation-un
+  özünün düzgün tamamlanıb-tamamlanmadığını qiymətləndirir — modelin
+  yararlı olub-olmaması (accept/reject) ayrıca, sonrakı addımdır.
+- Yeni `analysis/visual_evaluation.py` (saf): `compute_majority_baseline_accuracy()`
+  — sadə "həmişə ən çox rast gəlinən TRAIN class-ı proqnozlaşdır"
+  müqayisəçisi. `detect_out_of_distribution()` — holdout-un orta ən-yaxın-
+  centroid məsafəsi validation-unkindən (floor-qorunmuş çoxaldıcı ilə)
+  kifayət qədər böyükdürsə OOD bayrağı qaldırır. `build_evaluation_artifact()`
+  — həmişə bütün metrikləri hesablayır, sonra outcome seçir: holdout
+  nümunə sayı azdırsa → `insufficient_evidence` (OOD siqnalı olsa belə
+  ƏVVƏLCƏ yoxlanır), OOD-dursa → `out_of_distribution`, əks halda →
+  `evaluated`.
+- Yeni migration `0017_visual_evaluations.sql` (yalnız test bazada) +
+  `visual_evaluation_repository.py` — idempotent/konflikt.
+- `visual_experiment_repository.py`-ə 3 yeni keçid: `mark_evaluated`,
+  `mark_out_of_distribution`, `mark_insufficient_evidence`.
+- Yeni `strategies/visual_experiment_evaluation.py`:
+  `evaluate_visual_experiment()` — mövcud `train_visual_baseline_model()`-i
+  çağırır (idempotent), sonra `build_visual_training_input()`-i YENİDƏN
+  çağıraraq NƏHAYƏT holdout-u oxuyur, validation VƏ holdout-u modelə görə
+  qiymətləndirir, evaluation artefaktını yaradıb saxlayır, nəticəyə görə
+  eksperimenti müvafiq vəziyyətə keçirir.
+- 23 yeni test (12 saf + 5 keçid + 6 inteqrasiya) — real seed edilmiş
+  data ilə happy-path (`evaluated`), qəsdən `insufficient_evidence`
+  (holdout sətri silinərək), qəsdən `out_of_distribution` (holdout
+  artefaktı tam fərqli rəngli şəkillə əvəz edilərək, public renderer
+  vasitəsilə). Tam backend regressiyası: `800 passed`.
+- **Scratch uçdan-uca doğrulama**: real render→training→evaluation —
+  `evaluated`-ə çatdı, holdout accuracy/majority-baseline/OOD sahələri
+  dolduruldu, evaluation artefaktı saxlanıldı. Real production baza
+  (`0011`-də qalır) toxunulmadı.
+
 ## 2026-08-10 — Phase 5: Deterministik CPU visual baseline trainer v1
 
 - İlk faktiki model: `pixel_centroid_baseline_v1` — sadə, tam audit

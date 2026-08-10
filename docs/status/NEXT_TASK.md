@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
-Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu+rendering job-un frontend workflow-a bağlanması+`rendering → training` müqaviləsi və təhlükəsizlik qapıları+training başlanğıcının atomikləşdirilməsi+deterministik training-input pipeline v1+**deterministik CPU visual baseline trainer v1** (`pixel_centroid_baseline_v1`, bu sessiyada tamamlandı) hamısı hazırdır. Qalan: training job/API/worker, evaluation/baseline-müqayisə/OOD-abstain, `training → evaluated` keçidi, frontend-in training-i başlatması, real ML kitabxanası/GPU seçimi (gələcək daha mürəkkəb arxitekturalar üçün). Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0016` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu+rendering job-un frontend workflow-a bağlanması+`rendering → training` müqaviləsi və təhlükəsizlik qapıları+training başlanğıcının atomikləşdirilməsi+deterministik training-input pipeline v1+deterministik CPU visual baseline trainer v1+**evaluation/OOD-abstain + `training → evaluated`** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: accept/reject qərarı (`evaluated → accepted_for_shadow | rejected`), training job/API/worker, frontend-in training/evaluation-u başlatması, real ML kitabxanası/GPU seçimi (gələcək daha mürəkkəb arxitekturalar üçün). Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0017` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -527,15 +527,24 @@ bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
   — eksperiment ARTIQ `training`-də olmalıdır, `holdout_samples` DƏRHAL
   atılır, model+log artefaktları content-addressed store-a, metadata
   migration `0016`-ya yazılır; eksperiment `training`-də qalır, `evaluated`
-  ayrı addımdır) tamamlandı. Nümunə lineage+checksum, real PNG faylı,
-  HTTP üzərindən job kimi işə salma, frontend-dən uçdan-uca yaratma/
-  izləmə/bərpa, training-ə keçidin təhlükəsizlik qapıları+atomikliyi,
-  deterministik model-input pipeline-ı VƏ ilk faktiki (baseline) model
-  indi hamısı mövcuddur (yalnız test/scratch bazada — real production-a
-  YOX). Növbəti təbii addımlar: (1) real production bazaya migration
-  `0012`-`0016` tətbiqi — ayrıca açıq təsdiq lazımdır; (2) training
-  job/API/worker (faktiki icra); (3) evaluation/baseline-müqayisə/OOD-abstain
-  + `training → evaluated` keçidi; (4) real ML kitabxanası/GPU qərarı
+  ayrı addımdır) VƏ **evaluation/OOD-abstain + `training → evaluated`**
+  (`analysis/visual_evaluation.py` — `compute_majority_baseline_accuracy()`
+  (sadə müqayisəçi), `detect_out_of_distribution()` (holdout vs validation
+  orta ən-yaxın-centroid məsafəsi), `build_evaluation_artifact()`
+  (outcome: `insufficient_evidence` → `out_of_distribution` → `evaluated`
+  prioritet sırası); migration `0017`; `visual_experiment_repository.py`-də
+  `mark_evaluated`/`mark_out_of_distribution`/`mark_insufficient_evidence`;
+  yeni `strategies/visual_experiment_evaluation.py` — HOLDOUT-un istifadə
+  edildiyi ilk və yeganə yer) tamamlandı. Nümunə lineage+checksum, real
+  PNG faylı, HTTP üzərindən job kimi işə salma, frontend-dən uçdan-uca
+  yaratma/izləmə/bərpa, training-ə keçidin təhlükəsizlik qapıları+atomikliyi,
+  deterministik model-input pipeline-ı, ilk faktiki (baseline) model VƏ
+  onun holdout qiymətləndirməsi/OOD-abstain-i indi hamısı mövcuddur
+  (yalnız test/scratch bazada — real production-a YOX). Növbəti təbii
+  addımlar: (1) real production bazaya migration `0012`-`0017` tətbiqi —
+  ayrıca açıq təsdiq lazımdır; (2) accept/reject qərarı
+  (`evaluated → accepted_for_shadow | rejected`); (3) training
+  job/API/worker (faktiki icra); (4) real ML kitabxanası/GPU qərarı
   (daha mürəkkəb arxitekturalar üçün) — daha böyük, ayrıca qərar tələb
   edən addım. İstifadəçinin prioritet sırasına görə (Phase
   3→4→7→8→9→10)
