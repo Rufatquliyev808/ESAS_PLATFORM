@@ -2,11 +2,20 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ShadowRunParticipantInput(BaseModel):
+    """`visual_experiment_id` is a lineage-only connection (Phase 5 ->
+    Phase 9): when set, the repository verifies the referenced Visual AI
+    experiment is currently `accepted_for_shadow` and pins its trained
+    model's and acceptance decision's checksums as an immutable snapshot.
+    It never generates decisions -- only "champion"/"challenger" role and
+    module_id/module_version do that. Only a "challenger" may set it.
+    """
+
     model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
 
     role: str = Field(pattern="^(champion|challenger)$")
     module_id: str = Field(min_length=1, max_length=200)
     module_version: str = Field(min_length=1, max_length=50)
+    visual_experiment_id: str | None = Field(default=None, min_length=1, max_length=200)
 
 
 class ShadowRunCreateRequest(BaseModel):

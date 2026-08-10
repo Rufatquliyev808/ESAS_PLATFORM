@@ -11,7 +11,11 @@ const SHADOW_EVENT_TYPES = [
   "SHADOW_PROMOTION_RECOMMENDED", "SHADOW_PROMOTION_REJECTED",
 ];
 
-type Participant = { participant_id: string; role: "champion" | "challenger"; module_id: string; module_version: string };
+type Participant = {
+  participant_id: string; role: "champion" | "challenger"; module_id: string; module_version: string;
+  visual_experiment_id: string | null; visual_model_checksum: string | null;
+  visual_acceptance_decision_checksum: string | null;
+};
 type ShadowRun = {
   shadow_run_id: string; created_by: string; created_at: string; planned_end_at: string;
   primary_metric: string; primary_metric_threshold: number; approved_by: string;
@@ -43,6 +47,31 @@ function splitList(value: string): string[] {
 
 function newCorrelationId(): string {
   return `corr_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+}
+
+type ParticipantInput = { role: "champion" | "challenger"; module_id: string; module_version: string; visual_experiment_id?: string };
+
+// The challenger fieldset is optional -- leaving its module ID blank keeps
+// the run champion-only, exactly as before this capability existed.
+// visual_experiment_id is a lineage-only connection (Phase 5 -> Phase 9):
+// the backend verifies the referenced Visual AI experiment is currently
+// accepted_for_shadow and pins its model/decision checksums -- it does not
+// make this challenger generate any decisions on its own.
+function buildParticipants(formData: FormData): ParticipantInput[] {
+  const participants: ParticipantInput[] = [
+    { role: "champion", module_id: String(formData.get("module_id")), module_version: String(formData.get("module_version")) },
+  ];
+  const challengerModuleId = String(formData.get("challenger_module_id") ?? "").trim();
+  if (challengerModuleId) {
+    const challenger: ParticipantInput = {
+      role: "challenger", module_id: challengerModuleId,
+      module_version: String(formData.get("challenger_module_version") ?? "").trim() || "1.0.0",
+    };
+    const visualExperimentId = String(formData.get("challenger_visual_experiment_id") ?? "").trim();
+    if (visualExperimentId) challenger.visual_experiment_id = visualExperimentId;
+    participants.push(challenger);
+  }
+  return participants;
 }
 
 export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUnauthorized: () => void }) {
@@ -122,7 +151,7 @@ export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUn
         risk_budget: riskBudget, data_quality_policy: {},
         approved_by: String(formData.get("approved_by")),
         rollback_plan: String(formData.get("rollback_plan")),
-        participants: [{ role: "champion", module_id: String(formData.get("module_id")), module_version: String(formData.get("module_version")) }],
+        participants: buildParticipants(formData),
       };
       const response = await fetch(`${API_BASE}/api/v2/shadow-runs`, {
         method: "POST", cache: "no-store",
@@ -130,7 +159,10 @@ export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUn
         body: JSON.stringify(body),
       });
       if (response.status === 401) { onUnauthorized(); throw new Error("Sessiyanın vaxtı bitib."); }
-      if (!response.ok) throw new Error(`Run yaradıla bilmədi (HTTP ${response.status}).`);
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(detail?.detail ? String(detail.detail) : `Run yaradıla bilmədi (HTTP ${response.status}).`);
+      }
       const created = (await response.json()).data as ShadowRun;
       setShowCreateForm(false);
       await loadRuns();
@@ -231,7 +263,7 @@ export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUn
         <div>
           <p className="eyebrow">Phase 9 · skelet</p>
           <h2 id="shadow-runs-title">SHADOW run-ları</h2>
-          <p>Run manifesti, event reyestri və nəzəri portfolio/risk ledger-i — hələ real qərar generatoru (Phase 5-8) olmadığı üçün yalnız əl ilə (admin) yaradılıb izlənilə bilər.</p>
+          <p>Run manifesti, event reyestri və nəzəri portfolio/risk ledger-i — hələ real qərar generatoru (Phase 6-8) olmadığı üçün yalnız əl ilə (admin) yaradılıb izlənilə bilər. Challenger iştirakçı könüllü olaraq konkret `accepted_for_shadow` Visual AI eksperiminə (model/qərar checksum-u ilə) bağlana bilər — bu YALNIZ audit-səviyyəli lineage-dir, modeldən heç bir qərar generasiya olunmur.</p>
         </div>
         <span className="research-pill danger-pill">NƏZƏRİDİR — REAL ƏMƏLİYYAT YOXDUR</span>
       </div>
@@ -282,6 +314,12 @@ export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUn
               <label>Əsas metrik həddi<input name="primary_metric_threshold" type="number" step="any" required defaultValue={0.5} /></label>
               <label>Champion modul ID<input name="module_id" required placeholder="structure_break_long" /></label>
               <label>Champion modul versiyası<input name="module_version" required defaultValue="1.0.0" /></label>
+              <label>Challenger modul ID (könüllü)<input name="challenger_module_id" placeholder="visual_ai_baseline" /></label>
+              <label>Challenger modul versiyası<input name="challenger_module_version" defaultValue="1.0.0" /></label>
+              <label>
+                Challenger — Visual AI eksperiment ID (könüllü)
+                <input name="challenger_visual_experiment_id" placeholder="sha256:… (yalnız accepted_for_shadow eksperiment)" />
+              </label>
               <label>Risk büdcəsi (JSON)<textarea name="risk_budget" rows={3} placeholder='{"max_concurrent_positions": 3}' /></label>
               <label>Təsdiqləyən şəxs<input name="approved_by" required placeholder="RISK-OFFICER" /></label>
               <label>Rollback planı<textarea name="rollback_plan" rows={2} required placeholder="halt and archive run" /></label>
@@ -303,7 +341,10 @@ export function ShadowRunsPanel({ token, onUnauthorized }: { token: string; onUn
             </div>
             {selected.halt_reason && <p className="shadow-runs-boundary">Dayandırma səbəbi: {selected.halt_reason}</p>}
             <p className="pattern-candidate-time">
-              Iştirakçılar: {selected.participants.map((item) => `${item.role}: ${item.module_id} v${item.module_version}`).join(" · ")}
+              Iştirakçılar: {selected.participants.map((item) => (
+                `${item.role}: ${item.module_id} v${item.module_version}`
+                + (item.visual_experiment_id ? ` (Visual AI: ${item.visual_experiment_id.slice(0, 24)}…, model ${item.visual_model_checksum?.slice(0, 16)}…)` : "")
+              )).join(" · ")}
             </p>
 
             {summary && (

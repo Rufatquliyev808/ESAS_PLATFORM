@@ -1358,7 +1358,8 @@ def shadow_run_create(
             approved_by=create_request.approved_by,
             rollback_plan=create_request.rollback_plan,
             participants=tuple(
-                (item.role, item.module_id, item.module_version) for item in create_request.participants
+                (item.role, item.module_id, item.module_version, item.visual_experiment_id)
+                for item in create_request.participants
             ),
         )
     except ValueError as error:

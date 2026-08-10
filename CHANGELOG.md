@@ -8,6 +8,59 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5 -> Phase 9: lineage-only connection from an accepted_for_shadow Visual AI experiment to a SHADOW run challenger
+
+- Scoped, deliberately small first step on the "SHADOW əlaqəsi" gap item
+  (per user decision, after being asked to clarify scope): NOT a live
+  decision feed -- Phase 6-8 remain design-only, so nothing generates
+  `SHADOW_DECISION_RECORDED` events from a Visual AI model yet. This only
+  gives a SHADOW run manifest a verifiable, checksum-pinned audit trail
+  back to exactly which trained model and which statistical acceptance
+  decision a challenger participant stands for.
+- New migration `0022_shadow_run_participant_visual_lineage.sql`
+  (test-only) -- append-only table keyed by `participant_id`, FK to both
+  `shadow_run_participants` and `shadow_runs`.
+- `shadow_run_repository.py`: `register_shadow_run()`'s `participants`
+  tuples may now carry an optional 4th element, `visual_experiment_id`.
+  When present: role must be `challenger` (a freshly `accepted_for_shadow`
+  model can never masquerade as the pre-selected champion baseline, per
+  contract section 7); the referenced experiment must currently be
+  `accepted_for_shadow`; its baseline model's and acceptance decision's
+  checksums are derived FRESH from the persisted records (never trusted
+  from the caller) and pinned as an immutable snapshot in the same
+  transaction as the run+participants insert. Fails closed (plain
+  `ValueError`, mapped to HTTP 422) on: missing experiment, wrong
+  lifecycle state, or lineage attempted on a champion.
+- `models/shadow.py` / `main.py`: `ShadowRunParticipantInput` gained an
+  optional `visual_experiment_id` field, threaded through to the
+  repository and back out in the API response.
+- 7 new backend tests (5 repository-level, 2 API-level via `TestClient`,
+  reusing the "learnable signal" / "natural signal" fixture techniques
+  from `test_visual_experiment_acceptance.py` to reach real
+  `accepted_for_shadow`/`rejected` experiments). Full backend regression:
+  `876 passed`.
+- `frontend/app/shadow-runs-panel.tsx`: the run-creation form gained an
+  optional challenger fieldset (module ID/version + Visual AI experiment
+  ID) -- leaving it blank keeps a run champion-only exactly as before.
+  The participant summary line shows the linked experiment ID and model
+  checksum when present. Error responses now surface the backend's actual
+  `detail` message (e.g. "visual experiment ... is not accepted_for_shadow")
+  instead of a generic HTTP-status string.
+- `frontend/tests/shadow-runs-ui.test.mjs`: new test asserting the
+  lineage-only disclaimer text and field wiring. `npm run lint`/`build`
+  clean; `npm test` 22/22 (was 21).
+- **Scratch end-to-end browser verification**: seeded a real
+  `accepted_for_shadow` Visual AI experiment (70-minute learnable-signal
+  fixture, same technique as prior increments). In the browser: created a
+  SHADOW run with a challenger referencing that experiment -- the
+  participant list correctly showed the experiment ID and model checksum.
+  Then attempted a second run referencing a nonexistent experiment ID --
+  the form surfaced the real backend error ("visual experiment not found:
+  ...") and no run was created. No unexpected console errors (only the
+  deliberate 422 network log for the negative case). Real services
+  (8000/3000) and the real production database (still at `0011`) were
+  untouched throughout; migration `0022` remains test-only.
+
 ### Added — Phase 5: async job/API resource + frontend for the statistical acceptance decision
 
 - Closes the remaining-order gap item "statistik accept/reject qərarının

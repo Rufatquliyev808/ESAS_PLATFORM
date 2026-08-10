@@ -3,11 +3,23 @@ from datetime import UTC, datetime
 import json
 import secrets
 
+from backend.app.analysis.visual_acceptance import ACCEPTED_FOR_SHADOW
 from backend.app.database.connection import get_connection
+from backend.app.database.visual_acceptance_repository import get_acceptance_decision
+from backend.app.database.visual_baseline_model_repository import get_baseline_model
+from backend.app.database.visual_experiment_repository import (
+    VisualExperimentNotFoundError,
+    get_visual_experiment,
+)
 
 
 PARTICIPANT_ROLES = frozenset({"champion", "challenger"})
 NON_TERMINAL_STATES = frozenset({"registered", "started"})
+# Visual AI lineage may only back a "challenger" -- a freshly
+# accepted_for_shadow model has never been through any SHADOW validation
+# itself, so it can never masquerade as the pre-selected "champion"
+# baseline (contract section 7: "Baseline əvvəlcədən seçilir").
+VISUAL_LINEAGE_ELIGIBLE_ROLES = frozenset({"challenger"})
 
 
 class ShadowRunNotFoundError(LookupError):
@@ -28,6 +40,9 @@ class ShadowRunParticipant:
     role: str
     module_id: str
     module_version: str
+    visual_experiment_id: str | None = None
+    visual_model_checksum: str | None = None
+    visual_acceptance_decision_checksum: str | None = None
 
 
 @dataclass(frozen=True)
@@ -83,14 +98,19 @@ def _new_id(prefix: str) -> str:
     return f"{prefix}_{secrets.token_urlsafe(18)}"
 
 
-def _row_to_participant(row: object) -> ShadowRunParticipant:
+def _row_to_participant(row: object, lineage_row: object | None) -> ShadowRunParticipant:
     return ShadowRunParticipant(
         participant_id=row["participant_id"], role=row["role"],
         module_id=row["module_id"], module_version=row["module_version"],
+        visual_experiment_id=lineage_row["visual_experiment_id"] if lineage_row is not None else None,
+        visual_model_checksum=lineage_row["visual_model_checksum"] if lineage_row is not None else None,
+        visual_acceptance_decision_checksum=(
+            lineage_row["visual_acceptance_decision_checksum"] if lineage_row is not None else None
+        ),
     )
 
 
-def _row_to_run(row: object, participant_rows: tuple[object, ...]) -> PersistedShadowRun:
+def _row_to_run(row: object, participant_rows: tuple[ShadowRunParticipant, ...]) -> PersistedShadowRun:
     return PersistedShadowRun(
         shadow_run_id=row["shadow_run_id"], created_by=row["created_by"], created_at=row["created_at"],
         planned_end_at=row["planned_end_at"], code_commit=row["code_commit"], config_hash=row["config_hash"],
@@ -109,7 +129,7 @@ def _row_to_run(row: object, participant_rows: tuple[object, ...]) -> PersistedS
         approved_by=row["approved_by"], rollback_plan=row["rollback_plan"],
         execution_allowed=bool(row["execution_allowed"]), state=row["state"],
         state_version=row["state_version"], halt_reason=row["halt_reason"], updated_at=row["updated_at"],
-        participants=tuple(_row_to_participant(item) for item in participant_rows),
+        participants=participant_rows,
     )
 
 
@@ -122,11 +142,45 @@ def _load_run(connection, shadow_run_id: str) -> object:
     return row
 
 
-def _load_participants(connection, shadow_run_id: str) -> tuple[object, ...]:
-    return tuple(connection.execute(
+def _load_participants(connection, shadow_run_id: str) -> tuple[ShadowRunParticipant, ...]:
+    rows = connection.execute(
         "SELECT * FROM shadow_run_participants WHERE shadow_run_id = ? ORDER BY participant_id;",
         (shadow_run_id,),
-    ).fetchall())
+    ).fetchall()
+    participants = []
+    for row in rows:
+        lineage_row = connection.execute(
+            "SELECT * FROM shadow_run_participant_visual_lineage WHERE participant_id = ?;",
+            (row["participant_id"],),
+        ).fetchone()
+        participants.append(_row_to_participant(row, lineage_row))
+    return tuple(participants)
+
+
+def _verify_visual_lineage(visual_experiment_id: str) -> tuple[str, str, str]:
+    """Fail-closed lookup for a challenger's Visual AI backing: the
+    experiment must exist and currently be `accepted_for_shadow`, and both
+    its trained model and its acceptance decision must be persisted.
+    Returns (visual_experiment_id, model_checksum, decision_checksum)
+    derived fresh from those records -- never trusted from a caller.
+    """
+    normalized_experiment_id = _required_text(visual_experiment_id, "visual_experiment_id")
+    try:
+        experiment = get_visual_experiment(normalized_experiment_id)
+    except VisualExperimentNotFoundError as error:
+        raise ValueError(f"visual experiment not found: {normalized_experiment_id}") from error
+    if experiment.lifecycle_state != ACCEPTED_FOR_SHADOW:
+        raise ValueError(
+            f"visual experiment {normalized_experiment_id} is not accepted_for_shadow "
+            f"(currently {experiment.lifecycle_state!r})"
+        )
+    model = get_baseline_model(normalized_experiment_id)
+    if model is None:
+        raise ValueError(f"visual experiment {normalized_experiment_id} has no persisted baseline model")
+    decision = get_acceptance_decision(normalized_experiment_id)
+    if decision is None or decision.decision != ACCEPTED_FOR_SHADOW:
+        raise ValueError(f"visual experiment {normalized_experiment_id} has no accepted_for_shadow decision")
+    return normalized_experiment_id, model.model_checksum, decision.decision_checksum
 
 
 def register_shadow_run(
@@ -151,7 +205,7 @@ def register_shadow_run(
     data_quality_policy: dict[str, object],
     approved_by: str,
     rollback_plan: str,
-    participants: tuple[tuple[str, str, str], ...],
+    participants: tuple[tuple[str, str, str] | tuple[str, str, str, str | None], ...],
 ) -> PersistedShadowRun:
     """Pre-register an immutable SHADOW run manifest (contract section 3).
 
@@ -164,6 +218,15 @@ def register_shadow_run(
     by a DB trigger, not just this function): "Run başladıqdan sonra hədəf,
     metrik və hədlər dəyişdirilmir." Only state may change afterward, via
     start_shadow_run/complete_shadow_run/halt_shadow_run.
+
+    Each participant tuple is (role, module_id, module_version) or, for a
+    challenger backed by a specific Visual AI experiment, (role, module_id,
+    module_version, visual_experiment_id) -- a lineage-only connection
+    (contract section 7's champion/challenger model), not a live decision
+    feed. When present, the referenced experiment must currently be
+    `accepted_for_shadow`; its trained model's and acceptance decision's
+    checksums are derived fresh from the persisted records (never trusted
+    from the caller) and pinned as an immutable snapshot.
     """
     normalized_creator = _required_text(created_by, "created_by")
     normalized_planned_end = _required_text(planned_end_at, "planned_end_at")
@@ -184,13 +247,22 @@ def register_shadow_run(
     if not participants:
         raise ValueError("at least one participant is required")
     champion_count = 0
-    for role, module_id, module_version in participants:
+    visual_lineage_by_index: dict[int, tuple[str, str, str]] = {}
+    for index, entry in enumerate(participants):
+        role, module_id, module_version = entry[0], entry[1], entry[2]
+        visual_experiment_id = entry[3] if len(entry) > 3 else None
         if role not in PARTICIPANT_ROLES:
             raise ValueError(f"unsupported participant role: {role}")
         _required_text(module_id, "module_id")
         _required_text(module_version, "module_version")
         if role == "champion":
             champion_count += 1
+        if visual_experiment_id:
+            if role not in VISUAL_LINEAGE_ELIGIBLE_ROLES:
+                raise ValueError(
+                    f"visual_experiment_id may only back a {sorted(VISUAL_LINEAGE_ELIGIBLE_ROLES)} participant, not {role!r}"
+                )
+            visual_lineage_by_index[index] = _verify_visual_lineage(visual_experiment_id)
     if champion_count != 1:
         raise ValueError("a shadow run must have exactly one champion participant")
 
@@ -225,14 +297,28 @@ def register_shadow_run(
                 normalized_rollback_plan, now,
             ),
         )
-        for role, module_id, module_version in participants:
+        for index, entry in enumerate(participants):
+            role, module_id, module_version = entry[0], entry[1], entry[2]
+            participant_id = _new_id("participant")
             connection.execute(
                 """
                 INSERT INTO shadow_run_participants (participant_id, shadow_run_id, role, module_id, module_version)
                 VALUES (?, ?, ?, ?, ?);
                 """,
-                (_new_id("participant"), shadow_run_id, role, module_id, module_version),
+                (participant_id, shadow_run_id, role, module_id, module_version),
             )
+            lineage = visual_lineage_by_index.get(index)
+            if lineage is not None:
+                lineage_experiment_id, model_checksum, decision_checksum = lineage
+                connection.execute(
+                    """
+                    INSERT INTO shadow_run_participant_visual_lineage
+                    (participant_id, shadow_run_id, visual_experiment_id, visual_model_checksum,
+                     visual_acceptance_decision_checksum, recorded_at)
+                    VALUES (?, ?, ?, ?, ?, ?);
+                    """,
+                    (participant_id, shadow_run_id, lineage_experiment_id, model_checksum, decision_checksum, now),
+                )
         row = _load_run(connection, shadow_run_id)
         participant_rows = _load_participants(connection, shadow_run_id)
     return _row_to_run(row, participant_rows)

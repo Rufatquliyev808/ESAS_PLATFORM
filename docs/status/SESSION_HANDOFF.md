@@ -1,9 +1,10 @@
 # ESAS Platform — Sessiya handoff
 
-Son yenilənmə: 2026-08-10 — Phase 5 statistik accept/reject qərarı üçün
-async job/API + frontend tamamlandı (bax `docs/status/CURRENT_STATE.md`
-üçün ətraflı, `NEXT_TASK.md` üçün qalan siyahı). Real xidmətlər (8000/3000)
-və baza (`0011`) toxunulmadı; migration `0021`-ə qədər yalnız test bazasında.
+Son yenilənmə: 2026-08-10 — Phase 5 → Phase 9: `accepted_for_shadow`
+eksperimentin SHADOW challenger-inə lineage-only bağlanması tamamlandı
+(CANLI qərar generatoru DEYİL — bax `docs/status/CURRENT_STATE.md` üçün
+ətraflı, `NEXT_TASK.md` üçün qalan siyahı). Real xidmətlər (8000/3000) və
+baza (`0011`) toxunulmadı; migration `0022`-ə qədər yalnız test bazasında.
 
 ## YENİ QAYDA (bu istifadəçi tapşırığı ilə)
 

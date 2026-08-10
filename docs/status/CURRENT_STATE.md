@@ -1,5 +1,48 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5 → Phase 9: accepted_for_shadow eksperimentin SHADOW challenger-inə lineage-only bağlanması
+
+- İstifadəçi "SHADOW əlaqəsi" tapşırığını verdi; əhatə dəqiqləşdirmək üçün
+  soruşuldu (AskUserQuestion), sonra "tapsiriqda ne idise onu" cavabı
+  əsasında TÖVSİYƏ edilən kiçik/təhlükəsiz seçim (yalnız lineage) icra
+  edildi. Bu, CANLI qərar generatoru DEYİL — Phase 6-8 hələ dizayn
+  mərhələsindədir, heç nə `SHADOW_DECISION_RECORDED` event-i yaratmır.
+  Yalnız SHADOW run manifestinə, hansı konkret öyrədilmiş model və
+  statistik qəbul qərarının challenger iştirakçısını təmsil etdiyini
+  checksum-la sübut edən audit izi verir.
+- Yeni migration `0022_shadow_run_participant_visual_lineage.sql` (yalnız
+  test bazada) — append-only cədvəl, `shadow_run_participants` və
+  `shadow_runs`-a FK.
+- `shadow_run_repository.py`: `register_shadow_run()`-un `participants`
+  tuple-larına könüllü 4-cü element (`visual_experiment_id`) əlavə edildi.
+  Mövcud olduqda: rol MÜTLƏQ `challenger` olmalıdır (təzə
+  `accepted_for_shadow` model heç vaxt əvvəlcədən seçilmiş champion
+  baseline-ı əvəz edə bilməz); eksperiment hazırda `accepted_for_shadow`
+  olmalıdır; onun baseline modelinin və qəbul qərarının checksum-ları
+  persisted qeydlərdən TƏZƏ hesablanır (çağırandan etibar edilmir) və
+  eyni tranzaksiyada dəyişməz snapshot kimi saxlanılır. Fail-closed: yoxdur/
+  səhv vəziyyət/champion-a lineage cəhdi → `ValueError` → HTTP 422.
+- `models/shadow.py`/`main.py`: `ShadowRunParticipantInput`-a könüllü
+  `visual_experiment_id` sahəsi.
+- 7 yeni backend test (5 repository, 2 API). Tam backend regressiyası:
+  `876 passed`.
+- `shadow-runs-panel.tsx`-ə könüllü challenger sahəsi (modul ID/versiya +
+  Visual AI eksperiment ID) — boş buraxılsa run əvvəlki kimi yalnız
+  champion olur. İştirakçı siyahısında eksperiment ID/model checksum
+  göstərilir. Xəta mesajları indi backend-in real `detail` mətnini göstərir.
+- Frontend testləri yeniləndi. `lint`/`build` təmiz; `npm test` 22/22
+  (əvvəl 21).
+- **Scratch uçdan-uca brauzer doğrulaması**: real `accepted_for_shadow`
+  Visual AI eksperimenti seed edildi (70-dəqiqəlik öyrənilə bilən siqnal
+  fixture-u). Brauzerdə: SHADOW run-u həmin eksperimenti challenger kimi
+  istinad edərək yaradıldı — iştirakçı siyahısında eksperiment ID və model
+  checksum düzgün göstərildi. Sonra mövcud olmayan eksperiment ID ilə
+  ikinci run cəhdi — forma real backend xətasını göstərdi ("visual
+  experiment not found: ...") və run yaradılmadı. Gözlənilməz konsol xətası
+  yox idi (yalnız mənfi ssenarinin öz 422 network qeydi). Real xidmətlər
+  (8000/3000) və baza (`0011`-də qalır) toxunulmadan qaldı; migration
+  `0022` yalnız test bazasında qalır.
+
 ## 2026-08-10 — Phase 5: Statistik accept/reject qərarı üçün async job/API + frontend
 
 - Qalan siyahının "statistik accept/reject qərarının frontend-ə
