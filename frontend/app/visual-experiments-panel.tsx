@@ -6,6 +6,7 @@ import { JobStatusBadge, isJobCancellable, useAsyncJob } from "./async-job-panel
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 const RENDERING_JOB_STORAGE_PREFIX = "esas.visual-experiment-rendering-job.";
 const TRAINING_JOB_STORAGE_PREFIX = "esas.visual-experiment-training-job.";
+const ACCEPTANCE_JOB_STORAGE_PREFIX = "esas.visual-experiment-acceptance-job.";
 
 // Phase 5's only supported architecture so far (pixel_centroid_baseline_v1)
 // -- not user-configurable yet, matching how render_spec geometry/colour
@@ -22,6 +23,10 @@ const DEFAULT_TRAINING_JOB_BODY = {
   max_epochs: 10,
   compute_requirement: "cpu",
 };
+// Must match DEFAULT_TRAINING_JOB_BODY -- the acceptance decision recomputes
+// the model fresh with the same ModelSpec/TrainingSpec the training job used
+// for this experiment (this doubles as its reproduction check).
+const DEFAULT_ACCEPTANCE_JOB_BODY = DEFAULT_TRAINING_JOB_BODY;
 
 type Timeframe = "S1" | "S10" | "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1";
 type VisualExperiment = {
@@ -232,6 +237,97 @@ function TrainingJobCell({ experiment, token, onUnauthorized, onCompleted }: {
   );
 }
 
+const ACCEPTANCE_DECISION_LABELS: Record<string, string> = {
+  accepted_for_shadow: "SHADOW üçün qəbul edildi",
+  rejected: "Rədd edildi",
+  insufficient_evidence: "Sübut yetərsizdir",
+};
+
+type AcceptanceJobResult = {
+  experiment: { lifecycle_state: string };
+  decision: {
+    decision: string;
+    reasons: string[];
+    family_trial_count: number;
+    corrected_alpha: number;
+    p_value: number;
+    holdout_accuracy: number;
+    majority_baseline_accuracy: number;
+    improvement_over_baseline: number;
+  };
+};
+
+function AcceptanceJobCell({ experiment, token, onUnauthorized, onCompleted }: {
+  experiment: VisualExperiment;
+  token: string;
+  onUnauthorized: () => void;
+  onCompleted: () => void;
+}) {
+  const storageKey = `${ACCEPTANCE_JOB_STORAGE_PREFIX}${experiment.experiment_id}`;
+  const restoreAttempted = useRef(false);
+
+  const asyncJob = useAsyncJob<AcceptanceJobResult>({
+    createUrl: `/api/v2/visual-experiments/${experiment.experiment_id}/acceptance-jobs`,
+    detailUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/acceptance-jobs/${jobId}`,
+    cancelUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/acceptance-jobs/${jobId}/cancel`,
+    token, onUnauthorized, onCompleted,
+  });
+
+  useEffect(() => {
+    if (restoreAttempted.current) return;
+    restoreAttempted.current = true;
+    const rememberedJobId = window.localStorage.getItem(storageKey);
+    if (rememberedJobId) asyncJob.restore(rememberedJobId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (asyncJob.job?.state === "cancelled") {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+    if (asyncJob.job?.job_id) window.localStorage.setItem(storageKey, asyncJob.job.job_id);
+  }, [asyncJob.job?.job_id, asyncJob.job?.state, storageKey]);
+
+  if (experiment.lifecycle_state !== "evaluated" && !asyncJob.job) {
+    return <span className="pattern-candidate-time">—</span>;
+  }
+
+  return (
+    <div className="pattern-candidate-backtest-cell">
+      {!asyncJob.job && (
+        <button
+          type="button" className="secondary-button" disabled={asyncJob.busy}
+          onClick={() => void asyncJob.create(DEFAULT_ACCEPTANCE_JOB_BODY)}
+        >
+          {asyncJob.busy ? "Növbəyə əlavə olunur…" : "Qəbul/rədd qərarını hesabla"}
+        </button>
+      )}
+      {asyncJob.job && (
+        <div className="async-job-meta">
+          <JobStatusBadge state={asyncJob.job.state} />
+          {isJobCancellable(asyncJob.job) && (
+            <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.cancel()}>Ləğv et</button>
+          )}
+          {asyncJob.job.error_code && <span className="card-detail danger-text">{asyncJob.job.error_code}</span>}
+          {asyncJob.job.state === "completed" && asyncJob.job.result && (
+            <dl className="pattern-candidate-evidence">
+              <div><dt>Qərar</dt><dd>{ACCEPTANCE_DECISION_LABELS[asyncJob.job.result.decision.decision] ?? asyncJob.job.result.decision.decision}</dd></div>
+              <div><dt>Təkmilləşmə</dt><dd>{(asyncJob.job.result.decision.improvement_over_baseline * 100).toFixed(1)}%</dd></div>
+              <div><dt>p-dəyər / düzəlişli alpha</dt><dd>{asyncJob.job.result.decision.p_value.toFixed(4)} / {asyncJob.job.result.decision.corrected_alpha.toFixed(4)}</dd></div>
+              <div><dt>Ailə sınaq sayı</dt><dd>{asyncJob.job.result.decision.family_trial_count}</dd></div>
+              {asyncJob.job.result.decision.reasons.length > 0 && (
+                <div><dt>Səbəblər</dt><dd>{asyncJob.job.result.decision.reasons.join(", ")}</dd></div>
+              )}
+            </dl>
+          )}
+        </div>
+      )}
+      {asyncJob.error && <span className="card-detail danger-text">{asyncJob.error}</span>}
+    </div>
+  );
+}
+
 export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const now = new Date();
   const [timeframe, setTimeframe] = useState<Timeframe>("M1");
@@ -335,10 +431,12 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
             düyməsi real render→dataset→label icrasını job kimi başladır (şəkillər PNG kimi, checksum və tam
             lineage ilə saxlanılır) — model təlim etmir. Dataset hazır olduqda &ldquo;Modeli öyrət və
             qiymətləndir&rdquo; düyməsi (`pixel_centroid_baseline_v1`) deterministik baseline modeli
-            job kimi öyrədir və holdout üzərində qiymətləndirir — accept/reject qərarı hələ ayrı addımdır.
-            Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə qeydə alınır; horizon və label hədləri
-            aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca hesablama endpoint-i olmadığı üçün əl ilə
-            (statistik/texniki analiz nəticəsindən götürülərək) daxil edilir.
+            job kimi öyrədir və holdout üzərində qiymətləndirir. Qiymətləndirmə bitdikdə &ldquo;Qəbul/rədd
+            qərarını hesabla&rdquo; düyməsi statistik reyestr-əsaslı qapını (pre-registered sınaq, düzəlişli
+            Bonferroni alpha, birtərəfli binomial test) işə salır — reyestrsiz heç bir model SHADOW üçün
+            qəbul edilə bilməz. Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə qeydə alınır; horizon
+            və label hədləri aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca hesablama endpoint-i
+            olmadığı üçün əl ilə (statistik/texniki analiz nəticəsindən götürülərək) daxil edilir.
           </p>
         </div>
       </div>
@@ -372,7 +470,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Dataset</th><th>Model</th><th /></tr></thead>
+              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Dataset</th><th>Model</th><th>Qərar</th><th /></tr></thead>
               <tbody>
                 {experiments.map((experiment) => (
                   <tr key={experiment.experiment_id}>
@@ -388,6 +486,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
                       <TrainingJobCell experiment={experiment} token={token} onUnauthorized={onUnauthorized} onCompleted={() => void load()} />
                     </td>
                     <td>
+                      <AcceptanceJobCell experiment={experiment} token={token} onUnauthorized={onUnauthorized} onCompleted={() => void load()} />
+                    </td>
+                    <td>
                       {ARCHIVABLE_STATES.has(experiment.lifecycle_state) && (
                         <button type="button" className="secondary-button" disabled={archivingId === experiment.experiment_id} onClick={() => void archive(experiment)}>
                           {archivingId === experiment.experiment_id ? "Arxivləşdirilir…" : "Arxivləşdir"}
@@ -400,7 +501,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="analysis-disclaimer"><strong>Qeyd:</strong> &ldquo;Dataset yarat&rdquo; real render→dataset→label icrasını işə salır (PNG artefaktları + manifest saxlanılır). &ldquo;Modeli öyrət və qiymətləndir&rdquo; real (deterministik, sadə) baseline modeli öyrədir və holdout üzərində qiymətləndirir. Statistik/reyestr-əsaslı accept/reject qərarı (`evaluated → accepted_for_shadow | rejected`) hələ frontend-ə bağlanmayıb. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
+        <p className="analysis-disclaimer"><strong>Qeyd:</strong> &ldquo;Dataset yarat&rdquo; real render→dataset→label icrasını işə salır (PNG artefaktları + manifest saxlanılır). &ldquo;Modeli öyrət və qiymətləndir&rdquo; real (deterministik, sadə) baseline modeli öyrədir və holdout üzərində qiymətləndirir. &ldquo;Qəbul/rədd qərarını hesabla&rdquo; real statistik reyestr-əsaslı qapını (`evaluated → accepted_for_shadow | rejected | insufficient_evidence`) işə salır. Heç bir vəziyyət real ticarət icazəsi vermir və `accepted_for_shadow` real Phase 9 SHADOW icrası ilə hələ bağlanmayıb.</p>
       </section>
     </section>
   );

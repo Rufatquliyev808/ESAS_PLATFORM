@@ -41,6 +41,10 @@ from backend.app.strategies.replay_pattern_candidates import (
     evaluate_replay_pattern_candidate_backtest,
 )
 from backend.app.strategies.visual_baseline_training import VisualBaselineTrainingError
+from backend.app.strategies.visual_experiment_acceptance import (
+    VisualAcceptanceError,
+    decide_visual_experiment_acceptance,
+)
 from backend.app.strategies.visual_experiment_evaluation import evaluate_visual_experiment
 from backend.app.strategies.visual_experiment_materialization import render_visual_experiment
 from backend.app.strategies.visual_training_input_pipeline import VisualTrainingInputError
@@ -71,6 +75,7 @@ _NON_RETRYABLE_ERRORS = (
     VisualTrainingInputError,
     BaselineTrainerError,
     VisualBaselineModelConflictError,
+    VisualAcceptanceError,
 )
 
 
@@ -124,11 +129,28 @@ def _run_visual_experiment_training_job(job: AnalysisJob) -> dict[str, object]:
     return asdict(result)
 
 
+def _run_visual_experiment_acceptance_job(job: AnalysisJob) -> dict[str, object]:
+    """Wraps decide_visual_experiment_acceptance(), which recomputes the
+    model and holdout predictions fresh and runs the statistical
+    multiple-testing gate for the `evaluated -> accepted_for_shadow |
+    rejected | insufficient_evidence` step.
+    """
+    payload = job.payload
+    model_spec = ModelSpec(**payload["model_spec"])
+    training_spec = TrainingSpec(**payload["training_spec"])
+    result = decide_visual_experiment_acceptance(
+        str(payload["experiment_id"]), actor=job.created_by, actor_role="operator",
+        model_spec=model_spec, training_spec=training_spec,
+    )
+    return asdict(result)
+
+
 _DISPATCH = {
     "pattern_candidate_backtest": _run_pattern_candidate_backtest_job,
     "statistical_analysis": _run_statistical_analysis_job,
     "visual_experiment_rendering": _run_visual_experiment_rendering_job,
     "visual_experiment_training": _run_visual_experiment_training_job,
+    "visual_experiment_acceptance": _run_visual_experiment_acceptance_job,
 }
 
 

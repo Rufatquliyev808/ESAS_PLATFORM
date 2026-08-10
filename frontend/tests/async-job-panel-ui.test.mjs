@@ -30,6 +30,11 @@ test("visual experiments panel offers an async training+evaluation job workflow"
   assert.match(visualExperimentsSource, /TrainingJobCell/);
 });
 
+test("visual experiments panel offers an async statistical acceptance job workflow", () => {
+  assert.match(visualExperimentsSource, /visual-experiments\/\$\{experiment\.experiment_id\}\/acceptance-jobs/);
+  assert.match(visualExperimentsSource, /AcceptanceJobCell/);
+});
+
 test("pattern candidates panel offers an async backtest-job alternative to the sync endpoint", () => {
   assert.match(patternCandidatesSource, /from "\.\/async-job-panel"/);
   assert.match(patternCandidatesSource, /pattern-candidates\/\$\{candidateId\}\/backtest-jobs/);

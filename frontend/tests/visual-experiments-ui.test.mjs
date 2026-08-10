@@ -19,7 +19,7 @@ test("visual experiments panel stays research-only and registers only frozen con
   assert.match(source, /Eksperimenti qeydə al/);
   assert.match(source, /expected_state_version: experiment\.state_version/);
   assert.match(source, /Arxivləşdir/);
-  assert.match(source, /Statistik\/reyestr-əsaslı accept\/reject qərarı[\s\S]*?hələ frontend-ə bağlanmayıb/);
+  assert.match(source, /accepted_for_shadow[\s\S]*?real Phase 9 SHADOW icrası ilə hələ bağlanmayıb/);
   assert.match(source, /Heç bir vəziyyət real ticarət icazəsi vermir/);
   // Rendering job workflow: create, restore-after-refresh, cancel, and
   // completion result (sample count + dataset fingerprint) must all be wired.
@@ -45,6 +45,17 @@ test("visual experiments panel stays research-only and registers only frozen con
   assert.match(source, /result\.evaluation\.holdout_metrics\.accuracy/);
   assert.match(source, /result\.evaluation\.majority_baseline_accuracy/);
   assert.match(source, /pixel_centroid_baseline_v1/);
+  // Statistical acceptance job workflow: same restore/cancel wiring, gated
+  // on the `evaluated` lifecycle state, surfacing the decision/p-value/
+  // corrected alpha/family trial count.
+  assert.match(source, /acceptance-jobs`/);
+  assert.match(source, /Qəbul\/rədd qərarını hesabla/);
+  assert.match(source, /ACCEPTANCE_JOB_STORAGE_PREFIX/);
+  assert.match(source, /experiment\.lifecycle_state !== "evaluated"/);
+  assert.match(source, /result\.decision\.decision/);
+  assert.match(source, /result\.decision\.p_value/);
+  assert.match(source, /result\.decision\.corrected_alpha/);
+  assert.match(source, /result\.decision\.family_trial_count/);
   const lowered = source.toLowerCase();
   assert.doesNotMatch(lowered, /placeorder|sendorder|positionsize|"buy"|'buy'|"sell"|'sell'/);
   // All 14 lifecycle states from the Phase 5 contract must be labelled.

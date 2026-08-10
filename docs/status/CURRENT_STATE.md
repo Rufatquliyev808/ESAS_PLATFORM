@@ -1,5 +1,39 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Statistik accept/reject qərarı üçün async job/API + frontend
+
+- Qalan siyahının "statistik accept/reject qərarının frontend-ə
+  bağlanması" bəndini bağlayır — əvvəlki addımın statistik reyestr-əsaslı
+  qapısı (`decide_visual_experiment_acceptance()`) indiyə qədər heç bir
+  API/job/frontend əlaqəsinə malik deyildi, yalnız pytest birbaşa
+  çağırırdı.
+- Yeni migration `0021_visual_experiment_acceptance_jobs.sql` (yalnız test
+  bazada, `0014`/`0020` ilə struktur baxımından eynidir) — 5-ci job növü,
+  `visual_experiment_acceptance` (`vaj_` prefiksi).
+- `analysis_job_repository.py` genişləndirildi; `analysis_job_worker.py`-a
+  `_run_visual_experiment_acceptance_job()` handler-i əlavə edildi.
+- Yeni `VisualExperimentAcceptanceJobRequest` (training job request-i ilə
+  eyni forma — qərar modeli eyni `ModelSpec`/`TrainingSpec` ilə YENİDƏN
+  hesablayır, bu həm də reproduksiya yoxlamasıdır) + 3 endpoint
+  (`POST/GET .../acceptance-jobs`, `POST .../cancel`).
+- 18 yeni backend test. Tam backend regressiyası: `869 passed`.
+- `visual-experiments-panel.tsx`-ə yeni `AcceptanceJobCell` — yalnız
+  `lifecycle_state === "evaluated"` olduqda göstərilir, "Qəbul/rədd
+  qərarını hesabla" düyməsi ilə. Yeni "Qərar" sütunu: qərar, baseline-dan
+  təkmilləşmə, p-dəyər/düzəlişli alpha, ailə sınaq sayı, rədd səbəbləri.
+- Frontend testləri yeniləndi (köhnəlmiş "hələ bağlanmayıb" assertion
+  silindi). `lint`/`build` təmiz; `npm test` 23/23 (əvvəl 21).
+- **Scratch uçdan-uca brauzer doğrulaması**: təbii (öyrənilə bilməyən)
+  label siqnalı ilə eksperiment seed edildi, `training`-ə qapılandı.
+  Brauzerdə: training+evaluation job-u işə salındı → `evaluated` (holdout
+  accuracy 0%), sonra "Qəbul/rədd qərarını hesabla" basıldı → `Rədd
+  edildi`, təkmilləşmə -100.0%, p-dəyər 1.0000 / düzəlişli alpha 0.0500,
+  ailə sınaq sayı 1, dəqiq rədd səbəbləri göstərildi; eksperimentin öz
+  vəziyyəti `Rədd edilib`-ə keçdi. Səhifə tam yenilənəndən (yenidən giriş
+  daxil) sonra HƏM training, HƏM acceptance job nəticələri localStorage-
+  dan düzgün bərpa olundu. Konsol xətası yox idi. Real xidmətlər
+  (8000/3000) və baza (`0011`-də qalır) toxunulmadan qaldı.
+
 ## 2026-08-10 — Phase 5: Training+evaluation job-un frontend-ə bağlanması
 
 - Qalan siyahının "...və frontend yoxdur" hissəsini tamamlayır — əvvəlki

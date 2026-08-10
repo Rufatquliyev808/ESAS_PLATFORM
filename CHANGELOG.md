@@ -8,6 +8,49 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: async job/API resource + frontend for the statistical acceptance decision
+
+- Closes the remaining-order gap item "statistik accept/reject qərarının
+  frontend-ə bağlanması" -- `decide_visual_experiment_acceptance()`
+  (the multiple-testing-registry-aware statistical gate from the previous
+  increment) had zero API/job/frontend exposure until now; only pytest
+  called it directly.
+- New migration `0021_visual_experiment_acceptance_jobs.sql` (test-only,
+  structurally identical to `0014`/`0020`) -- 5th job type,
+  `visual_experiment_acceptance`, prefix `vaj_`.
+- `analysis_job_repository.py`: `JOB_TYPES`/`_JOB_TABLES` extended.
+- `analysis_job_worker.py`: new `_run_visual_experiment_acceptance_job()`
+  handler wrapping `decide_visual_experiment_acceptance()`; `VisualAcceptanceError`
+  added to `_NON_RETRYABLE_ERRORS`.
+- New `VisualExperimentAcceptanceJobRequest` (same shape as the training
+  job request -- the decision recomputes the model fresh with the same
+  `ModelSpec`/`TrainingSpec`, which doubles as its reproduction check) + 3
+  endpoints (`POST/GET .../acceptance-jobs`, `POST .../cancel`).
+- 18 new backend tests (8 API-level via `TestClient`, 10 job-repository-level).
+  Full backend regression: `869 passed`.
+- `frontend/app/visual-experiments-panel.tsx`: new `AcceptanceJobCell`,
+  shown only when `lifecycle_state === "evaluated"` (or a job already
+  exists), with a "Qəbul/rədd qərarını hesabla" button. New "Qərar" table
+  column shows the decision, improvement over baseline, p-value/corrected
+  alpha, family trial count, and rejection reasons when present. Intro/
+  disclaimer text updated.
+- `frontend/tests/visual-experiments-ui.test.mjs` / `async-job-panel-ui.test.mjs`:
+  removed the now-stale "not wired to frontend" assertion, added coverage
+  for the new workflow. `npm run lint`/`build` clean; `npm test` 23/23
+  (was 21).
+- **Scratch end-to-end browser verification**: seeded a real experiment
+  with a natural (unlearnable) label signal, gated into `training`. In the
+  browser: ran the training+evaluation job to reach `evaluated` (holdout
+  accuracy 0%, as expected for this fixture), then clicked "Qəbul/rədd
+  qərarını hesabla" -- the job completed showing `Rədd edildi`,
+  improvement -100.0%, p-value 1.0000 / corrected alpha 0.0500, family
+  trial count 1, and the exact rejection reasons; the experiment's own
+  lifecycle label updated to `Rədd edilib`. Reloaded the page (full
+  re-login) and confirmed both the training and acceptance job results
+  restored correctly from `localStorage`. No console errors. Real services
+  (8000/3000) and the real production database (still at `0011`) were
+  untouched throughout.
+
 ### Added — Phase 5: connect the training+evaluation job to the Visual AI panel
 
 - Completes the remaining-order gap item ("...və frontend yoxdur") by

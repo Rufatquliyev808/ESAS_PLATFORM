@@ -11,7 +11,7 @@ from backend.app.database.connection import get_connection
 
 JOB_TYPES = frozenset({
     "pattern_candidate_backtest", "statistical_analysis", "visual_experiment_rendering",
-    "visual_experiment_training",
+    "visual_experiment_training", "visual_experiment_acceptance",
 })
 TERMINAL_STATES = frozenset({"completed", "cancelled", "failed"})
 DEFAULT_LEASE_SECONDS = 30
@@ -39,6 +39,9 @@ _JOB_TABLES: dict[str, tuple[str, str, str]] = {
     ),
     "visual_experiment_training": (
         "visual_experiment_training_jobs", "visual_experiment_training_job_audit", "vtj",
+    ),
+    "visual_experiment_acceptance": (
+        "visual_experiment_acceptance_jobs", "visual_experiment_acceptance_job_audit", "vaj",
     ),
 }
 _PREFIX_TO_JOB_TYPE = {prefix: job_type for job_type, (_, _, prefix) in _JOB_TABLES.items()}

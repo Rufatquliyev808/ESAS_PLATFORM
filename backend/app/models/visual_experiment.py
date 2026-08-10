@@ -88,3 +88,27 @@ class VisualExperimentTrainingJobRequest(BaseModel):
     batch_size: int = Field(ge=1, le=1_000_000)
     max_epochs: int = Field(ge=1, le=1_000_000)
     compute_requirement: str = Field(min_length=1, max_length=20)
+
+
+class VisualExperimentAcceptanceJobRequest(BaseModel):
+    """Same shape as `VisualExperimentTrainingJobRequest` -- the acceptance
+    decision recomputes the model fresh (this doubles as its reproduction
+    check), so it needs the exact same `ModelSpec`/`TrainingSpec` the
+    training job was given for this experiment.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+
+    idempotency_key: str = Field(min_length=1, max_length=200)
+    priority: int = Field(default=3, ge=1, le=5)
+
+    architecture_id: str = Field(min_length=1, max_length=200)
+    preprocessing_policy: str = Field(min_length=1, max_length=200)
+    class_weight_policy: str = Field(min_length=1, max_length=50)
+
+    seed: int
+    optimizer: str = Field(min_length=1, max_length=100)
+    loss: str = Field(min_length=1, max_length=100)
+    batch_size: int = Field(ge=1, le=1_000_000)
+    max_epochs: int = Field(ge=1, le=1_000_000)
+    compute_requirement: str = Field(min_length=1, max_length=20)
