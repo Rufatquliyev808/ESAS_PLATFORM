@@ -169,9 +169,18 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   solid-white PNG-lər, training qapısı keçəndən SONRA yeridilir) real
   rəqəmlərlə qəbul meyarını sübut edir: tək-trial family qəbul edilir,
   EYNİ real sübut böyük family üçün Bonferroni ilə rədd edilir. Scratch-də
-  təsdiqləndi. Migration `0012`-`0019` YALNIZ test bazasındadır.
-  Növbəti addım: `accepted_for_shadow`-un real Phase 9 SHADOW sisteminə
-  bağlanması, sonra training job/API/worker (faktiki icra).
+  təsdiqləndi. **Training+evaluation üçün asinxron job/API resursu** da
+  tamamlandı ("yuxarıdakı tapşırıqdan nə qalıbsa ardıcıllıqla icra et"
+  sorğusuna cavab olaraq, qalan siyahının (6) bəndi) — bu sessiyada 4-cü
+  dəfə eyni job-queue nümunəsi. `evaluate_visual_experiment()`-i (training+
+  evaluation-u BİRLİKDƏ əhatə edir, idempotent) TƏK job kimi bükür. Yeni
+  migration `0020`, `analysis_job_repository.py`-da `vtj_` prefiksli 4-cü
+  job növü, yeni `VisualExperimentTrainingJobRequest` + 3 endpoint. 18
+  yeni test (8 API-səviyyəli + 10 repository-səviyyəli). Tam backend
+  regressiyası: `859 passed`. Migration `0012`-`0020` YALNIZ test
+  bazasındadır.
+  Növbəti addım: bu job-un FRONTEND-ə bağlanması (backend hazırdır),
+  sonra `accepted_for_shadow`-un real Phase 9 SHADOW sisteminə bağlanması.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin

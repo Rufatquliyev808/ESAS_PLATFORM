@@ -18,12 +18,15 @@ from backend.app.database.pattern_candidate_repository import (
 )
 from backend.app.analysis.replay_analysis import ReplayDatasetChangedError
 from backend.app.analysis.statistical_analysis import create_replay_statistical_analysis
+from backend.app.analysis.visual_baseline_trainer import BaselineTrainerError
 from backend.app.analysis.visual_materializer import BarFingerprintMismatchError
+from backend.app.analysis.visual_model_spec import ModelSpec, TrainingSpec
 from backend.app.database.replay_session_repository import (
     ReplaySessionNotFoundError,
     ReplayTransitionConflictError,
     get_replay_session,
 )
+from backend.app.database.visual_baseline_model_repository import VisualBaselineModelConflictError
 from backend.app.database.visual_dataset_repository import VisualDatasetManifestConflictError
 from backend.app.database.visual_experiment_repository import (
     VisualExperimentConflictError,
@@ -37,7 +40,10 @@ from backend.app.strategies.pattern_candidate_backtest import (
 from backend.app.strategies.replay_pattern_candidates import (
     evaluate_replay_pattern_candidate_backtest,
 )
+from backend.app.strategies.visual_baseline_training import VisualBaselineTrainingError
+from backend.app.strategies.visual_experiment_evaluation import evaluate_visual_experiment
 from backend.app.strategies.visual_experiment_materialization import render_visual_experiment
+from backend.app.strategies.visual_training_input_pipeline import VisualTrainingInputError
 
 
 # Errors that mean "this exact request can never succeed" -- retrying would
@@ -61,6 +67,10 @@ _NON_RETRYABLE_ERRORS = (
     VisualDatasetManifestConflictError,
     BarFingerprintMismatchError,
     ArtifactIntegrityError,
+    VisualBaselineTrainingError,
+    VisualTrainingInputError,
+    BaselineTrainerError,
+    VisualBaselineModelConflictError,
 )
 
 
@@ -98,10 +108,27 @@ def _run_visual_experiment_rendering_job(job: AnalysisJob) -> dict[str, object]:
     return asdict(result)
 
 
+def _run_visual_experiment_training_job(job: AnalysisJob) -> dict[str, object]:
+    """Wraps evaluate_visual_experiment(), which idempotently re-fits the
+    baseline model and then evaluates it against holdout -- one job covers
+    both the `training` and `evaluated` lifecycle steps, since the two are
+    always called together anyway.
+    """
+    payload = job.payload
+    model_spec = ModelSpec(**payload["model_spec"])
+    training_spec = TrainingSpec(**payload["training_spec"])
+    result = evaluate_visual_experiment(
+        str(payload["experiment_id"]), actor=job.created_by, actor_role="operator",
+        model_spec=model_spec, training_spec=training_spec,
+    )
+    return asdict(result)
+
+
 _DISPATCH = {
     "pattern_candidate_backtest": _run_pattern_candidate_backtest_job,
     "statistical_analysis": _run_statistical_analysis_job,
     "visual_experiment_rendering": _run_visual_experiment_rendering_job,
+    "visual_experiment_training": _run_visual_experiment_training_job,
 }
 
 

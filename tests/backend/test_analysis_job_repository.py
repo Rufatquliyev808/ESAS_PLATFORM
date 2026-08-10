@@ -347,25 +347,73 @@ def test_visual_experiment_rendering_jobs_use_a_separate_table(isolated_database
     assert other_table_count == 0
 
 
-def test_all_three_job_type_ids_do_not_collide(isolated_database: Path) -> None:
-    _prepare(isolated_database)
-    pattern_job = _enqueue()
-    stats_job = _enqueue_statistical_analysis()
-    rendering_job = _enqueue_visual_experiment_rendering()
-    assert pattern_job.job_id.startswith("job_")
-    assert stats_job.job_id.startswith("saj_")
-    assert rendering_job.job_id.startswith("vrj_")
-    assert get_job(pattern_job.job_id).job_type == "pattern_candidate_backtest"
-    assert get_job(stats_job.job_id).job_type == "statistical_analysis"
-    assert get_job(rendering_job.job_id).job_type == "visual_experiment_rendering"
-
-
 def test_visual_experiment_rendering_queue_metrics_are_independent(isolated_database: Path) -> None:
     _prepare(isolated_database)
     _enqueue_visual_experiment_rendering(key="vrj1", experiment_id="experiment-1")
     _enqueue_visual_experiment_rendering(key="vrj2", experiment_id="experiment-2")
     claim_next_job(worker_id="w1", job_type="visual_experiment_rendering")
     metrics = queue_metrics("visual_experiment_rendering")
+    assert metrics["depth_by_state"]["queued"] == 1
+    assert metrics["depth_by_state"]["claimed"] == 1
+    pattern_metrics = queue_metrics("pattern_candidate_backtest")
+    assert pattern_metrics["depth_by_state"] == {}
+
+
+def _enqueue_visual_experiment_training(created_by: str = "TEST-USER", key: str = "vtj1", experiment_id: str = "experiment-1"):
+    return enqueue_job(
+        job_type="visual_experiment_training", created_by=created_by,
+        payload={
+            "experiment_id": experiment_id,
+            "model_spec": {
+                "architecture_id": "pixel_centroid_baseline_v1", "preprocessing_policy": "normalize_0_1",
+                "class_weight_policy": "balanced", "version": "1.0.0",
+            },
+            "training_spec": {
+                "seed": 42, "optimizer": "adam", "loss": "cross_entropy", "batch_size": 4,
+                "max_epochs": 10, "compute_requirement": "cpu", "version": "1.0.0",
+            },
+        },
+        related_resource_id=experiment_id, idempotency_key=key,
+    )
+
+
+def test_visual_experiment_training_jobs_use_a_separate_table(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    job = _enqueue_visual_experiment_training()
+    assert job.job_id.startswith("vtj_")
+    with get_connection() as connection:
+        own_table_count = connection.execute(
+            "SELECT COUNT(*) FROM visual_experiment_training_jobs WHERE job_id = ?;", (job.job_id,)
+        ).fetchone()[0]
+        other_table_count = connection.execute(
+            "SELECT COUNT(*) FROM analysis_jobs WHERE job_id = ?;", (job.job_id,)
+        ).fetchone()[0]
+    assert own_table_count == 1
+    assert other_table_count == 0
+
+
+def test_all_four_job_type_ids_do_not_collide(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    pattern_job = _enqueue()
+    stats_job = _enqueue_statistical_analysis()
+    rendering_job = _enqueue_visual_experiment_rendering()
+    training_job = _enqueue_visual_experiment_training()
+    assert pattern_job.job_id.startswith("job_")
+    assert stats_job.job_id.startswith("saj_")
+    assert rendering_job.job_id.startswith("vrj_")
+    assert training_job.job_id.startswith("vtj_")
+    assert get_job(pattern_job.job_id).job_type == "pattern_candidate_backtest"
+    assert get_job(stats_job.job_id).job_type == "statistical_analysis"
+    assert get_job(rendering_job.job_id).job_type == "visual_experiment_rendering"
+    assert get_job(training_job.job_id).job_type == "visual_experiment_training"
+
+
+def test_visual_experiment_training_queue_metrics_are_independent(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    _enqueue_visual_experiment_training(key="vtj1", experiment_id="experiment-1")
+    _enqueue_visual_experiment_training(key="vtj2", experiment_id="experiment-2")
+    claim_next_job(worker_id="w1", job_type="visual_experiment_training")
+    metrics = queue_metrics("visual_experiment_training")
     assert metrics["depth_by_state"]["queued"] == 1
     assert metrics["depth_by_state"]["claimed"] == 1
     pattern_metrics = queue_metrics("pattern_candidate_backtest")

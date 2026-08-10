@@ -8,6 +8,47 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: async job/API resource for training + evaluation
+
+- Continuing the remaining-order gap list ("Training/evaluation job
+  API/worker və frontend yoxdur"): the 4th application of this session's
+  job-queue pattern (after `pattern_candidate_backtest`,
+  `statistical_analysis`, `visual_experiment_rendering`). Wraps
+  `evaluate_visual_experiment()` -- which idempotently re-fits the
+  baseline model and then evaluates it against holdout -- as ONE async
+  job covering both the `training` and `evaluated` lifecycle steps, since
+  the two are always called together anyway.
+- New migration `0020_visual_experiment_training_jobs.sql` (test/scratch
+  DB only, not applied to production), structurally identical to
+  migration `0014` (claim/lease/fencing, retry, idempotency-key dedup,
+  per-user active-job cap, append-only audit).
+- `analysis_job_repository.py`: `"visual_experiment_training"` added to
+  `JOB_TYPES`/`_JOB_TABLES` (prefix `vtj_`) -- the existing generic
+  enqueue/claim/heartbeat/complete/fail/cancel/metrics functions needed
+  no other changes.
+- `analysis_job_worker.py`: new `_run_visual_experiment_training_job()`
+  handler reconstructs `ModelSpec`/`TrainingSpec` from the job payload and
+  calls `evaluate_visual_experiment()`. Added
+  `VisualBaselineTrainingError`/`VisualTrainingInputError`/
+  `BaselineTrainerError`/`VisualBaselineModelConflictError` to the
+  non-retryable error list.
+- New `VisualExperimentTrainingJobRequest` model (mirrors `ModelSpec`/
+  `TrainingSpec` fields exactly -- the API is the first place callers
+  actually choose a model/training spec at request time, unlike
+  rendering, which is fully frozen at registration) + 3 endpoints
+  (`POST/GET .../visual-experiments/{id}/training-jobs`,
+  `POST .../cancel`) mirroring the rendering-jobs endpoints exactly.
+- 18 new tests (8 API-level via `TestClient` -- enqueue, idempotency,
+  404s, ownership, cancel-terminal-409, and an unsupported-architecture
+  failure path -- plus 10 job-repository-level: separate table, 4-way
+  job-type-id collision check, independent queue metrics). Full backend
+  regression: `859 passed`. No new scratch script for this increment --
+  the `TestClient`-based API tests already exercise the real FastAPI app
+  and background-task worker execution end-to-end, matching how the
+  earlier rendering/statistical-analysis job increments were verified.
+  Real production database (still at migration `0011`) untouched.
+- No frontend or production migration in this increment.
+
 ### Fixed — Phase 5: statistical acceptance gate and multiple-testing registry
 
 - User-flagged gap: the previous increment's accept/reject decision only

@@ -1,5 +1,30 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Training + evaluation üçün asinxron job/API resursu
+
+- "Yuxarıdakı tapşırıqdan nə qalıbsa ardıcıllıqla icra et" — qalan
+  siyahının (6) bəndi: "Training/evaluation job API/worker və frontend
+  yoxdur". Bu sessiyada 4-cü dəfə eyni job-queue nümunəsi (pattern-
+  candidate-backtest, statistical-analysis, visual-experiment-rendering-
+  dan sonra). `evaluate_visual_experiment()`-i (idempotent — həm
+  training, həm evaluation-u əhatə edir) TƏK asinxron job kimi bükür.
+- Yeni migration `0020_visual_experiment_training_jobs.sql` (yalnız test
+  bazada) — migration `0014` ilə struktur baxımından eynidir.
+- `analysis_job_repository.py`-a `"visual_experiment_training"` job növü
+  (`vtj_` prefiksi) əlavə edildi — mövcud generic funksiyalar dəyişmədi.
+- `analysis_job_worker.py`-a `_run_visual_experiment_training_job()`
+  handler-i — payload-dan `ModelSpec`/`TrainingSpec` bərpa edir.
+- Yeni `VisualExperimentTrainingJobRequest` (ModelSpec/TrainingSpec
+  sahələrini dəqiq güzgüləyir — bu, çağıranın model/training spec-i
+  REQUEST ZAMANI seçdiyi ilk yerdir, rendering-dən fərqli olaraq) + 3
+  endpoint (`POST/GET .../training-jobs`, `POST .../cancel`).
+- 18 yeni test (8 API-səviyyəli `TestClient` ilə + 10 job-repository-
+  səviyyəli). Tam backend regressiyası: `859 passed`. Bu addım üçün ayrıca
+  scratch skript yoxdur — `TestClient` testləri artıq real FastAPI app-ı
+  və background-task worker icrasını uçdan-uca sınayır (əvvəlki job/API
+  addımlarında olduğu kimi). Real production baza (`0011`-də qalır)
+  toxunulmadı.
+
 ## 2026-08-10 — Phase 5: Statistik acceptance qapısı və multiple-testing reyestri
 
 - İstifadəçinin tapdığı boşluq: əvvəlki addımın accept/reject qərarı
