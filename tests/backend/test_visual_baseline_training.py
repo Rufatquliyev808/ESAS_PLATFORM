@@ -169,6 +169,37 @@ def test_train_visual_baseline_model_succeeds_and_keeps_lifecycle_state(isolated
     assert stored_model.model_checksum == result.model.checksum
 
 
+def test_train_visual_baseline_model_preregisters_a_testing_trial_before_fitting(
+    isolated_database: Path,
+) -> None:
+    """Phase 5 multiple-testing registry requirement: every (dataset, model
+    spec, training spec) combination must be registered as a trial BEFORE
+    any result is known -- verified here by confirming the registry has
+    exactly the one trial this training run used, keyed to the dataset's
+    testing family.
+    """
+    from backend.app.analysis.visual_model_spec import model_spec_id, training_spec_id
+    from backend.app.analysis.visual_statistical_acceptance import compute_testing_family_id
+    from backend.app.database.visual_dataset_repository import get_dataset_manifest
+    from backend.app.database.visual_testing_trial_repository import count_family_trials, trial_is_registered
+
+    experiment = _prepare_trainable_experiment(isolated_database)
+    manifest = get_dataset_manifest(experiment.experiment_id)
+    testing_family_id = compute_testing_family_id(manifest.dataset_fingerprint)
+    assert count_family_trials(testing_family_id) == 0
+
+    train_visual_baseline_model(
+        experiment.experiment_id, actor="TEST-USER",
+        model_spec=BASELINE_MODEL_SPEC, training_spec=DEFAULT_TRAINING_SPEC,
+    )
+
+    assert count_family_trials(testing_family_id) == 1
+    assert trial_is_registered(
+        testing_family_id=testing_family_id, model_spec_id=model_spec_id(BASELINE_MODEL_SPEC),
+        training_spec_id=training_spec_id(DEFAULT_TRAINING_SPEC),
+    ) is True
+
+
 def test_train_visual_baseline_model_is_deterministic(isolated_database: Path) -> None:
     experiment = _prepare_trainable_experiment(isolated_database)
     first = train_visual_baseline_model(

@@ -11,13 +11,20 @@ from backend.app.analysis.visual_baseline_trainer import (
     predict_validation,
     training_log_artifact_bytes,
 )
-from backend.app.analysis.visual_model_spec import ModelSpec, TrainingSpec
+from backend.app.analysis.visual_model_spec import (
+    ModelSpec,
+    TrainingSpec,
+    model_spec_id as compute_model_spec_id,
+    training_spec_id as compute_training_spec_id,
+)
+from backend.app.analysis.visual_statistical_acceptance import compute_testing_family_id
 from backend.app.database.visual_baseline_model_repository import (
     PersistedVisualBaselineModel,
     persist_baseline_model,
 )
 from backend.app.database.visual_dataset_repository import get_dataset_manifest
 from backend.app.database.visual_experiment_repository import VisualExperimentOwnershipError, get_visual_experiment
+from backend.app.database.visual_testing_trial_repository import register_trial
 from backend.app.storage.artifact_store import put_artifact
 from backend.app.strategies.visual_training_input_pipeline import build_visual_training_input
 
@@ -72,6 +79,19 @@ def train_visual_baseline_model(
     manifest = get_dataset_manifest(experiment_id)
     if manifest is None:
         raise VisualBaselineTrainingError("experiment has no dataset manifest")
+
+    # Phase 5 multiple-testing registry: register this exact (dataset,
+    # model spec, training spec) combination as a trial BEFORE fitting
+    # anything -- pre-registration happens before any result is known, not
+    # after, so a later acceptance decision can see how many
+    # architecture/seed/hyperparameter attempts this dataset's "testing
+    # family" has accumulated. Idempotent -- re-running training for the
+    # same trial never inflates the family's count.
+    testing_family_id = compute_testing_family_id(manifest.dataset_fingerprint)
+    register_trial(
+        testing_family_id=testing_family_id, experiment_id=experiment_id,
+        model_spec_id=compute_model_spec_id(model_spec), training_spec_id=compute_training_spec_id(training_spec),
+    )
 
     training_input = build_visual_training_input(
         experiment_id, actor=actor, model_spec=model_spec, training_spec=training_spec,

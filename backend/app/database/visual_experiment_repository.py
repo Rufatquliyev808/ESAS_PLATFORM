@@ -31,6 +31,11 @@ RENDERABLE_FROM_STATES = frozenset({"registered"})
 FAILABLE_FROM_STATES = frozenset({"rendering"})
 TRAINABLE_FROM_STATES = frozenset({"rendering"})
 EVALUABLE_FROM_STATES = frozenset({"training"})
+# mark_insufficient_evidence is reachable from two places: the evaluation
+# step itself (too few holdout samples to evaluate at all) and the
+# statistical acceptance step (a defensive re-check -- holdout data could
+# have changed between evaluation and acceptance).
+INSUFFICIENT_EVIDENCE_FROM_STATES = frozenset({"training", "evaluated"})
 ACCEPTABLE_FROM_STATES = frozenset({"evaluated"})
 
 
@@ -642,13 +647,16 @@ def mark_out_of_distribution(
 def mark_insufficient_evidence(
     *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
 ) -> PersistedVisualExperiment:
-    """training -> insufficient_evidence. Too few holdout samples to trust
-    any evaluation conclusion -- an abstain outcome, not a failure.
+    """training|evaluated -> insufficient_evidence. Too few holdout samples
+    to trust any conclusion -- an abstain outcome, not a failure. Reachable
+    from `training` (the evaluation step never had enough holdout data to
+    begin with) or from `evaluated` (the statistical acceptance step's own
+    defensive re-check found holdout data had changed since evaluation).
     """
     return _transition(
         experiment_id=experiment_id, actor=actor, actor_role=actor_role,
         expected_state_version=expected_state_version,
-        allowed_from_states=EVALUABLE_FROM_STATES, next_state="insufficient_evidence",
+        allowed_from_states=INSUFFICIENT_EVIDENCE_FROM_STATES, next_state="insufficient_evidence",
         action="mark_insufficient_evidence",
     )
 

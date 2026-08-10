@@ -8,6 +8,74 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Fixed — Phase 5: statistical acceptance gate and multiple-testing registry
+
+- User-flagged gap: the previous increment's accept/reject decision only
+  checked a fixed 5% improvement margin -- no statistical validation, no
+  multiple-testing correction, no pre-registration -- so a model could
+  reach `accepted_for_shadow` without ever going through a registry. New
+  task: build both, and make the existing simple 5% path structurally
+  incapable of reaching `accepted_for_shadow` on its own.
+- New `backend/app/analysis/visual_statistical_acceptance.py` (pure, no
+  I/O, no scipy/numpy dependency): `compute_testing_family_id()` groups
+  every trial (architecture/seed/hyperparameter variation) attempted
+  against the SAME frozen dataset. `one_sided_binomial_p_value()` is an
+  exact binomial test (`math.comb`, summed in a fixed ascending-k order
+  for determinism) against the null hypothesis that the model's true
+  accuracy is no better than the naive majority-baseline rate.
+  `wilson_score_interval()` gives a 95% CI on holdout accuracy (a fixed,
+  documented z-score, not an inverse-normal-CDF call). `bonferroni_corrected_alpha()`
+  divides alpha=0.05 by the family's trial count. `decide_statistical_acceptance()`
+  requires ALL SIX conditions for `accepted_for_shadow`: the trial was
+  pre-registered; the model reproduces byte-for-byte from a fresh
+  recomputation; the evaluation actually completed (`outcome ==
+  "evaluated"`); enough holdout samples; improvement over baseline meets
+  the minimum margin; and the exact binomial p-value clears the
+  Bonferroni-corrected alpha. Too few holdout samples is
+  `insufficient_evidence` (checked first); any other failure is
+  `rejected` with every reason listed.
+- New migration `0019_visual_testing_trials.sql` (test/scratch DB only,
+  not applied to production) + `visual_testing_trial_repository.py`:
+  `register_trial()` is idempotent per (family, model_spec_id,
+  training_spec_id) -- re-registering an already-known trial never
+  inflates the family's count. `count_family_trials()` is what feeds the
+  Bonferroni correction.
+- `strategies/visual_baseline_training.py`: `train_visual_baseline_model()`
+  now registers this exact trial BEFORE fitting anything -- pre-registration
+  happens before any result is known, not after, closing the "cherry-pick
+  after the fact" gap. Purely additive; every existing behavior/test
+  still holds.
+- `strategies/visual_experiment_acceptance.py`: completely rewired.
+  `decide_visual_experiment_acceptance()` now requires `model_spec`/
+  `training_spec` parameters, recomputes the model and holdout predictions
+  FRESH from persisted samples/artifacts (doubling as the reproduction
+  check and giving exact holdout counts for the binomial test rather than
+  trusting the DB summary), looks up the family's trial count, and calls
+  `decide_statistical_acceptance()` -- the old simple threshold-only
+  `visual_acceptance.decide_acceptance()` is no longer reachable from this
+  path at all. `visual_experiment_repository.py`'s `mark_insufficient_evidence()`
+  is now also reachable from `evaluated` (previously `training` only), for
+  the statistical gate's own defensive insufficient-holdout re-check.
+- 39 new/changed tests: 19 pure unit tests for the p-value/CI/Bonferroni
+  math (verified against known reference values) and the six-condition
+  decision logic, 8 trial-registry tests, and a substantially rewritten
+  `test_visual_experiment_acceptance.py` with a new "learnable signal"
+  fixture (swaps in solid-black/solid-white PNG artifacts matching each
+  sample's label, injected AFTER the training-readiness gate has already
+  passed) that lets the centroid classifier genuinely learn -- proving
+  the core acceptance criterion with REAL pipeline-derived numbers: a
+  single-trial family reaches `accepted_for_shadow`, and the identical
+  real holdout evidence is `rejected` once Bonferroni correction is
+  applied for a much larger family. Full backend regression: `849 passed`.
+- **Scratch end-to-end verification**: registered/rendered/gated/trained/
+  evaluated a real 70-minute experiment with the injected learnable
+  signal, reached `accepted_for_shadow` with `family_trial_count=1`, then
+  re-decided the exact same real evidence with `family_trial_count=500` --
+  flipped to `rejected`. Real production database (still at migration
+  `0011`) untouched.
+- No frontend, production migration, or SHADOW connection in this
+  increment.
+
 ### Added — Phase 5: accept/reject decision and `evaluated -> accepted_for_shadow | rejected`
 
 - User-picked continuation of the same lifecycle contract work: with an

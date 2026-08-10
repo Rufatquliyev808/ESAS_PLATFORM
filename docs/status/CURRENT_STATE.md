@@ -1,5 +1,55 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Statistik acceptance qapısı və multiple-testing reyestri
+
+- İstifadəçinin tapdığı boşluq: əvvəlki addımın accept/reject qərarı
+  YALNIZ sabit 5% yaxşılaşma həddinə baxırdı — statistik təsdiq,
+  multiple-testing düzəlişi, pre-registration yox idi — model reyestrsiz
+  `accepted_for_shadow`-a çata bilirdi. Yeni tapşırıq: hər ikisini qurmaq
+  və mövcud sadə 5% yolunu KONSTRUKSİYA İLƏ reyestrsiz nəticəyə çata
+  bilməyəcək hala gətirmək.
+- Yeni `analysis/visual_statistical_acceptance.py` (saf, scipy/numpy
+  asılılığı yoxdur): `compute_testing_family_id()` — eyni dondurulmuş
+  dataset-ə qarşı sınanan bütün arxitektura/seed/hyperparameter
+  variasiyalarını qruplaşdırır. `one_sided_binomial_p_value()` — dəqiq
+  binomial test (`math.comb`, sabit artan-k sırasında cəmlənir).
+  `wilson_score_interval()` — 95% CI (sabit z-dəyəri). `bonferroni_corrected_alpha()`
+  — alpha=0.05-i family trial sayına bölür. `decide_statistical_acceptance()`
+  — `accepted_for_shadow` üçün 6 ŞƏRTİN HAMISI: trial əvvəlcədən qeydə
+  alınıb; model təzə hesablamadan byte-for-byte reproduksiya olunur;
+  evaluation həqiqətən tamamlanıb (`outcome=="evaluated"`); kifayət qədər
+  holdout nümunəsi; baseline-dan yaxşılaşma minimum həddədir; düzəlişli
+  binomial p-value Bonferroni-corrected alpha-nı keçir. Holdout azdırsa
+  → `insufficient_evidence` (əvvəlcə yoxlanır); əks halda → `rejected`
+  (bütün səbəblər).
+- Yeni migration `0019_visual_testing_trials.sql` (yalnız test bazada) +
+  `visual_testing_trial_repository.py` — `register_trial()` (family,
+  model_spec_id, training_spec_id) üzrə idempotent, `count_family_trials()`
+  Bonferroni düzəlişini bəsləyir.
+- `strategies/visual_baseline_training.py`: `train_visual_baseline_model()`
+  indi bu dəqiq trial-ı NƏTİCƏ MƏLUM OLMAZDAN ƏVVƏL qeydə alır — "sonradan
+  seçmə" boşluğu bağlandı. Yalnız əlavə edici dəyişiklik, mövcud davranış
+  toxunulmaz.
+- `strategies/visual_experiment_acceptance.py`: tam yenidən qurşandırıldı.
+  `decide_visual_experiment_acceptance()` indi `model_spec`/`training_spec`
+  tələb edir, modeli və holdout proqnozlarını persisted nümunələrdən TƏZƏ
+  hesablayır (həm reproduksiya yoxlaması, həm dəqiq binomial say),
+  family trial sayını axtarır, `decide_statistical_acceptance()`-i
+  çağırır — köhnə sadə `decide_acceptance()` bu yoldan artıq HEÇ VAXT
+  çağırılmır. `mark_insufficient_evidence()` indi `evaluated`-dən də əl
+  çatandır (əvvəllər yalnız `training`-dən).
+- 39 yeni/dəyişdirilmiş test — o cümlədən "öyrənilə bilən siqnal" fixture
+  (solid-black/solid-white PNG-lər label-ə uyğun, TRAINING QAPISI
+  keçəndən SONRA yeridilir) real rəqəmlərlə qəbul meyarını sübut edir:
+  tək-trial family `accepted_for_shadow`-a çatır, EYNİ real holdout
+  sübutu böyük family üçün Bonferroni düzəlişi ilə `rejected`-ə çevrilir.
+  Tam backend regressiyası: `849 passed`.
+- **Scratch uçdan-uca doğrulama**: real 70-dəqiqəlik eksperiment
+  öyrənilə bilən siqnalla `accepted_for_shadow`-a çatdı
+  (family_trial_count=1), sonra EYNİ real sübut family_trial_count=500
+  ilə yenidən qərarlandırıldı — `rejected`-ə çevrildi. Real production
+  baza (`0011`-də qalır) toxunulmadı.
+
 ## 2026-08-10 — Phase 5: Accept/reject qərarı və `evaluated → accepted_for_shadow | rejected`
 
 - İstifadəçinin seçdiyi davam: evaluation artıq var — indi eksperimentin

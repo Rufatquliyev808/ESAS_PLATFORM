@@ -148,8 +148,28 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   (hələ qurulmamış) SHADOW uyğunluğunu idarə edir — real ticarəti ÖZÜ-
   ÖZLÜYÜNDƏ HEÇ VAXT icazə vermir. 21 yeni test (real data ilə təbii
   `rejected` yolu + mühəndisləşdirilmiş `accepted_for_shadow` yolu daxil).
-  Scratch-də hər iki yol təsdiqləndi. Migration `0012`-`0018` YALNIZ test
-  bazasındadır.
+  Scratch-də hər iki yol təsdiqləndi. **İstifadəçi düzgün boşluq tapdı**:
+  bu sadə 5%-lik yol statistik təsdiqlənməmişdi, multiple-testing reyestri
+  yoxdur — reyestrsiz model `accepted_for_shadow`-a çata bilirdi. Yeni
+  tapşırıq: **statistik acceptance qapısı və multiple-testing reyestri**.
+  `analysis/visual_statistical_acceptance.py` (saf) — dəqiq
+  `one_sided_binomial_p_value()` (`math.comb`, sabit sıra), `wilson_score_interval()`
+  (95% CI), `bonferroni_corrected_alpha()`, `decide_statistical_acceptance()`
+  6 ŞƏRTİN HAMISINI tələb edir: trial əvvəlcədən qeydə alınıb; model təzə
+  hesablamadan byte-for-byte reproduksiya olunur; evaluation həqiqətən
+  `evaluated`-dir; kifayət qədər holdout; baseline-dan yaxşılaşma minimum
+  həddədir; düzəlişli binomial p-value Bonferroni-corrected alpha-nı
+  keçir. Yeni migration `0019` + `visual_testing_trial_repository.py` —
+  `register_trial()` idempotent. `train_visual_baseline_model()` indi
+  trial-ı NƏTİCƏDƏN ƏVVƏL qeydə alır. `decide_visual_experiment_acceptance()`
+  TAM YENİDƏN QURULDU — modeli/holdout-u TƏZƏ hesablayır (reproduksiya
+  yoxlaması + dəqiq say), family trial sayını axtarır, statistik qapını
+  çağırır — köhnə sadə yol artıq bu yoldan HEÇ VAXT çağırılmır. 39
+  yeni/dəyişdirilmiş test — "öyrənilə bilən siqnal" fixture (solid-black/
+  solid-white PNG-lər, training qapısı keçəndən SONRA yeridilir) real
+  rəqəmlərlə qəbul meyarını sübut edir: tək-trial family qəbul edilir,
+  EYNİ real sübut böyük family üçün Bonferroni ilə rədd edilir. Scratch-də
+  təsdiqləndi. Migration `0012`-`0019` YALNIZ test bazasındadır.
   Növbəti addım: `accepted_for_shadow`-un real Phase 9 SHADOW sisteminə
   bağlanması, sonra training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
