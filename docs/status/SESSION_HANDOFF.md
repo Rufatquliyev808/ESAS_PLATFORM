@@ -177,9 +177,17 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   migration `0020`, `analysis_job_repository.py`-da `vtj_` prefiksli 4-cü
   job növü, yeni `VisualExperimentTrainingJobRequest` + 3 endpoint. 18
   yeni test (8 API-səviyyəli + 10 repository-səviyyəli). Tam backend
-  regressiyası: `859 passed`. Migration `0012`-`0020` YALNIZ test
-  bazasındadır.
-  Növbəti addım: bu job-un FRONTEND-ə bağlanması (backend hazırdır),
+  regressiyası: `859 passed`. **Frontend-ə bağlanması** da tamamlandı —
+  `visual-experiments-panel.tsx`-də yeni `TrainingJobCell` (mövcud
+  `RenderingJobCell` nümunəsini dəqiq güzgüləyir), yalnız `training`
+  vəziyyətində göstərilir, tamamlandıqda evaluation outcome+holdout
+  accuracy+majority-baseline göstərir. Scratch brauzerdə uçdan-uca
+  doğrulandı: real `training` eksperimenti seed edildi, düymə basıldı,
+  `Tamamlandı`+`Qiymətləndirildi`+100% accuracy göstərildi, eksperimentin
+  öz vəziyyəti `Qiymətləndirilib`-ə keçdi, tam səhifə yenilənməsindən
+  sonra job vəziyyəti düzgün bərpa olundu, konsol xətası yox idi.
+  `npm test` 20/20. Migration `0012`-`0020` YALNIZ test bazasındadır.
+  Növbəti addım: statistik accept/reject qərarının frontend-ə bağlanması,
   sonra `accepted_for_shadow`-un real Phase 9 SHADOW sisteminə bağlanması.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`

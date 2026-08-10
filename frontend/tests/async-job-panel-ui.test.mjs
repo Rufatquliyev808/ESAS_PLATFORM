@@ -25,6 +25,11 @@ test("visual experiments panel offers an async rendering-job workflow with reloa
   assert.match(visualExperimentsSource, /asyncJob\.restore/);
 });
 
+test("visual experiments panel offers an async training+evaluation job workflow", () => {
+  assert.match(visualExperimentsSource, /visual-experiments\/\$\{experiment\.experiment_id\}\/training-jobs/);
+  assert.match(visualExperimentsSource, /TrainingJobCell/);
+});
+
 test("pattern candidates panel offers an async backtest-job alternative to the sync endpoint", () => {
   assert.match(patternCandidatesSource, /from "\.\/async-job-panel"/);
   assert.match(patternCandidatesSource, /pattern-candidates\/\$\{candidateId\}\/backtest-jobs/);

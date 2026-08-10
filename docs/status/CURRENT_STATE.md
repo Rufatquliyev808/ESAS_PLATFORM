@@ -1,5 +1,31 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Training+evaluation job-un frontend-ə bağlanması
+
+- Qalan siyahının "...və frontend yoxdur" hissəsini tamamlayır — əvvəlki
+  addımın backend job-unu UI-ə bağlayır, mövcud `RenderingJobCell`
+  nümunəsini dəqiq güzgüləyərək (eyni `useAsyncJob` hook-u, eyni
+  localStorage-əsaslı reload-safe bərpa).
+- `visual-experiments-panel.tsx`-ə yeni `TrainingJobCell` — yalnız
+  `lifecycle_state === "training"` olduqda (və ya artıq job varsa)
+  göstərilir, "Modeli öyrət və qiymətləndir" düyməsi ilə. Arxitektura/
+  hiperparametrlər hələ istifadəçi tərəfindən konfiqurasiya edilə bilmir
+  (yalnız `pixel_centroid_baseline_v1` var) — sabit `DEFAULT_TRAINING_JOB_BODY`
+  istifadə olunur. Tamamlandıqda: evaluation outcome, holdout accuracy,
+  majority-baseline accuracy, holdout nümunə sayı göstərilir. Yeni "Model"
+  cədvəl sütunu; giriş/qeyd mətnləri yenilənib.
+- Frontend testləri: 2 köhnəlmiş assertion silindi (artıq doğru deyildi),
+  yeni iş axını üçün assertion-lar əlavə edildi. `lint`/`build` təmiz;
+  `npm test` 20/20 (əvvəl 19).
+- **Scratch uçdan-uca brauzer doğrulaması**: real `training` vəziyyətində
+  eksperiment seed edildi, giriş edildi, "Modeli öyrət və qiymətləndir"
+  basıldı, `Tamamlandı` + `Qiymətləndirildi` + holdout accuracy 100.0% +
+  majority baseline 100.0% + holdout nümunə 3 göstərildi — eksperimentin
+  öz vəziyyəti `Qiymətləndirilib`-ə keçdi. Səhifə tam yenilənəndən (yenidən
+  giriş daxil) sonra tamamlanmış job vəziyyəti localStorage-dan düzgün
+  bərpa olundu. Konsol xətası yox idi. Real xidmətlər (8000/3000) və baza
+  (`0011`-də qalır) toxunulmadan qaldı.
+
 ## 2026-08-10 — Phase 5: Training + evaluation üçün asinxron job/API resursu
 
 - "Yuxarıdakı tapşırıqdan nə qalıbsa ardıcıllıqla icra et" — qalan

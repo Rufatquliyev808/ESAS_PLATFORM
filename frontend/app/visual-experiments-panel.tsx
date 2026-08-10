@@ -5,6 +5,23 @@ import { JobStatusBadge, isJobCancellable, useAsyncJob } from "./async-job-panel
 
 const API_BASE = process.env.NEXT_PUBLIC_ESAS_API_URL ?? "http://127.0.0.1:8000";
 const RENDERING_JOB_STORAGE_PREFIX = "esas.visual-experiment-rendering-job.";
+const TRAINING_JOB_STORAGE_PREFIX = "esas.visual-experiment-training-job.";
+
+// Phase 5's only supported architecture so far (pixel_centroid_baseline_v1)
+// -- not user-configurable yet, matching how render_spec geometry/colour
+// also stay at fixed defaults in this panel. A future increment can expose
+// these once more than one architecture exists.
+const DEFAULT_TRAINING_JOB_BODY = {
+  architecture_id: "pixel_centroid_baseline_v1",
+  preprocessing_policy: "normalize_0_1",
+  class_weight_policy: "balanced",
+  seed: 42,
+  optimizer: "adam",
+  loss: "cross_entropy",
+  batch_size: 32,
+  max_epochs: 10,
+  compute_requirement: "cpu",
+};
 
 type Timeframe = "S1" | "S10" | "M1" | "M5" | "M15" | "M30" | "H1" | "H4" | "D1";
 type VisualExperiment = {
@@ -129,6 +146,92 @@ function RenderingJobCell({ experiment, token, onUnauthorized, onCompleted }: {
   );
 }
 
+const EVALUATION_OUTCOME_LABELS: Record<string, string> = {
+  evaluated: "Qiymətləndirildi",
+  out_of_distribution: "Paylanmadan kənar",
+  insufficient_evidence: "Sübut yetərsizdir",
+};
+
+type TrainingJobResult = {
+  experiment: { lifecycle_state: string };
+  evaluation: {
+    outcome: string;
+    holdout_sample_count: number;
+    holdout_metrics: { accuracy: number; correct_count: number; sample_count: number };
+    majority_baseline_accuracy: number;
+    improvement_over_baseline: number;
+    is_out_of_distribution: boolean;
+  };
+};
+
+function TrainingJobCell({ experiment, token, onUnauthorized, onCompleted }: {
+  experiment: VisualExperiment;
+  token: string;
+  onUnauthorized: () => void;
+  onCompleted: () => void;
+}) {
+  const storageKey = `${TRAINING_JOB_STORAGE_PREFIX}${experiment.experiment_id}`;
+  const restoreAttempted = useRef(false);
+
+  const asyncJob = useAsyncJob<TrainingJobResult>({
+    createUrl: `/api/v2/visual-experiments/${experiment.experiment_id}/training-jobs`,
+    detailUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/training-jobs/${jobId}`,
+    cancelUrlFor: (jobId) => `/api/v2/visual-experiments/${experiment.experiment_id}/training-jobs/${jobId}/cancel`,
+    token, onUnauthorized, onCompleted,
+  });
+
+  useEffect(() => {
+    if (restoreAttempted.current) return;
+    restoreAttempted.current = true;
+    const rememberedJobId = window.localStorage.getItem(storageKey);
+    if (rememberedJobId) asyncJob.restore(rememberedJobId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (asyncJob.job?.state === "cancelled") {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+    if (asyncJob.job?.job_id) window.localStorage.setItem(storageKey, asyncJob.job.job_id);
+  }, [asyncJob.job?.job_id, asyncJob.job?.state, storageKey]);
+
+  if (experiment.lifecycle_state !== "training" && !asyncJob.job) {
+    return <span className="pattern-candidate-time">—</span>;
+  }
+
+  return (
+    <div className="pattern-candidate-backtest-cell">
+      {!asyncJob.job && (
+        <button
+          type="button" className="secondary-button" disabled={asyncJob.busy}
+          onClick={() => void asyncJob.create(DEFAULT_TRAINING_JOB_BODY)}
+        >
+          {asyncJob.busy ? "Növbəyə əlavə olunur…" : "Modeli öyrət və qiymətləndir"}
+        </button>
+      )}
+      {asyncJob.job && (
+        <div className="async-job-meta">
+          <JobStatusBadge state={asyncJob.job.state} />
+          {isJobCancellable(asyncJob.job) && (
+            <button type="button" className="secondary-button" disabled={asyncJob.busy} onClick={() => void asyncJob.cancel()}>Ləğv et</button>
+          )}
+          {asyncJob.job.error_code && <span className="card-detail danger-text">{asyncJob.job.error_code}</span>}
+          {asyncJob.job.state === "completed" && asyncJob.job.result && (
+            <dl className="pattern-candidate-evidence">
+              <div><dt>Nəticə</dt><dd>{EVALUATION_OUTCOME_LABELS[asyncJob.job.result.evaluation.outcome] ?? asyncJob.job.result.evaluation.outcome}</dd></div>
+              <div><dt>Holdout accuracy</dt><dd>{(asyncJob.job.result.evaluation.holdout_metrics.accuracy * 100).toFixed(1)}%</dd></div>
+              <div><dt>Baseline (majority)</dt><dd>{(asyncJob.job.result.evaluation.majority_baseline_accuracy * 100).toFixed(1)}%</dd></div>
+              <div><dt>Holdout nümunə</dt><dd>{asyncJob.job.result.evaluation.holdout_sample_count}</dd></div>
+            </dl>
+          )}
+        </div>
+      )}
+      {asyncJob.error && <span className="card-detail danger-text">{asyncJob.error}</span>}
+    </div>
+  );
+}
+
 export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorized }: { sessionId: string; symbol: string; token: string; onUnauthorized: () => void }) {
   const now = new Date();
   const [timeframe, setTimeframe] = useState<Timeframe>("M1");
@@ -230,10 +333,12 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
           <p>
             Əvvəlcə eksperimentin DONDURULMUŞ konfiqurasiyasını qeydə alın. Sonra &ldquo;Dataset yarat&rdquo;
             düyməsi real render→dataset→label icrasını job kimi başladır (şəkillər PNG kimi, checksum və tam
-            lineage ilə saxlanılır) — model təlim etmir. Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə
-            qeydə alınır; horizon və label hədləri aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca
-            hesablama endpoint-i olmadığı üçün əl ilə (statistik/texniki analiz nəticəsindən götürülərək)
-            daxil edilir.
+            lineage ilə saxlanılır) — model təlim etmir. Dataset hazır olduqda &ldquo;Modeli öyrət və
+            qiymətləndir&rdquo; düyməsi (`pixel_centroid_baseline_v1`) deterministik baseline modeli
+            job kimi öyrədir və holdout üzərində qiymətləndirir — accept/reject qərarı hələ ayrı addımdır.
+            Render spesifikasiyası (ölçü, rəng) standart dəyərlərlə qeydə alınır; horizon və label hədləri
+            aşağıda seçilir. `source_bar_fingerprint` hələ ayrıca hesablama endpoint-i olmadığı üçün əl ilə
+            (statistik/texniki analiz nəticəsindən götürülərək) daxil edilir.
           </p>
         </div>
       </div>
@@ -267,7 +372,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Dataset</th><th /></tr></thead>
+              <thead><tr><th>Vaxt çərçivəsi</th><th>Pəncərə</th><th>Horizon / hədlər (bps)</th><th>Vəziyyət</th><th>Qeydə alınma</th><th>Dataset</th><th>Model</th><th /></tr></thead>
               <tbody>
                 {experiments.map((experiment) => (
                   <tr key={experiment.experiment_id}>
@@ -278,6 +383,9 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
                     <td>{formatTime(experiment.created_at)}</td>
                     <td>
                       <RenderingJobCell experiment={experiment} token={token} onUnauthorized={onUnauthorized} onCompleted={() => void load()} />
+                    </td>
+                    <td>
+                      <TrainingJobCell experiment={experiment} token={token} onUnauthorized={onUnauthorized} onCompleted={() => void load()} />
                     </td>
                     <td>
                       {ARCHIVABLE_STATES.has(experiment.lifecycle_state) && (
@@ -292,7 +400,7 @@ export function VisualExperimentsPanel({ sessionId, symbol, token, onUnauthorize
             </table>
           </div>
         )}
-        <p className="analysis-disclaimer"><strong>Qeyd:</strong> &ldquo;Dataset yarat&rdquo; real render→dataset→label icrasını işə salır (PNG artefaktları + manifest saxlanılır). Model təlimi, qiymətləndirmə və qəbul/rədd qərarı hələ yoxdur. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
+        <p className="analysis-disclaimer"><strong>Qeyd:</strong> &ldquo;Dataset yarat&rdquo; real render→dataset→label icrasını işə salır (PNG artefaktları + manifest saxlanılır). &ldquo;Modeli öyrət və qiymətləndir&rdquo; real (deterministik, sadə) baseline modeli öyrədir və holdout üzərində qiymətləndirir. Statistik/reyestr-əsaslı accept/reject qərarı (`evaluated → accepted_for_shadow | rejected`) hələ frontend-ə bağlanmayıb. Heç bir vəziyyət real ticarət icazəsi vermir.</p>
       </section>
     </section>
   );

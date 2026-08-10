@@ -2,7 +2,7 @@
 
 Status: BLOCKED — növbəti addım seçilməyib, istifadəçi təsdiqi tələb olunur
 Prioritet: istifadəçi açıq qərar verdi — Phase 7-nin öz müqaviləsindəki "Phase 1–6 bağlanmalıdır" şərtinə SƏRT RİAYƏT edilir. Phase 7 DAYANDIRILDI (yalnız `knowledge_claim.py` saf data modeli qalır, əlavə iş yoxdur).
-Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu (rendering)+rendering job-un frontend workflow-a bağlanması+`rendering → training` müqaviləsi və təhlükəsizlik qapıları+training başlanğıcının atomikləşdirilməsi+deterministik training-input pipeline v1+deterministik CPU visual baseline trainer v1+evaluation/OOD-abstain + `training → evaluated`+accept/reject qərarı+statistik acceptance qapısı və multiple-testing reyestri+**async job/API resursu (training+evaluation)** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: training/evaluation job-un frontend-ə bağlanması (backend hazırdır, frontend hələ yoxdur), `accepted_for_shadow` eksperimentin real Phase 9 SHADOW sisteminə bağlanması, real ML kitabxanası/GPU seçimi. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0020` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
+Mərhələ: Phase 5 (Visual AI) YENİDƏN AKTİV PRİORİTETDİR — renderer+dataset+label+qeydiyyat API-si+frontend paneli+materializer v1+`registered → rendering` persistence+yerli content-addressed artifact store+async job/API resursu (rendering)+rendering job-un frontend workflow-a bağlanması+`rendering → training` müqaviləsi və təhlükəsizlik qapıları+training başlanğıcının atomikləşdirilməsi+deterministik training-input pipeline v1+deterministik CPU visual baseline trainer v1+evaluation/OOD-abstain + `training → evaluated`+accept/reject qərarı+statistik acceptance qapısı və multiple-testing reyestri+async job/API resursu (training+evaluation)+**training/evaluation job-un frontend-ə bağlanması** (bu sessiyada tamamlandı) hamısı hazırdır. Qalan: statistik accept/reject qərarının frontend-ə bağlanması, `accepted_for_shadow` eksperimentin real Phase 9 SHADOW sisteminə bağlanması, real ML kitabxanası/GPU seçimi. Sonra Phase 6 (Xəbər/fundamental, hələ 0%) tamamlanmalıdır ki, Phase 7-yə qayıtmaq mümkün olsun. Migration `0012`-`0020` YALNIZ test bazasındadır — real production bazaya tətbiq edilməyəcək (istifadəçinin açıq qərarı).
 
 ## Tamamlanan (bu sessiya)
 
@@ -561,15 +561,20 @@ bazasında qalır. 3 push edilməmiş commit (`71f67f0`, `6b6fb3d`,
   üçün asinxron job/API resursu** (migration `0020`, `analysis_job_repository.py`-da
   4-cü job növü `vtj_` prefiksi ilə, `evaluate_visual_experiment()`-i
   bükən worker handler-i, yeni `VisualExperimentTrainingJobRequest` + 3
-  endpoint) indi hamısı mövcuddur (yalnız test/scratch bazada — real
-  production-a YOX; accept/reject qərarı SHADOW-a heç bir real bağlantı
-  yaratmır, YALNIZ uyğunluğu qeyd edir). Növbəti təbii addımlar: (1) real
-  production bazaya migration `0012`-`0020` tətbiqi — ayrıca açıq təsdiq
-  lazımdır; (2) training/evaluation job-un FRONTEND-ə bağlanması (backend
-  hazırdır); (3) `accepted_for_shadow` eksperimentin real Phase 9 SHADOW
-  sisteminə bağlanması; (4) real ML kitabxanası/GPU qərarı (daha mürəkkəb
-  arxitekturalar üçün) — daha böyük, ayrıca qərar tələb edən addım.
-  İstifadəçinin prioritet sırasına görə (Phase
+  endpoint) VƏ **training/evaluation job-un frontend-ə bağlanması**
+  (`visual-experiments-panel.tsx`-də yeni `TrainingJobCell` — mövcud
+  `RenderingJobCell` nümunəsini güzgüləyir, `lifecycle_state === "training"`
+  olduqda göstərilir, tamamlandıqda evaluation outcome+holdout accuracy+
+  majority-baseline göstərir) indi hamısı mövcuddur (yalnız test/scratch
+  bazada — real production-a YOX; accept/reject qərarı SHADOW-a heç bir
+  real bağlantı yaratmır, YALNIZ uyğunluğu qeyd edir; STATİSTİK accept/
+  reject qərarının ÖZÜ hələ frontend-ə bağlanmayıb). Növbəti təbii
+  addımlar: (1) real production bazaya migration `0012`-`0020` tətbiqi —
+  ayrıca açıq təsdiq lazımdır; (2) statistik accept/reject qərarının
+  frontend-ə bağlanması; (3) `accepted_for_shadow` eksperimentin real
+  Phase 9 SHADOW sisteminə bağlanması; (4) real ML kitabxanası/GPU qərarı
+  (daha mürəkkəb arxitekturalar üçün) — daha böyük, ayrıca qərar tələb
+  edən addım. İstifadəçinin prioritet sırasına görə (Phase
   3→4→7→8→9→10)
   Phase 5 "əhəmiyyətli yeni həcm" kimi qeyd edilib, Phase 3/4-dən sonra
   əlavə addımdır — bu barədə istifadəçi ilə aydınlaşdırma lazım ola bilər.

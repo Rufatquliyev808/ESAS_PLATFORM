@@ -8,6 +8,40 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: connect the training+evaluation job to the Visual AI panel
+
+- Completes the remaining-order gap item ("...və frontend yoxdur") by
+  wiring the backend job from the previous increment into the UI, mirroring
+  the existing `RenderingJobCell` pattern exactly (same `useAsyncJob` hook,
+  same localStorage-based reload-safe restore).
+- `frontend/app/visual-experiments-panel.tsx`: new `TrainingJobCell`
+  component, shown only when `lifecycle_state === "training"` (or a job
+  already exists), with a "Modeli öyrət və qiymətləndir" button. The
+  architecture/hyperparameters are not yet user-configurable (only
+  `pixel_centroid_baseline_v1` exists) -- a fixed `DEFAULT_TRAINING_JOB_BODY`
+  constant is used, matching how render geometry/colour also stay at fixed
+  defaults in this panel. On completion, shows the evaluation outcome,
+  holdout accuracy, majority-baseline accuracy, and holdout sample count.
+  New "Model" table column; intro/disclaimer text updated to describe the
+  new capability and to flag that the statistical accept/reject decision
+  is still not wired to the frontend.
+- `frontend/tests/visual-experiments-ui.test.mjs` /
+  `async-job-panel-ui.test.mjs`: removed two now-stale assertions ("model
+  does not train" / "no training, evaluation, or accept-reject decision
+  yet" -- both no longer true) and added assertions covering the new
+  workflow. `npm run lint`/`build` clean; `npm test` 20/20 (was 19).
+- **Scratch end-to-end browser verification**: seeded a real experiment
+  already gated into `training`, logged in, clicked "Modeli öyrət və
+  qiymətləndir", watched it reach `Tamamlandı` with outcome
+  `Qiymətləndirildi`, holdout accuracy 100.0%, majority baseline 100.0%,
+  holdout sample count 3 -- and confirmed the experiment's own lifecycle
+  label updated to `Qiymətləndirilib` (evaluated). Reloaded the page
+  (full re-login) and confirmed the completed job state restored correctly
+  from `localStorage` without re-creating a job. No console errors. Real
+  production services (8000/3000) and database (still at migration
+  `0011`) untouched throughout.
+- No production migration in this increment.
+
 ### Added — Phase 5: async job/API resource for training + evaluation
 
 - Continuing the remaining-order gap list ("Training/evaluation job
