@@ -1,5 +1,48 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Deterministik CPU visual baseline trainer v1
+
+- İlk faktiki model: `pixel_centroid_baseline_v1` — sadə, tam audit
+  edilə bilən nearest-centroid classifier. Yeni ML/GPU asılılığı yoxdur.
+  Eksperiment `training` vəziyyətində qalır — `training → evaluated`
+  ayrıca, sonrakı addımdır.
+- Yeni `analysis/visual_baseline_trainer.py` (saf, heç bir I/O):
+  `fit_baseline_model()` — hər class üçün TRAIN nümunələrinin normalized
+  piksel vektorlarının elementwise ortası (centroid). `model_spec.architecture_id`-in
+  dəqiq `"pixel_centroid_baseline_v1"` olduğunu VƏ bütün class-ların
+  up/down/flat çərçivəsində olduğunu yoxlayır (fail-closed). Deterministik:
+  hər class üçün nümunələr SABİT sırada (sample_id-ə görə sort) toplanır —
+  seed-li batch shuffle-ın sırası çəkilərə TƏSİR ETMİR.
+  `predict_validation()` — VALIDATION nümunələrini ən yaxın centroid-ə görə
+  təsnif edir (sabit ölçü sırasında kvadrat məsafə, bərabərlikdə kiçik
+  class index qalib gəlir), `1/(1+məsafə)` score + bütün class-lara olan
+  məsafələr (audit üçün). `build_training_log()` — epoch əvəzinə tək-keçidli
+  əməliyyatı, resurs istifadəsini (vaxt, nümunə sayları) və validation
+  metriklərini qeydə alır — log-un öz checksum-u (fərqli olaraq model-dən)
+  hər işə salınmada eyni OLMAYA bilər (vaxt təbii dəyişir), amma model və
+  validation prediction/metriklər reproduksiya edilə bilməlidir.
+- Yeni migration `0016_visual_baseline_models.sql` (yalnız test bazada)
+  + `visual_baseline_model_repository.py` — eyni checksum üçün idempotent,
+  fərqli checksum üçün konflikt.
+- Yeni `strategies/visual_baseline_training.py`:
+  `train_visual_baseline_model()` — eksperimentin ARTIQ `training`
+  vəziyyətində olmasını tələb edir (fail-closed əks halda), training-input
+  pipeline-ı işə salır, `holdout_samples`-i DƏRHAL atır — heç vaxt
+  `fit_baseline_model()`/`predict_validation()`-a ötürülmür (bu
+  funksiyaların heç birində holdout parametri belə yoxdur). Model+log
+  artefaktlarını content-addressed store-a yazır, sonra metadata sətrini.
+  Lifecycle vəziyyətini dəyişmir.
+- 20 yeni test (13 saf + 7 inteqrasiya) — qəbul meyarını birbaşa yoxladı:
+  eyni dataset/spec/seed → tam eyni model+checksum+validation
+  prediction/metriklər; validation VƏ holdout dəyişiklikləri model
+  çəkilərinə (centroid-lərə) təsir etmir. Tam backend regressiyası:
+  `777 passed`.
+- **Scratch uçdan-uca doğrulama**: real render→training→baseline trainer
+  iki dəfə ardıcıl işə salındı (tam eyni model), sonra holdout etiketləri
+  korlanıb yenidən işə salındı — model checksum-u dəyişmədi. Eksperiment
+  bütün müddətdə `training`-də qaldı. Real production baza (`0011`-də
+  qalır) toxunulmadı.
+
 ## 2026-08-10 — Phase 5: Deterministik training-input pipeline v1
 
 - Tapşırıq: PNG artefaktlarını checksum yoxlaması ilə oxuyan, sabit ölçülü

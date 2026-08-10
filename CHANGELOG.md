@@ -8,6 +8,70 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: deterministic CPU visual baseline trainer v1
+
+- The first actual model: `pixel_centroid_baseline_v1`, a simple,
+  fully-auditable nearest-centroid classifier. No new third-party ML
+  dependency, no GPU. Experiment stays in `training` -- the `training ->
+  evaluated` transition is a separate, later step not built here.
+- New `backend/app/analysis/visual_baseline_trainer.py` (pure, no I/O):
+  `fit_baseline_model()` computes one centroid per class as the elementwise
+  mean of every TRAIN sample's normalized pixel vector in that class --
+  validates `model_spec.architecture_id == "pixel_centroid_baseline_v1"`
+  and that every class in the frozen preprocessing state's class mapping
+  is one of `up`/`down`/`flat` (fail-closed otherwise). Deterministic: for
+  each class, samples are summed in a FIXED order (sorted by `sample_id`),
+  never the order `train_batches` happens to arrive in, so a different
+  seeded batch shuffle can never change the fitted weights.
+  `predict_validation()` classifies VALIDATION samples by nearest centroid
+  (squared distance in the fixed pixel-dimension order every sample
+  already has, ties broken toward the smaller class index) and returns a
+  `1/(1+distance)` score plus the full per-class distance vector for
+  auditability. `compute_validation_metrics()` derives accuracy/mean-score/
+  predicted-class-distribution from those predictions.
+  `build_training_log()` records the single-pass fit+score operation
+  (there is no epoch loop to log), wall-clock duration, and sample counts
+  alongside the validation metrics -- unlike the model artifact, the log's
+  own checksum is not expected to be identical across runs (duration
+  genuinely varies), only the model and the validation predictions/metrics
+  it is built from are required to be reproducible.
+- New migration `0016_visual_baseline_models.sql` (test/scratch DB only,
+  same as `0012`-`0015` -- not applied to production) +
+  `visual_baseline_model_repository.py`: one row per experiment
+  (architecture/version/checksums), idempotent for an identical
+  `model_checksum`, refused as a conflict for a different one.
+- New `backend/app/strategies/visual_baseline_training.py`:
+  `train_visual_baseline_model()` requires the experiment already be in
+  `training` state (fail-closed otherwise -- this trainer does not itself
+  gate anything), runs the existing training-input pipeline, and
+  discards `holdout_samples` immediately -- they are never passed to
+  `fit_baseline_model()` or `predict_validation()`, since neither function
+  even has a holdout parameter. Persists the model and training-log
+  artifacts to the content-addressed artifact store, then the metadata row.
+  Does not change the experiment's lifecycle state.
+- 20 new tests: 13 pure unit tests (correct centroid math on hand-computed
+  values, determinism regardless of batch layout, architecture/label
+  validation, prediction/metrics correctness, checksum-matches-bytes) and
+  7 integration tests against real seeded/rendered data covering the
+  explicit acceptance criteria --
+  `test_train_visual_baseline_model_is_deterministic` (two full runs
+  produce an identical model, checksum, and validation metrics) and both
+  `test_validation_mutation_does_not_change_model_weights` and
+  `test_holdout_mutation_does_not_change_model_weights` (mutating either
+  split's labels leaves the train-fitted model checksum and centroids
+  completely unchanged), plus lifecycle-state gating, ownership, and
+  different-spec-conflict-after-first-success tests. Full backend
+  regression: `777 passed`.
+- **Scratch end-to-end verification**: registered and rendered a real
+  40-minute replay session (isolated DB/artifact root), gated it into
+  `training`, ran the baseline trainer twice back-to-back (byte-for-byte
+  identical model), then mutated holdout labels and reran -- model
+  checksum unchanged, proving the holdout separation holds outside the
+  test harness too. Experiment's `lifecycle_state` confirmed still
+  `training` throughout. Real production database (still at migration
+  `0011`) untouched.
+- No frontend or production migration in this increment.
+
 ### Added — Phase 5: deterministic training-input pipeline v1
 
 - New task: a pure-Python (no new ML/numeric dependency), fully

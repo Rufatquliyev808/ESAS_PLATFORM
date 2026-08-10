@@ -102,8 +102,26 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   meyarını birbaşa yoxladı: eyni dataset/spec/seed → byte-for-byte eyni
   batch-lər+checksum; validation dəyişməsi train checksum-una təsir
   etmir. Scratch-də iki ardıcıl işə salma tam eyni nəticə verdi.
-  Migration `0012`-`0015` YALNIZ test bazasındadır.
-  Növbəti addım: training job/API/worker (faktiki icra).
+  **Deterministik CPU visual baseline trainer v1** də tamamlandı — ilk
+  faktiki model: `pixel_centroid_baseline_v1` (yeni ML/GPU asılılığı
+  yoxdur). Yeni `analysis/visual_baseline_trainer.py` (saf) —
+  `fit_baseline_model()` hər class üçün YALNIZ train nümunələrinin
+  centroid-ini sabit (`sample_id`-ə görə sort edilmiş) sırada hesablayır
+  — batch shuffle sırası çəkilərə təsir etmir; `predict_validation()`
+  nearest-centroid + audit üçün tam məsafə vektoru. Yeni
+  `strategies/visual_baseline_training.py`: eksperiment ARTIQ
+  `training`-də olmalıdır (fail-closed əks halda), `holdout_samples`
+  DƏRHAL atılır — heç bir fit/predict funksiyasında holdout parametri
+  belə yoxdur. Model+log artefaktları content-addressed store-a, metadata
+  yeni migration `0016`-ya (yalnız test bazada) yazılır. Eksperiment
+  `training`-də qalır — `evaluated` ayrı, sonrakı addımdır. 20 yeni test
+  qəbul meyarını birbaşa yoxladı: eyni dataset/spec/seed → tam eyni
+  model+checksum+validation prediction/metriklər; validation VƏ holdout
+  dəyişiklikləri model çəkilərinə təsir etmir (hər ikisi ayrıca test
+  edildi). Scratch-də təsdiqləndi. Migration `0012`-`0016` YALNIZ test
+  bazasındadır.
+  Növbəti addım: training job/API/worker (faktiki icra), sonra
+  evaluation/baseline-müqayisə/OOD-abstain + `training → evaluated`.
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin
