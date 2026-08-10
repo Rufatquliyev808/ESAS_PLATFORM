@@ -135,10 +135,23 @@ testdən keçmiş dəyişikliklər üçün) yaradılır, amma push gözləyir.
   düzgün tamamlanmasını qiymətləndirir — accept/reject (modelin yararlı
   olub-olmaması) ayrı, sonrakı addımdır. 23 yeni test (real seed edilmiş
   data ilə qəsdən yaradılmış insufficient_evidence VƏ out_of_distribution
-  ssenariləri daxil). Scratch-də təsdiqləndi. Migration `0012`-`0017`
-  YALNIZ test bazasındadır.
-  Növbəti addım: accept/reject qərarı (`evaluated → accepted_for_shadow |
-  rejected`), sonra training job/API/worker (faktiki icra).
+  ssenariləri daxil). Scratch-də təsdiqləndi. **Accept/reject qərarı** da
+  tamamlandı (istifadəçinin özü seçdiyi davam — yenə "davam et" sualına
+  cavab olaraq): yeni `analysis/visual_acceptance.py` (saf) —
+  `decide_acceptance()`: holdout accuracy artıq hesablanmış
+  majority-baseline accuracy-ni `MINIMUM_IMPROVEMENT_OVER_BASELINE` (v1
+  hədd, 0.05) qədər KEÇMİRSƏ `rejected` (səbəb qeyd edilir), keçirsə
+  `accepted_for_shadow`. YALNIZ `evaluated` outcome-lu evaluation üçün
+  çağırıla bilər. Yeni `strategies/visual_experiment_acceptance.py`:
+  persisted evaluation-u oxuyur (YENİDƏN hesablamır), qərar artefaktını
+  saxlayır, eksperimenti müvafiq vəziyyətə keçirir. Bu qərar YALNIZ
+  (hələ qurulmamış) SHADOW uyğunluğunu idarə edir — real ticarəti ÖZÜ-
+  ÖZLÜYÜNDƏ HEÇ VAXT icazə vermir. 21 yeni test (real data ilə təbii
+  `rejected` yolu + mühəndisləşdirilmiş `accepted_for_shadow` yolu daxil).
+  Scratch-də hər iki yol təsdiqləndi. Migration `0012`-`0018` YALNIZ test
+  bazasındadır.
+  Növbəti addım: `accepted_for_shadow`-un real Phase 9 SHADOW sisteminə
+  bağlanması, sonra training job/API/worker (faktiki icra).
   **AKTİV PRİORİTET.**
   **Phase 7 (Knowledge Base): DAYANDIRILIB** — yalnız `knowledge_claim.py`
   (saf data modeli) tamamlanıb, sonra istifadəçiyə Phase 7 müqaviləsinin

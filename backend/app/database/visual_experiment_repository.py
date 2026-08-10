@@ -31,6 +31,7 @@ RENDERABLE_FROM_STATES = frozenset({"registered"})
 FAILABLE_FROM_STATES = frozenset({"rendering"})
 TRAINABLE_FROM_STATES = frozenset({"rendering"})
 EVALUABLE_FROM_STATES = frozenset({"training"})
+ACCEPTABLE_FROM_STATES = frozenset({"evaluated"})
 
 
 @dataclass(frozen=True)
@@ -649,4 +650,36 @@ def mark_insufficient_evidence(
         expected_state_version=expected_state_version,
         allowed_from_states=EVALUABLE_FROM_STATES, next_state="insufficient_evidence",
         action="mark_insufficient_evidence",
+    )
+
+
+def mark_accepted_for_shadow(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """evaluated -> accepted_for_shadow. The model beat the naive
+    majority-class baseline by the required margin on holdout -- this only
+    makes the experiment SHADOW-eligible (a separate, not-yet-built step);
+    it never authorizes real trading by itself.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=ACCEPTABLE_FROM_STATES, next_state="accepted_for_shadow",
+        action="mark_accepted_for_shadow",
+    )
+
+
+def mark_rejected(
+    *, experiment_id: str, actor: str, actor_role: str, expected_state_version: int,
+) -> PersistedVisualExperiment:
+    """evaluated -> rejected. The model did not beat the naive
+    majority-class baseline by the required margin -- the specific
+    shortfall is the caller's `AcceptanceDecision.reasons`, not re-stored
+    here, matching `mark_rendering_failed`'s "the transition itself is the
+    record" convention.
+    """
+    return _transition(
+        experiment_id=experiment_id, actor=actor, actor_role=actor_role,
+        expected_state_version=expected_state_version,
+        allowed_from_states=ACCEPTABLE_FROM_STATES, next_state="rejected", action="mark_rejected",
     )

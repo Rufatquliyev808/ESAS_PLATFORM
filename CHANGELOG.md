@@ -8,6 +8,56 @@ Format Semantic Versioning prinsipinə əsaslanır:
 
 ## Unreleased
 
+### Added — Phase 5: accept/reject decision and `evaluated -> accepted_for_shadow | rejected`
+
+- User-picked continuation of the same lifecycle contract work: with an
+  evaluation now on record, decide whether the experiment is eligible for
+  a (separate, not-yet-built) SHADOW run. This decision governs SHADOW
+  eligibility only -- it never authorizes real trading by itself, and is
+  a v1 heuristic threshold, not a statistically validated governance
+  policy.
+- New `backend/app/analysis/visual_acceptance.py` (pure, no I/O):
+  `decide_acceptance()` accepts (`accepted_for_shadow`) only if holdout
+  accuracy beats the naive majority-baseline accuracy already computed
+  during evaluation by at least `MINIMUM_IMPROVEMENT_OVER_BASELINE`
+  (documented as a v1 sanity floor, same convention as every other
+  `MINIMUM_*`/`OOD_*` constant in this pipeline); otherwise `rejected`,
+  with the shortfall recorded in `reasons`. Only ever callable for an
+  evaluation whose outcome was `evaluated` -- raises rather than guessing
+  for an `out_of_distribution` or `insufficient_evidence` evaluation,
+  since neither was trustworthy enough to decide anything from.
+- New migration `0018_visual_acceptance_decisions.sql` (test/scratch DB
+  only, not applied to production) + `visual_acceptance_repository.py`:
+  one row per experiment, idempotent per `decision_checksum`, conflict on
+  a different one.
+- `visual_experiment_repository.py`: `ACCEPTABLE_FROM_STATES =
+  {"evaluated"}`, two new transitions (`mark_accepted_for_shadow`,
+  `mark_rejected`).
+- New `backend/app/strategies/visual_experiment_acceptance.py`:
+  `decide_visual_experiment_acceptance()` reads the already-persisted
+  evaluation (never recomputes it -- this decision is about what was
+  already measured), applies the heuristic, persists the decision
+  artifact, and transitions the experiment.
+- 21 new tests: 8 pure unit tests (boundary behavior at the exact
+  threshold, rejection reasoning, non-evaluated-outcome guard,
+  determinism, checksum matches bytes), 4 new lifecycle-transition tests,
+  and 6 integration tests against real seeded/rendered/trained/evaluated
+  data -- a natural `rejected` path (this fixture's engineered labels
+  make the centroid model underperform the trivial baseline), an
+  engineered `accepted_for_shadow` path (directly setting favorable
+  accuracy values on the persisted evaluation row, since coaxing the
+  simple centroid classifier to naturally beat its baseline on this tiny
+  synthetic fixture isn't worth the complexity), ownership, wrong-state
+  rejection, a missing-evaluation defensive case, and re-run-after-
+  decision conflict. Full backend regression: `818 passed`.
+- **Scratch end-to-end verification**: ran both outcomes against real
+  rendered/gated/evaluated experiments -- one reached `rejected`
+  naturally, the other reached `accepted_for_shadow` after the same
+  favorable-metrics adjustment the integration test uses. Real production
+  database (still at migration `0011`) untouched.
+- No frontend, production migration, or actual SHADOW wiring in this
+  increment -- the decision step only.
+
 ### Added — Phase 5: evaluation, OOD/abstain, and `training -> evaluated`
 
 - User-picked continuation of the same lifecycle contract work: the

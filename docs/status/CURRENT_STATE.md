@@ -1,5 +1,35 @@
 # ESAS Platform — Cari Vəziyyət
 
+## 2026-08-10 — Phase 5: Accept/reject qərarı və `evaluated → accepted_for_shadow | rejected`
+
+- İstifadəçinin seçdiyi davam: evaluation artıq var — indi eksperimentin
+  (gələcək, hələ qurulmamış) SHADOW run üçün uyğun olub-olmadığını həll
+  etmək. Bu qərar YALNIZ SHADOW uyğunluğunu idarə edir — real ticarəti
+  ÖZÜ-ÖZLÜYÜNDƏ HEÇ VAXT icazə vermir, v1 həddi kimi (statistik
+  təsdiqlənmiş qərar deyil).
+- Yeni `analysis/visual_acceptance.py` (saf): `decide_acceptance()` —
+  yalnız holdout accuracy artıq hesablanmış majority-baseline accuracy-ni
+  `MINIMUM_IMPROVEMENT_OVER_BASELINE` qədər keçirsə `accepted_for_shadow`;
+  əks halda `rejected` (səbəb `reasons`-da). YALNIZ `evaluated` outcome-lu
+  evaluation üçün çağırıla bilər — `out_of_distribution`/
+  `insufficient_evidence` üçün raise edir.
+- Yeni migration `0018_visual_acceptance_decisions.sql` (yalnız test
+  bazada) + `visual_acceptance_repository.py` — idempotent/konflikt.
+- `visual_experiment_repository.py`-ə 2 yeni keçid: `mark_accepted_for_shadow`,
+  `mark_rejected`.
+- Yeni `strategies/visual_experiment_acceptance.py`:
+  `decide_visual_experiment_acceptance()` — persisted evaluation-u oxuyur
+  (yenidən hesablamır), qərarı tətbiq edir, artefaktı saxlayır, eksperimenti
+  müvafiq vəziyyətə keçirir.
+- 21 yeni test (8 saf + 4 keçid + 6 inteqrasiya) — real data ilə təbii
+  `rejected` yolu (bu fixture-un modeli trivial baseline-dan aşağı işləyir)
+  VƏ mühəndisləşdirilmiş `accepted_for_shadow` yolu (persisted evaluation
+  sətrinə əlverişli dəyərlər birbaşa yazılaraq). Tam backend regressiyası:
+  `818 passed`.
+- **Scratch uçdan-uca doğrulama**: hər iki nəticə real render→training→
+  evaluation zənciri ilə təsdiqləndi. Real production baza (`0011`-də
+  qalır) toxunulmadı.
+
 ## 2026-08-10 — Phase 5: Evaluation, OOD/abstain və `training → evaluated`
 
 - İstifadəçinin seçdiyi davam: baseline model artıq var — indi onu

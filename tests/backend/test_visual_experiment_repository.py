@@ -15,9 +15,11 @@ from backend.app.database.visual_experiment_repository import (
     block_experiment_for_data_quality,
     get_visual_experiment,
     list_visual_experiments,
+    mark_accepted_for_shadow,
     mark_evaluated,
     mark_insufficient_evidence,
     mark_out_of_distribution,
+    mark_rejected,
     mark_rendering_failed,
     register_visual_experiment,
     start_rendering,
@@ -456,4 +458,71 @@ def test_mark_insufficient_evidence_by_another_user_is_rejected(isolated_databas
         mark_insufficient_evidence(
             experiment_id=training.experiment_id, actor="OTHER-USER", actor_role="operator",
             expected_state_version=training.state_version,
+        )
+
+
+def test_mark_accepted_for_shadow_transitions_from_evaluated(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    evaluated = mark_evaluated(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    accepted = mark_accepted_for_shadow(
+        experiment_id=evaluated.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=evaluated.state_version,
+    )
+    assert accepted.lifecycle_state == "accepted_for_shadow"
+    assert accepted.state_version == evaluated.state_version + 1
+
+    with get_connection() as connection:
+        audit = connection.execute(
+            "SELECT action, previous_state, next_state FROM visual_experiment_audit "
+            "WHERE experiment_id = ? ORDER BY audit_id DESC LIMIT 1;",
+            (experiment.experiment_id,),
+        ).fetchone()
+    assert audit["action"] == "mark_accepted_for_shadow"
+    assert audit["previous_state"] == "evaluated"
+    assert audit["next_state"] == "accepted_for_shadow"
+
+
+def test_mark_rejected_transitions_from_evaluated(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    evaluated = mark_evaluated(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    rejected = mark_rejected(
+        experiment_id=evaluated.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=evaluated.state_version,
+    )
+    assert rejected.lifecycle_state == "rejected"
+
+
+def test_mark_accepted_for_shadow_rejects_from_training(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    with pytest.raises(VisualExperimentConflictError):
+        mark_accepted_for_shadow(
+            experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+            expected_state_version=training.state_version,
+        )
+
+
+def test_mark_rejected_by_another_user_is_rejected(isolated_database: Path) -> None:
+    _prepare(isolated_database)
+    experiment = _register()
+    training = _rendering_then_training(experiment)
+    evaluated = mark_evaluated(
+        experiment_id=training.experiment_id, actor="TEST-USER", actor_role="operator",
+        expected_state_version=training.state_version,
+    )
+    with pytest.raises(VisualExperimentOwnershipError):
+        mark_rejected(
+            experiment_id=evaluated.experiment_id, actor="OTHER-USER", actor_role="operator",
+            expected_state_version=evaluated.state_version,
         )
